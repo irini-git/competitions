@@ -9,7 +9,8 @@ class FluShotData:
     Class responsible for Flu Shot Data
     """
     def __init__(self):
-        self.load_data()
+        self.df_train = self.load_data()
+        self.explore_train_data(self.df_train)
 
     def load_data(self):
         """
@@ -17,11 +18,11 @@ class FluShotData:
         :return:
         """
         df_labels = pd.read_csv(FILENAME_INPUT_DATA_LABELS)
-        self.explore_data(df_labels)
+        return df_labels
 
-    def explore_data(self, df):
+    def explore_train_data(self, df):
         """
-        Explore dataset, calculate stats and visualize
+        Explore train dataset, calculate stats and visualize
         :param df: dataframe to explore
         :return: output to screen, charts as files
         """
@@ -30,9 +31,24 @@ class FluShotData:
         print(f'Dataset has {df.shape[0]} entries.')
 
         columns = ['h1n1_vaccine', 'seasonal_vaccine']
-        # TODO : make this a dataframe
+
+        # How many people receive H1N1 / seasonal flu vaccine?
+        # To do this, let's explore the distribution of values in train dataset
+
         for c in columns:
-            print(df[c].value_counts(), df[c].value_counts()/df.shape[0])
+            # Calculate counts and percentages
+            counts = df[c].value_counts()
+            percentages = round(100*(df[c].value_counts(normalize=True)),1).astype(str) + '%'
+
+            # Combines counts and percentages
+            df_counts_percentages = pd.concat([counts, percentages], axis=1, keys=['count', 'percentage'])
+
+            print(df_counts_percentages)
+
 
     def get_current_location(self):
+        """
+        Support function to return the current directly
+        :return: prints the current directory
+        """
         print(os.getcwd())
