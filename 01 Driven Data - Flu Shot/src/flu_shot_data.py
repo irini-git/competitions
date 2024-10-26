@@ -4,7 +4,8 @@ import os
 FILENAME_INPUT_DATA_LABELS = '../data/Flu_Shot_Learning_Predict_H1N1_and_Seasonal_Flu_Vaccines_-_Training_Labels.csv'
 FILENAME_INPUT_DATA_FEATURES = '../data/Flu_Shot_Learning_Predict_H1N1_and_Seasonal_Flu_Vaccines_-_Training_Features.csv'
 
-FILE_BARCHART_LABELS = '../fig/Labels_bar_chart.png'
+FILE_BARCHART_LABELS = '../fig/labels_bar_chart.png'
+FILE_BARCHART_LABELS_TEST = '../fig/labels_bar_chart_test.png'
 
 class FluShotData:
     """
@@ -13,7 +14,6 @@ class FluShotData:
     def __init__(self):
         self.df_train = self.load_data()
         self.explore_train_data(self.df_train)
-        # self.plot_bar_chart_train_data()
 
     def load_data(self):
         """
@@ -50,7 +50,7 @@ class FluShotData:
             # Calculate counts and percentages
             counts = df[c].value_counts() # value counts
             # percentages_round = round(100*(df[c].value_counts(normalize=True)),1).astype(str) + '%' # percentage as str with % sign
-            percentages = df[c].value_counts(normalize=True) # percentage value as is
+            percentages = 100*df[c].value_counts(normalize=True) # percentage value as is
 
             # Combines counts and percentages
             df_temp = pd.concat([counts, percentages], axis=1).reset_index()
@@ -64,8 +64,10 @@ class FluShotData:
 
         print(df_counts_percentages)
 
+        self.plot_bar_chart_train_data(df_counts_percentages)
 
-    def plot_bar_chart_train_data(self):
+
+    def plot_bar_chart_train_data(self, df):
         """
         Plot bar chart for labels
         :return: figure in
@@ -78,10 +80,19 @@ class FluShotData:
 
         print(source)
 
-        bars = alt.Chart(source).mark_bar().encode(
+        bars_test = alt.Chart(source).mark_bar().encode(
             x=alt.X('sum(yield):Q').stack('zero'),
             y=alt.Y('variety:N'),
             color=alt.Color('site')
+        )
+
+        bars = alt.Chart(df).mark_bar().encode(
+            x=alt.X('count:Q').stack('zero'),
+            y=alt.Y('vaccine:N'),
+            color=alt.Color('received')
+        ).properties(
+            width=800,
+            height=200
         )
 
         text = alt.Chart(source).mark_text(dx=-15, dy=3, color='white').encode(
@@ -91,10 +102,13 @@ class FluShotData:
             text=alt.Text('sum(yield):Q', format='.1f')
         )
 
-        chart = bars + text
+        chart_test = bars_test + text
+        chart = bars
 
         # Save the image in the img folder
+        chart_test.save(FILE_BARCHART_LABELS_TEST)
         chart.save(FILE_BARCHART_LABELS)
+
 
 
 
