@@ -1,5 +1,6 @@
 import pandas as pd
 import os
+import altair as alt
 
 FILENAME_INPUT_DATA_LABELS = '../data/Flu_Shot_Learning_Predict_H1N1_and_Seasonal_Flu_Vaccines_-_Training_Labels.csv'
 FILENAME_INPUT_DATA_FEATURES = '../data/Flu_Shot_Learning_Predict_H1N1_and_Seasonal_Flu_Vaccines_-_Training_Features.csv'
@@ -59,11 +60,13 @@ class FluShotData:
             df_temp['vaccine'] = c
 
             df_temp.columns = columns_
+            # Replace values for received to Yes/No, current: 0/1
+            df_temp['received'] = df_temp['received'].map({0: 'No', 1: 'Yes'})
 
+            # Concat dataframes to one
             df_counts_percentages = pd.concat([df_temp, df_counts_percentages])
 
         print(df_counts_percentages)
-
         self.plot_bar_chart_train_data(df_counts_percentages)
 
 
@@ -73,43 +76,29 @@ class FluShotData:
         :return: figure in
         """
 
-        import altair as alt
-        from vega_datasets import data
-
-        source = data.barley()
-
-        print(source)
-
-        bars_test = alt.Chart(source).mark_bar().encode(
-            x=alt.X('sum(yield):Q').stack('zero'),
-            y=alt.Y('variety:N'),
-            color=alt.Color('site')
-        )
-
         bars = alt.Chart(df).mark_bar().encode(
-            x=alt.X('count:Q').stack('zero'),
-            y=alt.Y('vaccine:N'),
-            color=alt.Color('received')
+            x=alt.X('count:Q').title('counts').stack('zero'),
+            y=alt.Y('vaccine:N').title(''),
+            color='received'
         ).properties(
             width=800,
             height=200
         )
 
-        text = alt.Chart(source).mark_text(dx=-15, dy=3, color='white').encode(
-            x=alt.X('sum(yield):Q').stack('zero'),
-            y=alt.Y('variety:N'),
-            detail='site:N',
-            text=alt.Text('sum(yield):Q', format='.1f')
+        text = bars.mark_text(
+            align='left',
+            baseline='middle',
+            color='white',
+            dx=10, dy=0  # Nudges text to the right so it doesn't appear on top of the bar
+        ).encode(
+            text='count:Q'
+
         )
 
-        chart_test = bars_test + text
-        chart = bars
+        chart = bars + text
 
         # Save the image in the img folder
-        chart_test.save(FILE_BARCHART_LABELS_TEST)
         chart.save(FILE_BARCHART_LABELS)
-
-
 
 
     def get_current_location(self):
