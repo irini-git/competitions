@@ -27,8 +27,6 @@ class FluShotData:
         df_labels = pd.read_csv(FILENAME_INPUT_DATA_LABELS)
         df_features = pd.read_csv(FILENAME_INPUT_DATA_FEATURES)
 
-        # TODO load test data
-
         return df_labels, df_features
 
     def explore_labels(self, df):
