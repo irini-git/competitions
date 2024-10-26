@@ -1,6 +1,9 @@
 import pandas as pd
 import os
 import altair as alt
+import logging
+
+# TODO : log data to file not print to screen
 
 FILENAME_INPUT_DATA_LABELS = '../data/Flu_Shot_Learning_Predict_H1N1_and_Seasonal_Flu_Vaccines_-_Training_Labels.csv'
 FILENAME_INPUT_DATA_FEATURES = '../data/Flu_Shot_Learning_Predict_H1N1_and_Seasonal_Flu_Vaccines_-_Training_Features.csv'
@@ -13,8 +16,8 @@ class FluShotData:
     Class responsible for Flu Shot Data
     """
     def __init__(self):
-        self.df_train = self.load_data()
-        self.explore_train_data(self.df_train)
+        self.df_labels, self.df_features = self.load_data()
+        self.explore_labels(self.df_labels)
 
     def load_data(self):
         """
@@ -22,13 +25,13 @@ class FluShotData:
         :return: raw train and test data
         """
         df_labels = pd.read_csv(FILENAME_INPUT_DATA_LABELS)
+        df_features = pd.read_csv(FILENAME_INPUT_DATA_FEATURES)
 
-        # TODO load features
         # TODO load test data
 
-        return df_labels
+        return df_labels, df_features
 
-    def explore_train_data(self, df):
+    def explore_labels(self, df):
         """
         Explore train dataset, calculate stats and visualize
         :param df: dataframe to explore
