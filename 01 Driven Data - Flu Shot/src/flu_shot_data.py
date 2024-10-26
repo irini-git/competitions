@@ -44,7 +44,7 @@ class FluShotData:
         # To do this, let's explore the distribution of values in train dataset
 
         # Placeholder for data
-        columns_ = ['received', 'count', 'percentage', 'vaccine']
+        columns_ = ['vaccinated', 'count', 'percentage', 'vaccine']
         df_counts_percentages = pd.DataFrame()
 
         for c in columns:
@@ -61,7 +61,7 @@ class FluShotData:
 
             df_temp.columns = columns_
             # Replace values for received to Yes/No, current: 0/1
-            df_temp['received'] = df_temp['received'].map({0: 'No', 1: 'Yes'})
+            df_temp['vaccinated'] = df_temp['vaccinated'].map({0: 'No', 1: 'Yes'})
 
             # Concat dataframes to one
             df_counts_percentages = pd.concat([df_temp, df_counts_percentages])
@@ -79,7 +79,7 @@ class FluShotData:
         bars = alt.Chart(df).mark_bar().encode(
             x=alt.X('count:Q').title('counts').stack('zero'),
             y=alt.Y('vaccine:N').title(''),
-            color='received'
+            color='vaccinated'
         ).properties(
             width=800,
             height=200
