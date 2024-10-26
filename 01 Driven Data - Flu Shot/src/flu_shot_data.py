@@ -4,6 +4,8 @@ import os
 FILENAME_INPUT_DATA_LABELS = '../data/Flu_Shot_Learning_Predict_H1N1_and_Seasonal_Flu_Vaccines_-_Training_Labels.csv'
 FILENAME_INPUT_DATA_FEATURES = '../data/Flu_Shot_Learning_Predict_H1N1_and_Seasonal_Flu_Vaccines_-_Training_Features.csv'
 
+FILE_BARCHART_LABELS = '../fig/Labels_bar_chart.png'
+
 class FluShotData:
     """
     Class responsible for Flu Shot Data
@@ -11,13 +13,18 @@ class FluShotData:
     def __init__(self):
         self.df_train = self.load_data()
         self.explore_train_data(self.df_train)
+        # self.plot_bar_chart_train_data()
 
     def load_data(self):
         """
         Load raw data (features and labels) from csv files.
-        :return:
+        :return: raw train and test data
         """
         df_labels = pd.read_csv(FILENAME_INPUT_DATA_LABELS)
+
+        # TODO load features
+        # TODO load test data
+
         return df_labels
 
     def explore_train_data(self, df):
@@ -35,15 +42,60 @@ class FluShotData:
         # How many people receive H1N1 / seasonal flu vaccine?
         # To do this, let's explore the distribution of values in train dataset
 
+        # Placeholder for data
+        columns_ = ['received', 'count', 'percentage', 'vaccine']
+        df_counts_percentages = pd.DataFrame()
+
         for c in columns:
             # Calculate counts and percentages
-            counts = df[c].value_counts()
-            percentages = round(100*(df[c].value_counts(normalize=True)),1).astype(str) + '%'
+            counts = df[c].value_counts() # value counts
+            # percentages_round = round(100*(df[c].value_counts(normalize=True)),1).astype(str) + '%' # percentage as str with % sign
+            percentages = df[c].value_counts(normalize=True) # percentage value as is
 
             # Combines counts and percentages
-            df_counts_percentages = pd.concat([counts, percentages], axis=1, keys=['count', 'percentage'])
+            df_temp = pd.concat([counts, percentages], axis=1).reset_index()
 
-            print(df_counts_percentages)
+            # Add a column for which vaccine
+            df_temp['vaccine'] = c
+
+            df_temp.columns = columns_
+
+            df_counts_percentages = pd.concat([df_temp, df_counts_percentages])
+
+        print(df_counts_percentages)
+
+
+    def plot_bar_chart_train_data(self):
+        """
+        Plot bar chart for labels
+        :return: figure in
+        """
+
+        import altair as alt
+        from vega_datasets import data
+
+        source = data.barley()
+
+        print(source)
+
+        bars = alt.Chart(source).mark_bar().encode(
+            x=alt.X('sum(yield):Q').stack('zero'),
+            y=alt.Y('variety:N'),
+            color=alt.Color('site')
+        )
+
+        text = alt.Chart(source).mark_text(dx=-15, dy=3, color='white').encode(
+            x=alt.X('sum(yield):Q').stack('zero'),
+            y=alt.Y('variety:N'),
+            detail='site:N',
+            text=alt.Text('sum(yield):Q', format='.1f')
+        )
+
+        chart = bars + text
+
+        # Save the image in the img folder
+        chart.save(FILE_BARCHART_LABELS)
+
 
 
     def get_current_location(self):
