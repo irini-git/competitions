@@ -37,38 +37,110 @@ Potentially to drop.
 
 - Observation : household_children, cast to int.
 Rational for decision: possible values are integer numbers: 0 (18.7k), 1 (3.2k), 2 (2.8k) and 3 (1.7k).
+
 - Observation : household_adults, cast to int.
 Rational for decision: same as above: 0 (8k), 1 (14.5k), 2 (2.8k) and 3 (1.1k).
+
 - Question : household_adults, how is it possible to have zeros (no adults)? Need to explore those entries carefully.
-- Observation : hhs_geo_region, create a simple mapping as 1 to 10
-Rational for decision: this is 10-region geographic classification by US Dept. of Health,
-using numbers would simplify the view, and the mapping to be provided to trace real values back.
-- Observation : employment_status, keep as is
+
+- Observation : hhs_geo_region, keep as is
+Rational for decision: this is 10-region geographic classification by US Dept. of Health.
+
+- Observation : employment_status, keep as is for exploration
 Rational for decision: reasonable values as Employed (13.6k), Unemployed (1.4k) and Not in Labor Force (10.2k).
-- Observation : rent_or_own, change to boolean is_own
-Rational for decision: possible values are Own (18.7k) and Rent (5.9k), changing to Boolean for model.
-- Observation : marital_status, change to boolean is_married
-Rational for decision: possible values are Married (13.5k), Not Married (11.7k), changing to Boolean for model.
+
+- Observation : employment_status, create two new features for the model
+    - is_employed, Boolean but encoded as 0/1 for model
+        Employed          ... 1
+        Unemployed        ... 0
+    - empl_status
+        Employed           ... 2
+        Not in Labor Force ... 0 (custom choice, the value might be revisited)
+        Unemployed         ... 1
+
+- Observation : rent_or_own, change to is_own coded as 1 (Own) and 0 (Rent)
+Rational for decision: possible values are Own (18.7k) and Rent (5.9k), possible to use is_condition logic.
+
+- Observation : marital_status, change to is_married for married (1) and not married (0)
+Rational for decision: possible values are Married (13.5k), Not Married (11.7k), possible to use is_condition logic.
+
 - Observation : income_poverty, create three features
 Current values :
 <= $75,000, Above Poverty    12777
 > $75,000                     6810
 Below Poverty                 2697
 For the analysis, we will create three new features based on the income_poverty:
-- is_income_gt_75k : boolean
-    <= $75,000, Above Poverty  ... False
-    > $75,000                  ... True
-    Below Poverty              ... False
-- is_above_poverty : boolean
-    <= $75,000, Above Poverty  ... True
-    > $75,000                  ... True
-    Below Poverty              ... False
+- is_income_gt_75k : boolean-like, coded as 0/1
+    <= $75,000, Above Poverty  ... 0
+    > $75,000                  ... 1
+    Below Poverty              ... 0
+- is_above_poverty : boolean-like, coded as 0/1
+    <= $75,000, Above Poverty  ... 1
+    > $75,000                  ... 1
+    Below Poverty              ... 0
 - social class : encode to 0,1,2 for low, middle and high class
     <= $75,000, Above Poverty  ... 1 (middle class)
     > $75,000                  ... 2 (high class)
     Below Poverty              ... 0 (low class)
 
+- Observation : sex, change to boolean is_woman
+Rational for decision: possible values are Female (15.9k) and Male (10.8k), possible to use is_condition logic.
 
+- Observation : race, keep as is for exploration.
+Rational for decision : might get some insights from data.
+For model, we will use Ordinal Encoder
+
+- Observation : Education, keep as is for exploration.
+Rational for decision : might get some insights from data.
+
+- Observation : Education, create two news feature for the model (manual and auto)
+Rational for decision : for manual, encode the education as numerical value from low (0) to high (2).
+For auto, we will use Ordinal Encoder.
+This parameter is self-reported, not fully transparent how to translate values to numbers.
+- is_educated
+    12 Years            ... 2
+    < 12 Years          ... 1
+    College Graduate    ... 1
+    Some College        ... 0
+
+- Observation : age_group, keep as is for visualisations
+Rational for decision: there might be interesting insights
+
+- Observation : age_group, create a new numeric feature for the model
+Rational for decision: possible to implement numeric logic.
+Comment it's a pity we do not have the exact age to plot the age diagram for received / not received the vaccine.
+- age
+    65+ Years        ... 4
+    55 - 64 Years    ... 3
+    45 - 54 Years    ... 2
+    35 - 44 Years    ... 1
+    18 - 34 Years    ... 0
+
+- Observation : opinion_seas_sick_from_vacc
+This is respondents worry of getting sick from seasonal flu vaccine.
+The majority of respondents are not worried (11.8k).
+Action 1 : Create a new feature based on it, integer. Keep "dont know" in the middle to have the same distance to Y/N.
+    - is_worried_seas_sick_from_vacc
+        1.0     (not worried)       ... 0
+        2.0     (not very worried)  ... 1
+        3.0     (don't know)        ... 2
+        4.0     (somewhat worried)  ... 3
+        5.0     (very worried)      ... 4
+
+Action 2 : Create a new feature with description (in English) for visualization
+
+- Observation : opinion_seas_risk
+This is respondents opinion about risk of getting sick with seasonal flu without vaccine.
+The majority of respondents replied "somewhat low" (8.9k).
+Action 1 : Create a new feature based on it, integer. Keep "dont know" in the middle to have the same distance to Y/N.
+    - is_worried_seas_risk
+        1.0    (very low)      ... 0
+        2.0    (somewhat low)  ... 1
+        3.0    (dont know)     ... 2
+        4.0    (somewhat high) ... 3
+        5.0    (very high)     ... 4
+
+Action 2 : Create a new feature with description (in English) for visualization
 
 Code sharing:
 Privately sharing code or data outside of teams is not permitted.
@@ -86,6 +158,11 @@ not provided on these competition pages.
 
 Abbreviations:
 MSA - Metropolitan statistical areas
+
+Potential inspiration:
+https://scikit-learn.org/stable/auto_examples/inspection/plot_permutation_importance.html
+https://datascience.stackexchange.com/questions/79570/when-to-one-hot-encode-categorical-data-when-following-crisp-dm/79575#79575
+
 
 Project:
 Saving charts in 'png' format requires the vl-convert-python package
