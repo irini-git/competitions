@@ -51,10 +51,24 @@ Rational for decision: possible values are Own (18.7k) and Rent (5.9k), changing
 Rational for decision: possible values are Married (13.5k), Not Married (11.7k), changing to Boolean for model.
 - Observation : income_poverty, create three features
 Current values :
-
 <= $75,000, Above Poverty    12777
 > $75,000                     6810
 Below Poverty                 2697
+For the analysis, we will create three new features based on the income_poverty:
+- is_income_gt_75k : boolean
+    <= $75,000, Above Poverty  ... False
+    > $75,000                  ... True
+    Below Poverty              ... False
+- is_above_poverty : boolean
+    <= $75,000, Above Poverty  ... True
+    > $75,000                  ... True
+    Below Poverty              ... False
+- social class : encode to 0,1,2 for low, middle and high class
+    <= $75,000, Above Poverty  ... 1 (middle class)
+    > $75,000                  ... 2 (high class)
+    Below Poverty              ... 0 (low class)
+
+
 
 Code sharing:
 Privately sharing code or data outside of teams is not permitted.
