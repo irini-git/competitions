@@ -38,18 +38,20 @@ Potentially to drop.
 - Observation : household_children, cast to int.
 Rational for decision: possible values are integer numbers: 0 (18.7k), 1 (3.2k), 2 (2.8k) and 3 (1.7k).
 
-- Observation : household_adults, cast to int.
+- Observation : household_adults
+Action 1 : cast to int.
 Rational for decision: same as above: 0 (8k), 1 (14.5k), 2 (2.8k) and 3 (1.1k).
+Action 2 : review how it is possible to have zeros (no adults)? Need to explore those entries carefully.
 
-- Question : household_adults, how is it possible to have zeros (no adults)? Need to explore those entries carefully.
-
-- Observation : hhs_geo_region, keep as is
+- Observation : hhs_geo_region
+Action : keep as is.
 Rational for decision: this is 10-region geographic classification by US Dept. of Health.
 
-- Observation : employment_status, keep as is for exploration
+- Observation : employment_status
+Action 1 : keep as is for exploration
 Rational for decision: reasonable values as Employed (13.6k), Unemployed (1.4k) and Not in Labor Force (10.2k).
 
-- Observation : employment_status, create two new features for the model
+Action 2 : create two new features for the model
     - is_employed, Boolean but encoded as 0/1 for model
         Employed          ... 1
         Unemployed        ... 0
@@ -58,63 +60,74 @@ Rational for decision: reasonable values as Employed (13.6k), Unemployed (1.4k) 
         Not in Labor Force ... 0 (custom choice, the value might be revisited)
         Unemployed         ... 1
 
-- Observation : rent_or_own, change to is_own coded as 1 (Own) and 0 (Rent)
+Action 3 : create yet another feature using encoding
+
+- Observation : rent_or_own
+Action : change to is_own coded as 1 (Own) and 0 (Rent)
 Rational for decision: possible values are Own (18.7k) and Rent (5.9k), possible to use is_condition logic.
 
-- Observation : marital_status, change to is_married for married (1) and not married (0)
+- Observation : marital_status
+Action : change to is_married for married (1) and not married (0)
 Rational for decision: possible values are Married (13.5k), Not Married (11.7k), possible to use is_condition logic.
 
 - Observation : income_poverty, create three features
 Current values :
-<= $75,000, Above Poverty    12777
-> $75,000                     6810
-Below Poverty                 2697
+    <= $75,000, Above Poverty    12777
+    > $75,000                     6810
+    Below Poverty                 2697
+Action :
 For the analysis, we will create three new features based on the income_poverty:
-- is_income_gt_75k : boolean-like, coded as 0/1
-    <= $75,000, Above Poverty  ... 0
-    > $75,000                  ... 1
-    Below Poverty              ... 0
-- is_above_poverty : boolean-like, coded as 0/1
-    <= $75,000, Above Poverty  ... 1
-    > $75,000                  ... 1
-    Below Poverty              ... 0
-- social class : encode to 0,1,2 for low, middle and high class
-    <= $75,000, Above Poverty  ... 1 (middle class)
-    > $75,000                  ... 2 (high class)
-    Below Poverty              ... 0 (low class)
+    - is_income_gt_75k : boolean-like, coded as 0/1
+        <= $75,000, Above Poverty  ... 0
+        > $75,000                  ... 1
+        Below Poverty              ... 0
+    - is_above_poverty : boolean-like, coded as 0/1
+        <= $75,000, Above Poverty  ... 1
+        > $75,000                  ... 1
+        Below Poverty              ... 0
+    - social class : encode to 0,1,2 for low, middle and high class
+        <= $75,000, Above Poverty  ... 1 (middle class)
+        > $75,000                  ... 2 (high class)
+        Below Poverty              ... 0 (low class)
 
-- Observation : sex, change to boolean is_woman
+- Observation : sex
+Action 1 : create a boolean-like feature is_woman with 0/1.
 Rational for decision: possible values are Female (15.9k) and Male (10.8k), possible to use is_condition logic.
 
-- Observation : race, keep as is for exploration.
-Rational for decision : might get some insights from data.
-For model, we will use Ordinal Encoder
+Action 2 : create a feature "gender" with values "man" or woman for charts.
+As per another feature with age, the youngest is 18 - 34 years, meaning there are no children in the sample.
 
-- Observation : Education, keep as is for exploration.
+- Observation : race
+Action 1 : keep as is for exploration.
+Rational for decision : might get some insights from data.
+Action 2 : For the model, we will use Ordinal Encoder
+
+- Observation : Education
+Action 1 : keep as is for exploration.
 Rational for decision : might get some insights from data.
 
-- Observation : Education, create two news feature for the model (manual and auto)
+Action 2 : create two news feature for the model (manual and auto)
 Rational for decision : for manual, encode the education as numerical value from low (0) to high (2).
 For auto, we will use Ordinal Encoder.
 This parameter is self-reported, not fully transparent how to translate values to numbers.
-- is_educated
-    12 Years            ... 2
-    < 12 Years          ... 1
-    College Graduate    ... 1
-    Some College        ... 0
+    - is_educated_manual
+        12 Years            ... 2
+        < 12 Years          ... 1
+        College Graduate    ... 1
+        Some College        ... 0
+    - education_encoded
 
-- Observation : age_group, keep as is for visualisations
+- Observation : age_group
+Action 1 : keep as is for visualisations
 Rational for decision: there might be interesting insights
-
-- Observation : age_group, create a new numeric feature for the model
+Action 2 : create a new numeric feature for the model
 Rational for decision: possible to implement numeric logic.
-Comment it's a pity we do not have the exact age to plot the age diagram for received / not received the vaccine.
-- age
-    65+ Years        ... 4
-    55 - 64 Years    ... 3
-    45 - 54 Years    ... 2
-    35 - 44 Years    ... 1
-    18 - 34 Years    ... 0
+    - age
+        65+ Years        ... 4
+        55 - 64 Years    ... 3
+        45 - 54 Years    ... 2
+        35 - 44 Years    ... 1
+        18 - 34 Years    ... 0
 
 - Observation : opinion_seas_sick_from_vacc
 This is respondents worry of getting sick from seasonal flu vaccine.
@@ -194,74 +207,87 @@ Action 1 : Create a new feature based on it, integer. Keep "dont know" in the mi
 
 Action 2 : Create a new feature with description (in English) for visualization
 
-- Observation : health_insurance, create a new int feature
+- Observation : health_insurance
 Current values are 0.0 (1 736) and 1.0 (12 697) with the majority of respondents having health insurance.
+Action : create a new int feature
     - has_health_insurance, and cast floats to int (1.0 -> 1)
 Rational : create feature easily absorbed by a model
 
-- Observation : health_worker, create a new int feature (same logic as above)
-The most respondents have not reported themself being a healthcare worker, compare 23 004 vs 2 899.
+- Observation : health_worker
+The most respondents have not reported themself being a healthcare worker, compare 23.k vs 2.9k.
+Action : create a new int feature (same logic as above)
     - is_health_worker, and cast floats to int (1.0 -> 1)
 Rational : create feature easily absorbed by a model
 
-- Observation : child_under_6_months, create a new int feature (same logic as above)
+- Observation : child_under_6_months
 The majority of respondents replied not having a regular contact with the child under age of six months (23.7k),
 while some did (2.1k).
+Action : create a new int feature (same logic as above)
     - has_child_under_6_months, and cast floats to int (1.0 -> 1)
 Rational : create feature easily absorbed by a model
 
-- Observation : chronic_med_condition, create a new int feature (same logic as above)
-The full list of chorical medical conditions in scope is provided in the materials by DataDriven with
+- Observation : chronic_med_condition
+The full list of chronically medical conditions in scope is provided in the materials by DataDriven with
 the problem statement. Respondents generally replied not having (18.4k) rather than yes (7.2k).
+Action : create a new int feature (same logic as above)
     - has_chronic_med_condition, and cast floats to int (1.0 -> 1)
 Rational : create feature easily absorbed by a model
 
-- Observation : doctor_recc_seasonal, create a new int feature (same logic as above)
+- Observation : doctor_recc_seasonal
 Seasonal flue vaccine was recommended by doctor to the majority of respondents (16.4k), compared to (8k).
+Action : create a new int feature (same logic as above)
     - is_doctor_recc_seasonal, and cast floats to int (1.0 -> 1)
 Rational : create feature easily absorbed by a model
 
 - Observation : doctor_recc_h1n1, create a new int feature (same logic as above)
 Seasonal flue vaccine was recommended by doctor to the majority of respondents (19.1k), compared to (5.4k).
 Curiously, that h1n1 was recommended more broadly by doctors compared to seasonal vaccine.
-Action : investigate the fields with recommendations and actual receiving or not vaccines.
+Action 1 : create a new int feature (same logic as above)
     - is_doctor_recc_h1n1, and cast floats to int (1.0 -> 1)
 Rational : create feature easily absorbed by a model
+Action 2 : investigate the fields with recommendations and actual receiving or not vaccines.
 
-- Observation : behavioral_touch_face, create a new int feature (same logic as above)
+- Observation : behavioral_touch_face
 Interesting how the majority of respondents (still not all) report themselves to avoid touching face : 18k vs 8.5k.
+Action : create a new int feature (same logic as above)
     - avoided_touch_face, and cast floats to int (1.0 -> 1)
 Rational : create feature easily absorbed by a model
 
-- Observation : behavioral_outside_home, create a new int feature (same logic as above)
+- Observation : behavioral_outside_home
 This feature holds values for has reduced contact with people outside of own household.
+Action : create a new int feature (same logic as above)
     - reduced_outside_home, and cast floats to int (1.0 -> 1)
 Rational : create feature easily absorbed by a model
 
-- Observation : behavioral_large_gatherings, create a new int feature (same logic as above)
+- Observation : behavioral_large_gatherings
 This feature holds values for has reduced time at large gatherings.
+Action : create a new int feature (same logic as above)
     - reduced_large_gatherings, and cast floats to int (1.0 -> 1)
 Rational : create feature easily absorbed by a model
 
-- Observation : behavioral_wash_hands, create a new int feature (same logic as above)
+- Observation : behavioral_wash_hands
 This feature holds values for has frequently wash hands or used hand sanitizer.
+Action : create a new int feature (same logic as above)
     - has_wash_hands, and cast floats to int (1.0 -> 1)
 Rational : create feature easily absorbed by a model
 
-- Observation : behavioral_face_mask, create a new int feature (same logic as above)
+- Observation : behavioral_face_mask
 This feature contains values for has bought a face mask.
 The majority reported buying a face mask (24.8), and curiously the feature is not "has used a mask".
+Action : create a new int feature (same logic as above)
     - bought_face_mask, and cast floats to int (1.0 -> 1)
 Rational : create feature easily absorbed by a model
 
-- Observation : behavioral_avoidance, create a new int feature (same logic as above)
+- Observation : behavioral_avoidance
 Has avoided close contact with others flu-like symptoms
+Action : create a new int feature (same logic as above)
     - has_avoided_contact_flu_symptoms, and cast floats to int (1.0 -> 1)
 Rational : create feature easily absorbed by a model
 
-- Observation : behavioral_antiviral_meds, create a new int feature (same logic as above)
+- Observation : behavioral_antiviral_meds
 Has taken antiviral medications, and a large majority did (25.3k vs 1.3k).
 Logically we miss here a feature for had symptoms for taking antiviral medications.
+Action : create a new int feature (same logic as above)
     - taken_antiviral_medications, and cast floats to int (1.0 -> 1)
 Rational : create feature easily absorbed by a model
 
