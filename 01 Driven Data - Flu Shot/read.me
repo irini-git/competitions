@@ -24,7 +24,7 @@ Data exploration:
 More people received a seasonal vaccine compared to h1n1:
 about a 1/2 of population received a seasonal vaccine (46.5%) and 1/5 received h1n1 vaccine (21.2%).
 
-2. Explore features :
+2. Explore features
 - Observation : employment_occupation, keep and treat as real value.
 Rational for decision: Even though the description states that values are represented as short random character string,
 (a) values might be coded for sensitivity reasons, so it is possible to encode to analyse the results.
@@ -141,6 +141,156 @@ Action 1 : Create a new feature based on it, integer. Keep "dont know" in the mi
         5.0    (very high)     ... 4
 
 Action 2 : Create a new feature with description (in English) for visualization
+
+- Observation : opinion_seas_vacc_effective
+Respondents opinion about seasonal flu vaccine effectiveness.
+The majority replied "Somewhat effective" (11.6k) and "Very effective" (9.9k)
+Action 1 : Create a new feature based on it, integer. Keep "dont know" in the middle to have the same distance to Y/N.
+    - is_seas_vacc_effective
+        1.0    (not al all effective)   ... 0
+        2.0    (not very effective)     ... 1
+        3.0    (dont know)              ... 2
+        4.0    (somewhat effective)     ... 3
+        5.0    (very effective)         ... 4
+
+Action 2 : Create a new feature with description (in English) for visualization
+
+- Observation : opinion_h1n1_sick_from_vacc
+This is respondents worry of getting sick from taking h1n1 vaccine.
+The majority of respondents are not very worried (9.1k).
+Action 1 : Create a new feature based on it, integer. Keep "dont know" in the middle to have the same distance to Y/N.
+    - is_worried_h1n1_sick_from_vacc
+        1.0     (not worried)       ... 0
+        2.0     (not very worried)  ... 1
+        3.0     (don't know)        ... 2
+        4.0     (somewhat worried)  ... 3
+        5.0     (very worried)      ... 4
+
+Action 2 : Create a new feature with description (in English) for visualization
+
+- Observation : opinion_h1n1_risk
+Respondents opinion about risk of getting sick with h1n1 flu without vaccine.
+The majority of respondents replied "somewhat low" (9.9k).
+Action 1 : Create a new feature based on it, integer. Keep "dont know" in the middle to have the same distance to Y/N.
+    - is_worried_h1n1_risk
+        1.0    (very low)      ... 0
+        2.0    (somewhat low)  ... 1
+        3.0    (dont know)     ... 2
+        4.0    (somewhat high) ... 3
+        5.0    (very high)     ... 4
+
+Action 2 : Create a new feature with description (in English) for visualization
+
+- Observation : opinion_h1n1_vacc_effective
+Respondents opinion about h1n1 vaccine effectiveness.
+The majority replied "Somewhat effective" (11.6k).
+Action 1 : Create a new feature based on it, integer. Keep "dont know" in the middle to have the same distance to Y/N.
+    - is_h1n1_vacc_effective
+        1.0    (not al all effective)   ... 0
+        2.0    (not very effective)     ... 1
+        3.0    (dont know)              ... 2
+        4.0    (somewhat effective)     ... 3
+        5.0    (very effective)         ... 4
+
+Action 2 : Create a new feature with description (in English) for visualization
+
+- Observation : health_insurance, create a new int feature
+Current values are 0.0 (1 736) and 1.0 (12 697) with the majority of respondents having health insurance.
+    - has_health_insurance, and cast floats to int (1.0 -> 1)
+Rational : create feature easily absorbed by a model
+
+- Observation : health_worker, create a new int feature (same logic as above)
+The most respondents have not reported themself being a healthcare worker, compare 23 004 vs 2 899.
+    - is_health_worker, and cast floats to int (1.0 -> 1)
+Rational : create feature easily absorbed by a model
+
+- Observation : child_under_6_months, create a new int feature (same logic as above)
+The majority of respondents replied not having a regular contact with the child under age of six months (23.7k),
+while some did (2.1k).
+    - has_child_under_6_months, and cast floats to int (1.0 -> 1)
+Rational : create feature easily absorbed by a model
+
+- Observation : chronic_med_condition, create a new int feature (same logic as above)
+The full list of chorical medical conditions in scope is provided in the materials by DataDriven with
+the problem statement. Respondents generally replied not having (18.4k) rather than yes (7.2k).
+    - has_chronic_med_condition, and cast floats to int (1.0 -> 1)
+Rational : create feature easily absorbed by a model
+
+- Observation : doctor_recc_seasonal, create a new int feature (same logic as above)
+Seasonal flue vaccine was recommended by doctor to the majority of respondents (16.4k), compared to (8k).
+    - is_doctor_recc_seasonal, and cast floats to int (1.0 -> 1)
+Rational : create feature easily absorbed by a model
+
+- Observation : doctor_recc_h1n1, create a new int feature (same logic as above)
+Seasonal flue vaccine was recommended by doctor to the majority of respondents (19.1k), compared to (5.4k).
+Curiously, that h1n1 was recommended more broadly by doctors compared to seasonal vaccine.
+Action : investigate the fields with recommendations and actual receiving or not vaccines.
+    - is_doctor_recc_h1n1, and cast floats to int (1.0 -> 1)
+Rational : create feature easily absorbed by a model
+
+- Observation : behavioral_touch_face, create a new int feature (same logic as above)
+Interesting how the majority of respondents (still not all) report themselves to avoid touching face : 18k vs 8.5k.
+    - avoided_touch_face, and cast floats to int (1.0 -> 1)
+Rational : create feature easily absorbed by a model
+
+- Observation : behavioral_outside_home, create a new int feature (same logic as above)
+This feature holds values for has reduced contact with people outside of own household.
+    - reduced_outside_home, and cast floats to int (1.0 -> 1)
+Rational : create feature easily absorbed by a model
+
+- Observation : behavioral_large_gatherings, create a new int feature (same logic as above)
+This feature holds values for has reduced time at large gatherings.
+    - reduced_large_gatherings, and cast floats to int (1.0 -> 1)
+Rational : create feature easily absorbed by a model
+
+- Observation : behavioral_wash_hands, create a new int feature (same logic as above)
+This feature holds values for has frequently wash hands or used hand sanitizer.
+    - has_wash_hands, and cast floats to int (1.0 -> 1)
+Rational : create feature easily absorbed by a model
+
+- Observation : behavioral_face_mask, create a new int feature (same logic as above)
+This feature contains values for has bought a face mask.
+The majority reported buying a face mask (24.8), and curiously the feature is not "has used a mask".
+    - bought_face_mask, and cast floats to int (1.0 -> 1)
+Rational : create feature easily absorbed by a model
+
+- Observation : behavioral_avoidance, create a new int feature (same logic as above)
+Has avoided close contact with others flu-like symptoms
+    - has_avoided_contact_flu_symptoms, and cast floats to int (1.0 -> 1)
+Rational : create feature easily absorbed by a model
+
+- Observation : behavioral_antiviral_meds, create a new int feature (same logic as above)
+Has taken antiviral medications, and a large majority did (25.3k vs 1.3k).
+Logically we miss here a feature for had symptoms for taking antiviral medications.
+    - taken_antiviral_medications, and cast floats to int (1.0 -> 1)
+Rational : create feature easily absorbed by a model
+
+- Observation : h1n1_knowledge
+Level of knowledge about h1n1 flue
+A small portion of respondents considered themselves not having knowledge (2.5k).
+Action 1 : create new feature to adapt the logic of the knowledge pool
+Rational : changed "a lot of knowledge" to 3 to adapt a logic behind the degree of knowledge.
+If "none" is coded with 0, "a little" is coded as 1 then the next should be "somewhat knowledge" coded as 2.
+    - has_h1n1_knowledge
+        0    (no knowledge)         ... 0
+        1    (a little knowledge)   ... 1
+        2    (a lot of knowledge)   ... 3  <- this is changed
+
+Action 2 : Create a new feature with description (in English) for visualization
+
+- Observation : h1n1_concern
+Level of concern about the h1n1 flu.
+Action 1 : create a new feature with added a value in the middle to align with other concern/worried features.
+We wil also keep the current feature for the model,
+the recommendation is to perform the assessment of feature importance.
+        1     (not at all concerned)  ... 0
+        2     (not very concerned)    ... 1
+        3     (don't know)            ... 2   <- this is new one
+        4     (somewhat concerned)    ... 3
+        5     (very concerned)        ... 4
+
+Action 2 : Create a new feature with description (in English) for visualization
+
 
 Code sharing:
 Privately sharing code or data outside of teams is not permitted.
