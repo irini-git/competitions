@@ -24,6 +24,38 @@ Data exploration:
 More people received a seasonal vaccine compared to h1n1:
 about a 1/2 of population received a seasonal vaccine (46.5%) and 1/5 received h1n1 vaccine (21.2%).
 
+2. Explore features :
+- Observation : employment_occupation, keep and treat as real value.
+Rational for decision: Even though the description states that values are represented as short random character string,
+(a) values might be coded for sensitivity reasons, so it is possible to encode to analyse the results.
+(b) same code could be reused for future cases where the employment occupation holds a value.
+- Observation : employment_industry, keep and treat as real value.
+Rational for decision: same as above. Review the decision after additional analysis.
+- Question : employment_occupation, employment_industry : what are the values in data? Perform some exploration
+whether these features are randomly represented in the distribution of vaccinated / not vaccinated.
+Potentially to drop.
+
+- Observation : household_children, cast to int.
+Rational for decision: possible values are integer numbers: 0 (18.7k), 1 (3.2k), 2 (2.8k) and 3 (1.7k).
+- Observation : household_adults, cast to int.
+Rational for decision: same as above: 0 (8k), 1 (14.5k), 2 (2.8k) and 3 (1.1k).
+- Question : household_adults, how is it possible to have zeros (no adults)? Need to explore those entries carefully.
+- Observation : hhs_geo_region, create a simple mapping as 1 to 10
+Rational for decision: this is 10-region geographic classification by US Dept. of Health,
+using numbers would simplify the view, and the mapping to be provided to trace real values back.
+- Observation : employment_status, keep as is
+Rational for decision: reasonable values as Employed (13.6k), Unemployed (1.4k) and Not in Labor Force (10.2k).
+- Observation : rent_or_own, change to boolean is_own
+Rational for decision: possible values are Own (18.7k) and Rent (5.9k), changing to Boolean for model.
+- Observation : marital_status, change to boolean is_married
+Rational for decision: possible values are Married (13.5k), Not Married (11.7k), changing to Boolean for model.
+- Observation : income_poverty, create three features
+Current values :
+
+<= $75,000, Above Poverty    12777
+> $75,000                     6810
+Below Poverty                 2697
+
 Code sharing:
 Privately sharing code or data outside of teams is not permitted.
 Participants are permitted to publicly share source or executable code developed in connection with or
@@ -37,6 +69,9 @@ External data:
 External data is not allowed unless otherwise noted explicitly on these competition pages.
 Participants agree to make no attempt to use additional data or data sources
 not provided on these competition pages.
+
+Abbreviations:
+MSA - Metropolitan statistical areas
 
 Project:
 Saving charts in 'png' format requires the vl-convert-python package

@@ -38,13 +38,26 @@ class FluShotData:
 
         df_train = pd.merge(self.df_labels, self.df_features, on="respondent_id")
 
-        for df in [df_train]:
-            print(f'Dataset has {df.shape[0]} entries.')
-            print(f'Dataset has columns : {df.columns.tolist()}.')
 
-        # Column names for vaccines
+        columns_explore = df_train.columns.tolist()
+        columns_explore.remove("respondent_id")
+        print(columns_explore)
+
+        print(df_train.columns)
+
+        print(f'Dataset has {df_train.shape[0]} entries.')
+        print(f'Dataset has columns : {df_train.columns.tolist()}.')
+        # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+        #       print(df_train[columns_explore].describe())
+
+        for c in columns_explore:
+            print(df_train[c].value_counts())
+            print('-'*10)
+
+
+        # Explore labels as is, without features
         columns = ['h1n1_vaccine', 'seasonal_vaccine']
-        self.explore_labels(df_train[columns])
+        # self.explore_labels(df_train[columns])
 
     def explore_labels(self, df):
         """
