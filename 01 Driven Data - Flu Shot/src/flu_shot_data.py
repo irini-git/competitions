@@ -17,7 +17,8 @@ class FluShotData:
     """
     def __init__(self):
         self.df_labels, self.df_features = self.load_data()
-        self.explore_labels(self.df_labels)
+        self.explore_features()
+        # self.explore_labels(self.df_labels)
 
     def load_data(self):
         """
@@ -29,29 +30,42 @@ class FluShotData:
 
         return df_labels, df_features
 
+    def explore_features(self):
+        """
+        Explore features
+        :return:  output to screen, charts as files
+        """
+
+        df_train = pd.merge(self.df_labels, self.df_features, on="respondent_id")
+
+        for df in [df_train]:
+            print(f'Dataset has {df.shape[0]} entries.')
+            print(f'Dataset has columns : {df.columns.tolist()}.')
+
+        # Column names for vaccines
+        columns = ['h1n1_vaccine', 'seasonal_vaccine']
+        self.explore_labels(df_train[columns])
+
     def explore_labels(self, df):
         """
-        Explore train dataset, calculate stats and visualize
+        How many people receive H1N1 / seasonal flu vaccine and how many do not?
+        To find out, let's explore the distribution of values in train dataset as is, without other factors.
+        The function explores train dataset, calculates stats and visualize
         :param df: dataframe to explore
         :return: output to screen, charts as files
         """
-        print('Exploring dataset', '-'*10)
-        print(f'Dataset has columns : {df.columns.tolist()}.')
-        print(f'Dataset has {df.shape[0]} entries.')
-
-        columns = ['h1n1_vaccine', 'seasonal_vaccine']
-
-        # How many people receive H1N1 / seasonal flu vaccine?
-        # To do this, let's explore the distribution of values in train dataset
 
         # Placeholder for data
         columns_ = ['vaccinated', 'count', 'percentage', 'vaccine']
         df_counts_percentages = pd.DataFrame()
 
-        for c in columns:
+        for c in df.columns:
             # Calculate counts and percentages
             counts = df[c].value_counts() # value counts
+
+            # Values for a log file, easier to read
             # percentages_round = round(100*(df[c].value_counts(normalize=True)),1).astype(str) + '%' # percentage as str with % sign
+
             percentages = 100*df[c].value_counts(normalize=True) # percentage value as is
 
             # Combines counts and percentages
@@ -60,14 +74,19 @@ class FluShotData:
             # Add a column for which vaccine
             df_temp['vaccine'] = c
 
+            # Rename columns
             df_temp.columns = columns_
-            # Replace values for received to Yes/No, current: 0/1
+
+            # Replace values for vaccinated to Yes/No for appealing visual, current values: 1/0.
             df_temp['vaccinated'] = df_temp['vaccinated'].map({0: 'No', 1: 'Yes'})
 
             # Concat dataframes to one
             df_counts_percentages = pd.concat([df_temp, df_counts_percentages])
 
+        # TODO : output to log file
         print(df_counts_percentages)
+
+        # Plot bar chart
         self.plot_bar_chart_train_data(df_counts_percentages)
 
 
@@ -98,7 +117,7 @@ class FluShotData:
 
         chart = bars + text
 
-        # Save the image in the img folder
+        # Save the image in the fig folder
         chart.save(FILE_BARCHART_LABELS)
 
 
