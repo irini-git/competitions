@@ -3,6 +3,7 @@ import os
 import altair as alt
 import logging
 
+from pandas.conftest import axis_1
 from pandas.core.sample import process_sampling_size
 
 # TODO : log data to file not print to screen
@@ -108,17 +109,19 @@ class FluShotData:
 
         source = data.barley()
 
-        print(source)
-        # h1n1_concern - prepare data
-        source1 = df['h1n1_concern_desc'].value_counts(dropna=False).rename_axis('values').reset_index(name='counts')
-        print(source1)
-        source2 = df['h1n1_knowledge_desc'].value_counts(dropna=False).rename_axis('values').reset_index(name='counts')
+        df1 = df['h1n1_concern_desc'].value_counts(dropna=False).rename_axis('rating').reset_index(name='h1n1_concern')
+        df2 = df['h1n1_knowledge_desc'].value_counts(dropna=False).rename_axis('rating').reset_index(name='h1n1_knowledge')
+        df3 = df['opinion_h1n1_vacc_effective_desc'].value_counts(dropna=False).rename_axis('rating').reset_index(name='opinion_h1n1_vacc_effective')
+        df4 = df['opinion_h1n1_risk_desc'].value_counts(dropna=False).rename_axis('rating').reset_index(name='opinion_h1n1_risk')
+        df5 = df['opinion_h1n1_sick_from_vacc_desc'].value_counts(dropna=False).rename_axis('rating').reset_index(name='opinion_h1n1_sick_from_vacc')
 
-        source3 = df['opinion_h1n1_vacc_effective_desc'].value_counts(dropna=False).rename_axis('values').reset_index(name='counts')
+        print(df1)
+        print(df2)
+        source1 = pd.concat([df1,df2])
+        # dfs = [df1, df2, df3, df4, df5]
+        # source1 = pd.concat(dfs, join='left', axis=1)
+        # print(source1)
 
-        source4 = df['opinion_h1n1_risk_desc'].value_counts(dropna=False).rename_axis('values').reset_index(name='counts')
-
-        source5 = df['opinion_h1n1_sick_from_vacc_desc'].value_counts(dropna=False).rename_axis('values').reset_index(name='counts')
 
         chart = alt.Chart(source).mark_bar().encode(
             x='sum(yield)',
