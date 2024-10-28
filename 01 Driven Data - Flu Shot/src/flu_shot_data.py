@@ -8,8 +8,8 @@ import logging
 FILENAME_INPUT_DATA_LABELS = '../data/Flu_Shot_Learning_Predict_H1N1_and_Seasonal_Flu_Vaccines_-_Training_Labels.csv'
 FILENAME_INPUT_DATA_FEATURES = '../data/Flu_Shot_Learning_Predict_H1N1_and_Seasonal_Flu_Vaccines_-_Training_Features.csv'
 
-FILE_BARCHART_LABELS = '../fig/labels_bar_chart.png'
-FILE_BARCHART_LABELS_TEST = '../fig/labels_bar_chart_test.png'
+FILE_BARCHART_LABELS = '../fig/labelas_bar_chart.png'
+FILE_BARCHART_H1N1_CONCERN = '../fig/features_bar_chart_h1n1_concern.png'
 
 class FluShotData:
     """
@@ -36,7 +36,6 @@ class FluShotData:
         """
 
         df_train = pd.merge(self.df_labels, self.df_features, on="respondent_id")
-
 
         columns_explore = df_train.columns.tolist()
         columns_explore.remove("respondent_id")
@@ -77,6 +76,32 @@ class FluShotData:
         # Explore labels as is, without features
         columns = ['h1n1_vaccine', 'seasonal_vaccine']
         # self.explore_labels(df_train[columns])
+
+        self.plot_bar_chart_h1n1_concern_kn(df_train)
+
+    def plot_bar_chart_h1n1_concern_kn(self, df):
+
+        # h1n1_concern - prepare data
+        source1 = df['h1n1_concern'].value_counts(dropna=False).rename_axis('unique_values').reset_index(name='counts')
+        source1['value'] = source1['unique_values'].astype(str)
+        # h1n1_concern - plot chart
+        chart1 = alt.Chart(source1).mark_bar().encode(
+            x='value',
+            y='counts'
+        )
+
+        # h1n1_knowledge - prepare data
+        source2 = df['h1n1_knowledge'].value_counts(dropna=False).rename_axis('unique_values').reset_index(name='counts')
+        source2['value'] = source1['unique_values'].astype(str)
+
+        chart2 = alt.Chart(source2).mark_bar().encode(
+            x='value',
+            y='counts'
+        )
+
+        chart = chart1 | chart2
+
+        chart.save(FILE_BARCHART_H1N1_CONCERN)
 
     def explore_labels(self, df):
         """
