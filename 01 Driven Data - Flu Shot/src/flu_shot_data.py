@@ -18,7 +18,6 @@ class FluShotData:
     def __init__(self):
         self.df_labels, self.df_features = self.load_data()
         self.explore_features()
-        # self.explore_labels(self.df_labels)
 
     def load_data(self):
         """
@@ -47,14 +46,34 @@ class FluShotData:
 
         print(f'Dataset has {df_train.shape[0]} entries.')
         print(f'Dataset has columns : {df_train.columns.tolist()}.')
+
+        # Check if empty records
+        # for c in df_train.columns:
+        #     print(c, df_train[c].isna().sum())
+
+        # plot distibution of values 
+
+
         # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
         #       print(df_train[columns_explore].describe())
 
-        for c in columns_explore:
-            print(df_train[c].value_counts())
-            print('-'*10)
+        # Feature engineering
+        # 1. h1n1_concern
+        # 1.1.
+        # Create a new feature (int) with added a value in the middle to align with other concern/worried features\
+        # Create new column using dictionary
+        #         0.0     (not at all concerned)  ... 0
+        #         1.0     (not very concerned)    ... 1
+        #         none     (don't know)           ... 2   <- this is a new one
+        #         2.0     (somewhat concerned)    ... 3
+        #         3.0     (very concerned)        ... 4
+
+        map_concern = {0.0: 0, 1.0: 1, 2.0: 3, 3.0:4}
+        # Combine the map for concern with h1n1_concern
+        df_train['has_h1n1_concern'] = df_train['h1n1_concern'].map(map_concern)
 
 
+        # -------------------------------------------------------
         # Explore labels as is, without features
         columns = ['h1n1_vaccine', 'seasonal_vaccine']
         # self.explore_labels(df_train[columns])
@@ -100,10 +119,10 @@ class FluShotData:
         print(df_counts_percentages)
 
         # Plot bar chart
-        self.plot_bar_chart_train_data(df_counts_percentages)
+        self.plot_bar_chart_labels(df_counts_percentages)
 
 
-    def plot_bar_chart_train_data(self, df):
+    def plot_bar_chart_labels(self, df):
         """
         Plot bar chart for labels
         :return: figure in
