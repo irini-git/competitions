@@ -2,9 +2,7 @@ import pandas as pd
 import os
 import altair as alt
 import logging
-
-from pandas.conftest import axis_1
-from pandas.core.sample import process_sampling_size
+import functools
 
 # TODO : log data to file not print to screen
 
@@ -109,56 +107,36 @@ class FluShotData:
 
         source = data.barley()
 
-        df1 = df['h1n1_concern_desc'].value_counts(dropna=False).rename_axis('rating').reset_index(name='h1n1_concern')
-        df2 = df['h1n1_knowledge_desc'].value_counts(dropna=False).rename_axis('rating').reset_index(name='h1n1_knowledge')
-        df3 = df['opinion_h1n1_vacc_effective_desc'].value_counts(dropna=False).rename_axis('rating').reset_index(name='opinion_h1n1_vacc_effective')
-        df4 = df['opinion_h1n1_risk_desc'].value_counts(dropna=False).rename_axis('rating').reset_index(name='opinion_h1n1_risk')
-        df5 = df['opinion_h1n1_sick_from_vacc_desc'].value_counts(dropna=False).rename_axis('rating').reset_index(name='opinion_h1n1_sick_from_vacc')
+        df1 = df['h1n1_concern_desc'].value_counts().rename_axis('rating').reset_index(name='counts')
+        df1['feature'] = 'h1n1_concern'
 
-        print(df1)
-        print(df2)
-        source1 = pd.concat([df1,df2])
-        # dfs = [df1, df2, df3, df4, df5]
-        # source1 = pd.concat(dfs, join='left', axis=1)
-        # print(source1)
+        df2 = df['h1n1_knowledge_desc'].value_counts().rename_axis('rating').reset_index(name='counts')
+        df2['feature'] = 'h1n1_knowledge'
 
+        df3 = df['opinion_h1n1_vacc_effective_desc'].value_counts().rename_axis('rating').reset_index(name='counts')
+        df3['feature'] = 'opinion_h1n1_vacc_effective'
 
-        chart = alt.Chart(source).mark_bar().encode(
-            x='sum(yield)',
-            y='variety',
-            color='site'
+        df4 = df['opinion_h1n1_risk_desc'].value_counts().rename_axis('rating').reset_index(name='counts')
+        df4['feature'] = 'opinion_h1n1_risk'
+
+        df5 = df['opinion_h1n1_sick_from_vacc_desc'].value_counts().rename_axis('rating').reset_index(name='counts')
+        df5['feature'] = 'opinion_h1n1_sick_from_vacc'
+
+        dfs = [df1, df2, df3, df4, df5]
+        source1 = functools.reduce(lambda left, right: pd.concat([left, right]), dfs)
+
+        print(source1.head(2))
+        print('-'*10)
+        print(source.head(2))
+
+        chart = alt.Chart(source1).mark_bar().encode(
+            x='counts',
+            y='feature',
+            color='rating'
         )
 
         chart.save(FILE_BARCHART_H1N1_CONCERN)
 
-
-    def plot_bar_chart_h1n1_concern_kn(self, df):
-        # TODO : use Reorder stacked bar segments
-        # https://altair-viz.github.io/gallery/interactive_reorder_stacked_bars.html
-        # h1n1_concern - prepare data
-        source1 = df['h1n1_concern_desc'].value_counts(dropna=False).rename_axis('unique_values').reset_index(name='counts')
-        # h1n1_concern - plot chart
-
-        chart1 = alt.Chart(source1).mark_bar().encode(
-            x=alt.X('value', title=''),
-            y=alt.Y('counts', title='')
-        ).properties(
-        title='Concern about h1n1 flu'
-        )
-
-        # h1n1_knowledge - prepare data
-        source2 = df['h1n1_knowledge'].value_counts(dropna=False).rename_axis('unique_values').reset_index(name='counts')
-        # h1n1_knowledge - plot chart
-        chart2 = alt.Chart(source2).mark_bar().encode(
-            x=alt.X('value', title=''),
-            y=alt.Y('counts', title='')
-        ).properties(
-        title='Knowledge about h1n1 flu'
-        )
-
-        chart = chart1 | chart2
-
-        chart.save(FILE_BARCHART_H1N1_CONCERN)
 
     def explore_labels(self, df):
         """
