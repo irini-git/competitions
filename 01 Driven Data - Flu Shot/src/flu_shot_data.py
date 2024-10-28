@@ -67,10 +67,12 @@ class FluShotData:
         #         2.0     (somewhat concerned)    ... 3
         #         3.0     (very concerned)        ... 4
 
-        map_concern = {0.0: 0, 1.0: 1, 2.0: 3, 3.0:4}
+        map_concern = {0.0: 'not at all concerned',
+                       1.0: 'not very concerned',
+                       2.0: 'somewhat concerned',
+                       3.0: 'very concerned'}
         # Combine the map for concern with h1n1_concern
-        df_train['has_h1n1_concern'] = df_train['h1n1_concern'].map(map_concern)
-
+        df_train['h1n1_concern_desc'] = df_train['h1n1_concern'].map(map_concern)
 
         # -------------------------------------------------------
         # Explore labels as is, without features
@@ -82,21 +84,26 @@ class FluShotData:
     def plot_bar_chart_h1n1_concern_kn(self, df):
 
         # h1n1_concern - prepare data
-        source1 = df['h1n1_concern'].value_counts(dropna=False).rename_axis('unique_values').reset_index(name='counts')
+        source1 = df['h1n1_concern_desc'].value_counts(dropna=False).rename_axis('unique_values').reset_index(name='counts')
         source1['value'] = source1['unique_values'].astype(str)
         # h1n1_concern - plot chart
+
         chart1 = alt.Chart(source1).mark_bar().encode(
-            x='value',
-            y='counts'
+            x=alt.X('value', title=''),
+            y=alt.Y('counts', title='')
+        ).properties(
+        title='Concern about h1n1 flu'
         )
 
         # h1n1_knowledge - prepare data
         source2 = df['h1n1_knowledge'].value_counts(dropna=False).rename_axis('unique_values').reset_index(name='counts')
-        source2['value'] = source1['unique_values'].astype(str)
-
+        source2['value'] = source2['unique_values'].astype(str)
+        # h1n1_knowledge - plot chart
         chart2 = alt.Chart(source2).mark_bar().encode(
-            x='value',
-            y='counts'
+            x=alt.X('value', title=''),
+            y=alt.Y('counts', title='')
+        ).properties(
+        title='Knowledge about h1n1 flu'
         )
 
         chart = chart1 | chart2
