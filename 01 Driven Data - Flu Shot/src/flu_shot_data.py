@@ -3,6 +3,8 @@ import os
 import altair as alt
 import logging
 
+from pandas.core.sample import process_sampling_size
+
 # TODO : log data to file not print to screen
 
 FILENAME_INPUT_DATA_LABELS = '../data/Flu_Shot_Learning_Predict_H1N1_and_Seasonal_Flu_Vaccines_-_Training_Labels.csv'
@@ -57,36 +59,81 @@ class FluShotData:
         #       print(df_train[columns_explore].describe())
 
         # Feature engineering
-        # 1. h1n1_concern
-        # 1.1.
-        # Create a new feature (int) with added a value in the middle to align with other concern/worried features\
-        # Create new column using dictionary
-        #         0.0     (not at all concerned)  ... 0
-        #         1.0     (not very concerned)    ... 1
-        #         none     (don't know)           ... 2   <- this is a new one
-        #         2.0     (somewhat concerned)    ... 3
-        #         3.0     (very concerned)        ... 4
+        # 1. Features with rating
+        # Create a new feature (str) with description
 
-        map_concern = {0.0: 'not at all concerned',
-                       1.0: 'not very concerned',
-                       2.0: 'somewhat concerned',
-                       3.0: 'very concerned'}
+        # Scale for concern
+        map_concern = {0.0: 'none',
+                       1.0: 'a little',
+                       2.0: 'somewhat',
+                       3.0: 'a lot'}
         # Combine the map for concern with h1n1_concern
         df_train['h1n1_concern_desc'] = df_train['h1n1_concern'].map(map_concern)
+
+        # Scale for knowledge
+        map_knowledge = {0.0: 'none',
+                       1.0: 'a little',
+                       2.0: 'a lot'}
+        # Combine the map for concern with h1n1_concern
+        df_train['h1n1_knowledge_desc'] = df_train['h1n1_knowledge'].map(map_knowledge)
+
+        # Scale for effective, risk and sick
+        map_effective = {1.0: 'none',
+                         2.0: 'a little',
+                         3.0: 'dont know',
+                         4.0: 'somewhat',
+                         5.0: 'a lot'}
+        # Apply the map
+        for c in ['opinion_h1n1_vacc_effective', 'opinion_h1n1_risk', 'opinion_h1n1_sick_from_vacc',
+                  'opinion_seas_vacc_effective', 'opinion_seas_risk', 'opinion_seas_sick_from_vacc']:
+            # Replace numeric values by description
+            df_train[f'{c}_desc'] = df_train[c].map(map_effective)
+        # Replace missing values NaN by 'dont know'
+        for c in ['opinion_h1n1_vacc_effective', 'opinion_h1n1_risk', 'opinion_h1n1_sick_from_vacc',
+                  'opinion_seas_vacc_effective', 'opinion_seas_risk', 'opinion_seas_sick_from_vacc',
+                  'h1n1_concern', 'h1n1_knowledge']:
+            df_train[f'{c}_desc'] = df_train[f'{c}_desc'].fillna('dont know')
+
 
         # -------------------------------------------------------
         # Explore labels as is, without features
         columns = ['h1n1_vaccine', 'seasonal_vaccine']
         # self.explore_labels(df_train[columns])
 
-        self.plot_bar_chart_h1n1_concern_kn(df_train)
+        # self.plot_bar_chart_h1n1_concern_kn(df_train)
+        self.plot_stacked_bar(df_train)
+
+    def plot_stacked_bar(self, df):
+        from vega_datasets import data
+
+        source = data.barley()
+
+        print(source)
+        # h1n1_concern - prepare data
+        source1 = df['h1n1_concern_desc'].value_counts(dropna=False).rename_axis('values').reset_index(name='counts')
+        print(source1)
+        source2 = df['h1n1_knowledge_desc'].value_counts(dropna=False).rename_axis('values').reset_index(name='counts')
+
+        source3 = df['opinion_h1n1_vacc_effective_desc'].value_counts(dropna=False).rename_axis('values').reset_index(name='counts')
+
+        source4 = df['opinion_h1n1_risk_desc'].value_counts(dropna=False).rename_axis('values').reset_index(name='counts')
+
+        source5 = df['opinion_h1n1_sick_from_vacc_desc'].value_counts(dropna=False).rename_axis('values').reset_index(name='counts')
+
+        chart = alt.Chart(source).mark_bar().encode(
+            x='sum(yield)',
+            y='variety',
+            color='site'
+        )
+
+        chart.save(FILE_BARCHART_H1N1_CONCERN)
+
 
     def plot_bar_chart_h1n1_concern_kn(self, df):
         # TODO : use Reorder stacked bar segments
         # https://altair-viz.github.io/gallery/interactive_reorder_stacked_bars.html
         # h1n1_concern - prepare data
         source1 = df['h1n1_concern_desc'].value_counts(dropna=False).rename_axis('unique_values').reset_index(name='counts')
-        source1['value'] = source1['unique_values'].astype(str)
         # h1n1_concern - plot chart
 
         chart1 = alt.Chart(source1).mark_bar().encode(
@@ -98,7 +145,6 @@ class FluShotData:
 
         # h1n1_knowledge - prepare data
         source2 = df['h1n1_knowledge'].value_counts(dropna=False).rename_axis('unique_values').reset_index(name='counts')
-        source2['value'] = source2['unique_values'].astype(str)
         # h1n1_knowledge - plot chart
         chart2 = alt.Chart(source2).mark_bar().encode(
             x=alt.X('value', title=''),
