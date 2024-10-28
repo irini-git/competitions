@@ -10,7 +10,7 @@ FILENAME_INPUT_DATA_LABELS = '../data/Flu_Shot_Learning_Predict_H1N1_and_Seasona
 FILENAME_INPUT_DATA_FEATURES = '../data/Flu_Shot_Learning_Predict_H1N1_and_Seasonal_Flu_Vaccines_-_Training_Features.csv'
 
 FILE_BARCHART_LABELS = '../fig/labelas_bar_chart.png'
-FILE_BARCHART_H1N1_CONCERN = '../fig/features_bar_chart_h1n1_concern.png'
+FILE_BARCHART_FEATURES_RATING = '../fig/features_bar_chart_rating.png'
 
 class FluShotData:
     """
@@ -62,26 +62,26 @@ class FluShotData:
         # Create a new feature (str) with description
 
         # Scale for concern
-        map_concern = {0.0: 'none',
-                       1.0: 'a little',
-                       2.0: 'somewhat',
-                       3.0: 'a lot'}
+        map_concern = {0.0: '0 - none',
+                       1.0: '1 - a little',
+                       2.0: '3 - somewhat',
+                       3.0: '4 - a lot'}
         # Combine the map for concern with h1n1_concern
         df_train['h1n1_concern_desc'] = df_train['h1n1_concern'].map(map_concern)
 
         # Scale for knowledge
-        map_knowledge = {0.0: 'none',
-                       1.0: 'a little',
-                       2.0: 'a lot'}
+        map_knowledge = {0.0: '0 - none',
+                       1.0: '1 - a little',
+                       2.0: '4 - a lot'}
         # Combine the map for concern with h1n1_concern
         df_train['h1n1_knowledge_desc'] = df_train['h1n1_knowledge'].map(map_knowledge)
 
         # Scale for effective, risk and sick
-        map_effective = {1.0: 'none',
-                         2.0: 'a little',
-                         3.0: 'dont know',
-                         4.0: 'somewhat',
-                         5.0: 'a lot'}
+        map_effective = {1.0: '0 - none',
+                         2.0: '1 - a little',
+                         3.0: '2 - dont know',
+                         4.0: '3 - somewhat',
+                         5.0: '4 - a lot'}
         # Apply the map
         for c in ['opinion_h1n1_vacc_effective', 'opinion_h1n1_risk', 'opinion_h1n1_sick_from_vacc',
                   'opinion_seas_vacc_effective', 'opinion_seas_risk', 'opinion_seas_sick_from_vacc']:
@@ -91,7 +91,7 @@ class FluShotData:
         for c in ['opinion_h1n1_vacc_effective', 'opinion_h1n1_risk', 'opinion_h1n1_sick_from_vacc',
                   'opinion_seas_vacc_effective', 'opinion_seas_risk', 'opinion_seas_sick_from_vacc',
                   'h1n1_concern', 'h1n1_knowledge']:
-            df_train[f'{c}_desc'] = df_train[f'{c}_desc'].fillna('dont know')
+            df_train[f'{c}_desc'] = df_train[f'{c}_desc'].fillna('2 - dont know')
 
 
         # -------------------------------------------------------
@@ -114,28 +114,49 @@ class FluShotData:
         df2['feature'] = 'h1n1_knowledge'
 
         df3 = df['opinion_h1n1_vacc_effective_desc'].value_counts().rename_axis('rating').reset_index(name='counts')
-        df3['feature'] = 'opinion_h1n1_vacc_effective'
+        df3['feature'] = 'h1n1_vacc_effective'
 
         df4 = df['opinion_h1n1_risk_desc'].value_counts().rename_axis('rating').reset_index(name='counts')
-        df4['feature'] = 'opinion_h1n1_risk'
+        df4['feature'] = 'h1n1_risk'
 
         df5 = df['opinion_h1n1_sick_from_vacc_desc'].value_counts().rename_axis('rating').reset_index(name='counts')
-        df5['feature'] = 'opinion_h1n1_sick_from_vacc'
+        df5['feature'] = 'h1n1_sick_from_vacc'
 
-        dfs = [df1, df2, df3, df4, df5]
-        source1 = functools.reduce(lambda left, right: pd.concat([left, right]), dfs)
+        df6 = df['opinion_seas_risk_desc'].value_counts().rename_axis('rating').reset_index(name='counts')
+        df6['feature'] = 'seas_risk'
 
-        print(source1.head(2))
-        print('-'*10)
-        print(source.head(2))
+        df7 = df['opinion_seas_vacc_effective_desc'].value_counts().rename_axis('rating').reset_index(name='counts')
+        df7['feature'] = 'seas_vacc_effective'
 
-        chart = alt.Chart(source1).mark_bar().encode(
-            x='counts',
-            y='feature',
-            color='rating'
+        df8 = df['opinion_seas_sick_from_vacc_desc'].value_counts().rename_axis('rating').reset_index(name='counts')
+        df8['feature'] = 'seas_sick_from_vacc'
+
+        dfs_h1n1 = [df3, df4, df5, df1, df2]
+        dfs_seas = [df6, df7, df8]
+        source_h1n1 = functools.reduce(lambda left, right: pd.concat([left, right]), dfs_h1n1)
+        source_seas = functools.reduce(lambda left, right: pd.concat([left, right]), dfs_seas)
+
+        chart_h1n1 = alt.Chart(source_h1n1, title='Opinion on H1N1 flu vaccine').mark_bar().encode(
+            x=alt.X('counts:Q').title(''),
+            y=alt.Y('feature:N').title(''),
+            color = alt.Color('rating',
+                              legend=alt.Legend(title="Ratings"),
+                              scale=alt.Scale(scheme='redyellowgreen')
+                              )
+            )
+
+        chart_seas = alt.Chart(source_seas, title='Opinion on seasonal vaccine').mark_bar().encode(
+            x=alt.X('counts:Q').title(''),
+            y=alt.Y('feature:N').title(''),
+            color = alt.Color('rating',
+                              legend=alt.Legend(title="Ratings"),
+                              scale=alt.Scale(scheme='redyellowgreen')
+                              )
         )
 
-        chart.save(FILE_BARCHART_H1N1_CONCERN)
+        chart = chart_h1n1 | chart_seas
+
+        chart.save(FILE_BARCHART_FEATURES_RATING)
 
 
     def explore_labels(self, df):
