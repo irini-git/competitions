@@ -82,7 +82,8 @@ class FluShotData:
         self.plot_bar_chart_h1n1_concern_kn(df_train)
 
     def plot_bar_chart_h1n1_concern_kn(self, df):
-
+        # TODO : use Reorder stacked bar segments
+        # https://altair-viz.github.io/gallery/interactive_reorder_stacked_bars.html
         # h1n1_concern - prepare data
         source1 = df['h1n1_concern_desc'].value_counts(dropna=False).rename_axis('unique_values').reset_index(name='counts')
         source1['value'] = source1['unique_values'].astype(str)
