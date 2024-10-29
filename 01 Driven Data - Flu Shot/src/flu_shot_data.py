@@ -59,8 +59,8 @@ class FluShotData:
 
         # Feature engineering
         # 1. Features with rating
-        # Create a new feature (str) with description
-
+        # 1.1 Create a new feature (str) with description
+        # Different features might have different ratings / scales
         # Scale for concern
         map_concern = {0.0: '0 - none',
                        1.0: '1 - a little',
@@ -100,12 +100,15 @@ class FluShotData:
         # self.explore_labels(df_train[columns])
 
         # self.plot_bar_chart_h1n1_concern_kn(df_train)
-        self.plot_stacked_bar(df_train)
+        self.plot_stacked_bar_ratings(df_train)
 
-    def plot_stacked_bar(self, df):
-        from vega_datasets import data
-
-        source = data.barley()
+    def plot_stacked_bar_ratings(self, df):
+        """
+        Visualisation of rating-like features in train data.
+        Leading numbers added to descriptions for visual purpose to align the graphs.
+        :param df: train dataframe with all features
+        :return: bar chart saved as png file
+        """
 
         df1 = df['h1n1_concern_desc'].value_counts().rename_axis('rating').reset_index(name='counts')
         df1['feature'] = '4 concern'
@@ -131,31 +134,43 @@ class FluShotData:
         df8 = df['opinion_seas_sick_from_vacc_desc'].value_counts().rename_axis('rating').reset_index(name='counts')
         df8['feature'] = '1 getting sick from vaccine'
 
+        # Dataframes for h1n1 and seasonal flu
         dfs_h1n1 = [df3, df4, df5, df1, df2]
         dfs_seas = [df6, df7, df8]
+
         source_h1n1 = functools.reduce(lambda left, right: pd.concat([left, right]), dfs_h1n1)
         source_seas = functools.reduce(lambda left, right: pd.concat([left, right]), dfs_seas)
 
+        # Chart for h1n1
         chart_h1n1 = alt.Chart(source_h1n1, title='Opinion on H1N1 flu vaccine').mark_bar().encode(
             x=alt.X('counts:Q').title(''),
             y=alt.Y('feature:N').title(''),
             color = alt.Color('rating',
                               legend=alt.Legend(title="Ratings"),
-                              scale=alt.Scale(scheme='redyellowgreen')
+                              scale=alt.Scale(scheme='redblue')
                               )
+            ).properties(
+                width=250,
+                height=250
             )
 
+        # Chart for seasonal flu
         chart_seas = alt.Chart(source_seas, title='Opinion on seasonal vaccine').mark_bar().encode(
             x=alt.X('counts:Q').title(''),
             y=alt.Y('feature:N').title(''),
             color = alt.Color('rating',
                               legend=alt.Legend(title="Ratings"),
-                              scale=alt.Scale(scheme='redyellowgreen')
+                              scale=alt.Scale(scheme='redblue')
                               )
-        )
+        ).properties(
+                width=250,
+                height=150
+            )
 
+        # Combined chart
         chart = chart_h1n1 | chart_seas
 
+        # Save chart as png file in dedicated folder
         chart.save(FILE_BARCHART_FEATURES_RATING)
 
 
