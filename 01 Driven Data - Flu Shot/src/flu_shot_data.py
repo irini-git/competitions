@@ -199,18 +199,22 @@ class FluShotData:
         dfs_behavioral = [df9, df10, df11, df12, df13, df14, df15]
         source_behavioral = functools.reduce(lambda left, right: pd.concat([left, right]), dfs_behavioral)
 
-
         # Chart for behavioural
         chart_behavioural = alt.Chart(source_behavioral, title='Behavioral').mark_bar().encode(
             x=alt.X('counts:Q').title(''),
-            y=alt.Y('feature:N').title(''),
+            y=alt.Y('feature:N', axis=alt.Axis(labelLimit=380)).title(''),
             color=alt.Color('value',
                             legend=alt.Legend(title="Ratings"),
                             scale=alt.Scale(scheme='lighttealblue')
                             )
+        ).configure_axis(
+            labelFontSize=12,
+            grid=False
         ).properties(
             width=500,
             height=250
+        ).configure_view(
+            strokeWidth=0
         )
 
         # Save chart as png file in dedicated folder
