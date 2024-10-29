@@ -108,28 +108,28 @@ class FluShotData:
         source = data.barley()
 
         df1 = df['h1n1_concern_desc'].value_counts().rename_axis('rating').reset_index(name='counts')
-        df1['feature'] = 'h1n1_concern'
+        df1['feature'] = '4 concern'
 
         df2 = df['h1n1_knowledge_desc'].value_counts().rename_axis('rating').reset_index(name='counts')
-        df2['feature'] = 'h1n1_knowledge'
+        df2['feature'] = '3 knowledge'
 
         df3 = df['opinion_h1n1_vacc_effective_desc'].value_counts().rename_axis('rating').reset_index(name='counts')
-        df3['feature'] = 'h1n1_vacc_effective'
+        df3['feature'] = '0 vaccine effectiveness'
 
         df4 = df['opinion_h1n1_risk_desc'].value_counts().rename_axis('rating').reset_index(name='counts')
-        df4['feature'] = 'h1n1_risk'
+        df4['feature'] = '2 getting sick without vaccine'
 
         df5 = df['opinion_h1n1_sick_from_vacc_desc'].value_counts().rename_axis('rating').reset_index(name='counts')
-        df5['feature'] = 'h1n1_sick_from_vacc'
+        df5['feature'] = '1 getting sick from vaccine'
 
         df6 = df['opinion_seas_risk_desc'].value_counts().rename_axis('rating').reset_index(name='counts')
-        df6['feature'] = 'seas_risk'
+        df6['feature'] = '2 getting sick without vaccine'
 
         df7 = df['opinion_seas_vacc_effective_desc'].value_counts().rename_axis('rating').reset_index(name='counts')
-        df7['feature'] = 'seas_vacc_effective'
+        df7['feature'] = '0 vaccine effectiveness'
 
         df8 = df['opinion_seas_sick_from_vacc_desc'].value_counts().rename_axis('rating').reset_index(name='counts')
-        df8['feature'] = 'seas_sick_from_vacc'
+        df8['feature'] = '1 getting sick from vaccine'
 
         dfs_h1n1 = [df3, df4, df5, df1, df2]
         dfs_seas = [df6, df7, df8]
