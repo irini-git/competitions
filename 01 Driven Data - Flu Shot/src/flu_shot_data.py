@@ -58,40 +58,53 @@ class FluShotData:
         #       print(df_train[columns_explore].describe())
 
         # Feature engineering
-        # 1. Features with rating
-        # 1.1 Create a new feature (str) with description
+        # 1. Features with rating -----------------------------------
+        # Create a new feature (str) with description and a new int feature
+        # Features with description to be used for visual exploration,
+        # Features with int values to be used for modeling.
+
         # Different features might have different ratings / scales
         # Scale for concern
-        map_concern = {0.0: '0 - none',
+        map_concern_desc = {0.0: '0 - none',
                        1.0: '1 - a little',
                        2.0: '3 - somewhat',
                        3.0: '4 - a lot'}
+        map_concern_int = {0.0: 0, 1.0: 1, 2.0: 3, 3.0: 4}
         # Combine the map for concern with h1n1_concern
-        df_train['h1n1_concern_desc'] = df_train['h1n1_concern'].map(map_concern)
+        df_train['h1n1_concern_desc'] = df_train['h1n1_concern'].map(map_concern_desc)
+        df_train['h1n1_concern_int'] = df_train['h1n1_concern'].map(map_concern_int)
 
         # Scale for knowledge
-        map_knowledge = {0.0: '0 - none',
+        map_knowledge_desc = {0.0: '0 - none',
                        1.0: '1 - a little',
                        2.0: '4 - a lot'}
+        map_knowledge_int = {0.0: 0, 1.0: 1, 2.0: 4}
         # Combine the map for concern with h1n1_concern
-        df_train['h1n1_knowledge_desc'] = df_train['h1n1_knowledge'].map(map_knowledge)
+        df_train['h1n1_knowledge_desc'] = df_train['h1n1_knowledge'].map(map_knowledge_desc)
+        df_train['h1n1_knowledge_int'] = df_train['h1n1_knowledge'].map(map_knowledge_int)
 
         # Scale for effective, risk and sick
-        map_effective = {1.0: '0 - none',
+        map_effective_desc = {1.0: '0 - none',
                          2.0: '1 - a little',
                          3.0: '2 - dont know',
                          4.0: '3 - somewhat',
                          5.0: '4 - a lot'}
+        map_effective_int = {1.0: 0, 2.0: 1, 3.0: 2, 4.0: 3, 5.0: 4}
+
         # Apply the map
         for c in ['opinion_h1n1_vacc_effective', 'opinion_h1n1_risk', 'opinion_h1n1_sick_from_vacc',
                   'opinion_seas_vacc_effective', 'opinion_seas_risk', 'opinion_seas_sick_from_vacc']:
             # Replace numeric values by description
-            df_train[f'{c}_desc'] = df_train[c].map(map_effective)
+            df_train[f'{c}_desc'] = df_train[c].map(map_effective_desc)
+            df_train[f'{c}_int'] = df_train[c].map(map_effective_int)
+
         # Replace missing values NaN by 'dont know'
         for c in ['opinion_h1n1_vacc_effective', 'opinion_h1n1_risk', 'opinion_h1n1_sick_from_vacc',
                   'opinion_seas_vacc_effective', 'opinion_seas_risk', 'opinion_seas_sick_from_vacc',
                   'h1n1_concern', 'h1n1_knowledge']:
             df_train[f'{c}_desc'] = df_train[f'{c}_desc'].fillna('2 - dont know')
+            df_train[f'{c}_int'] = df_train[f'{c}_int'].fillna(2)
+            df_train[f'{c}_int'] = df_train[f'{c}_int'].astype(int)
 
 
         # -------------------------------------------------------
