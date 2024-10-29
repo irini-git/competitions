@@ -11,7 +11,7 @@ import functools
 FILENAME_INPUT_DATA_LABELS = '../data/Flu_Shot_Learning_Predict_H1N1_and_Seasonal_Flu_Vaccines_-_Training_Labels.csv'
 FILENAME_INPUT_DATA_FEATURES = '../data/Flu_Shot_Learning_Predict_H1N1_and_Seasonal_Flu_Vaccines_-_Training_Features.csv'
 
-FILE_BARCHART_LABELS = '../fig/labelas_bar_chart.png'
+FILE_BARCHART_LABELS = '../fig/labels_bar_chart.png'
 FILE_BARCHART_FEATURES_RATING = '../fig/features_bar_chart_rating.png'
 FILE_BARCHART_FEATURES_BEHAVIOURAL = '../fig/features_bar_chart_behavioral.png'
 
@@ -125,7 +125,7 @@ class FluShotData:
         # -------------------------------------------------------
         # Explore labels as is, without features
         columns = ['h1n1_vaccine', 'seasonal_vaccine']
-        # self.explore_labels(df_train[columns])
+        self.explore_labels(df_train[columns])
 
         self.plot_stacked_bar_ratings_behaviour(df_train)
 
@@ -301,29 +301,25 @@ class FluShotData:
         :return: figure in
         """
 
-        bars = alt.Chart(df).mark_bar().encode(
-            x=alt.X('count:Q').title('counts').stack('zero'),
+        bars = alt.Chart(df, title='Respondent received vaccines').mark_bar().encode(
+            x=alt.X('count:Q').title('').stack('zero'),
             y=alt.Y('vaccine:N').title(''),
-            color='vaccinated'
-        ).properties(
-            width=800,
-            height=200
-        )
-
-        text = bars.mark_text(
-            align='left',
-            baseline='middle',
-            color='white',
-            dx=10, dy=0  # Nudges text to the right so it doesn't appear on top of the bar
-        ).encode(
-            text='count:Q'
-
-        )
-
-        chart = bars + text
+            color = alt.Color('vaccinated',
+                          legend=alt.Legend(title=""),
+                          scale=alt.Scale(scheme='lightgreyteal')
+                          )
+            ).properties(
+                width=800,
+                height=200
+            ).configure_axis(
+                labelFontSize=12,
+                grid=False
+            ).configure_view(
+                strokeWidth=0
+            )
 
         # Save the image in the fig folder
-        chart.save(FILE_BARCHART_LABELS)
+        bars.save(FILE_BARCHART_LABELS)
 
 
     def get_current_location(self):
