@@ -1,3 +1,5 @@
+from pyexpat import features
+
 import pandas as pd
 import os
 import altair as alt
@@ -11,6 +13,7 @@ FILENAME_INPUT_DATA_FEATURES = '../data/Flu_Shot_Learning_Predict_H1N1_and_Seaso
 
 FILE_BARCHART_LABELS = '../fig/labelas_bar_chart.png'
 FILE_BARCHART_FEATURES_RATING = '../fig/features_bar_chart_rating.png'
+FILE_BARCHART_FEATURES_BEHAVIOURAL = '../fig/features_bar_chart_behavioral.png'
 
 class FluShotData:
     """
@@ -107,15 +110,26 @@ class FluShotData:
             df_train[f'{c}_int'] = df_train[f'{c}_int'].astype(int)
 
 
+        # 2. Behavioral features Y/N
+        # What to do with behavioral missing?
+        features_behavioral = ['behavioral_antiviral_meds', 'behavioral_avoidance',
+                               'behavioral_face_mask', 'behavioral_wash_hands',
+                               'behavioral_large_gatherings', 'behavioral_outside_home',
+                               'behavioral_touch_face']
+
+        for f in features_behavioral:
+            print(df_train[f].value_counts())
+            print(df_train[f].isna().sum())
+            print('-'*10)
+
         # -------------------------------------------------------
         # Explore labels as is, without features
         columns = ['h1n1_vaccine', 'seasonal_vaccine']
         # self.explore_labels(df_train[columns])
 
-        # self.plot_bar_chart_h1n1_concern_kn(df_train)
-        self.plot_stacked_bar_ratings(df_train)
+        self.plot_stacked_bar_ratings_behaviour(df_train)
 
-    def plot_stacked_bar_ratings(self, df):
+    def plot_stacked_bar_ratings_behaviour(self, df):
         """
         Visualisation of rating-like features in train data.
         Leading numbers added to descriptions for visual purpose to align the graphs.
@@ -123,6 +137,7 @@ class FluShotData:
         :return: bar chart saved as png file
         """
 
+        # Ratings ------------------------
         df1 = df['h1n1_concern_desc'].value_counts().rename_axis('rating').reset_index(name='counts')
         df1['feature'] = '4 concern'
 
@@ -147,20 +162,68 @@ class FluShotData:
         df8 = df['opinion_seas_sick_from_vacc_desc'].value_counts().rename_axis('rating').reset_index(name='counts')
         df8['feature'] = '1 getting sick from vaccine'
 
+        # Behaviour ------------------------
+        features_behavioral = ['behavioral_antiviral_meds', 'behavioral_avoidance',
+                               'behavioral_face_mask', 'behavioral_wash_hands',
+                               'behavioral_large_gatherings', 'behavioral_outside_home',
+                               'behavioral_touch_face']
+
+        df9 = df['behavioral_antiviral_meds'].value_counts().rename_axis('value').reset_index(name='counts')
+        df9['feature'] = 'Has taken antiviral medications'
+
+        df10 = df['behavioral_avoidance'].value_counts().rename_axis('value').reset_index(name='counts')
+        df10['feature'] = 'Has avoided close contact with others with flu-like symptoms'
+
+        df11 = df['behavioral_face_mask'].value_counts().rename_axis('value').reset_index(name='counts')
+        df11['feature'] = 'Has bought a face mask'
+
+        df12 = df['behavioral_wash_hands'].value_counts().rename_axis('value').reset_index(name='counts')
+        df12['feature'] = 'Has frequently washed hands or used hand sanitizer'
+
+        df13 = df['behavioral_large_gatherings'].value_counts().rename_axis('value').reset_index(name='counts')
+        df13['feature'] = 'Has reduced time at large gatherings'
+
+        df14 = df['behavioral_outside_home'].value_counts().rename_axis('value').reset_index(name='counts')
+        df14['feature'] = 'Has reduced contact with people outside of own household'
+
+        df15 = df['behavioral_touch_face'].value_counts().rename_axis('value').reset_index(name='counts')
+        df15['feature'] = 'Has avoided touching eyes, nose, or mouth'
+
         # Dataframes for h1n1 and seasonal flu
         dfs_h1n1 = [df3, df4, df5, df1, df2]
         dfs_seas = [df6, df7, df8]
-
         source_h1n1 = functools.reduce(lambda left, right: pd.concat([left, right]), dfs_h1n1)
         source_seas = functools.reduce(lambda left, right: pd.concat([left, right]), dfs_seas)
 
+        # Dataframe for behavioural
+        dfs_behavioral = [df9, df10, df11, df12, df13, df14, df15]
+        source_behavioral = functools.reduce(lambda left, right: pd.concat([left, right]), dfs_behavioral)
+
+
+        # Chart for behavioural
+        chart_behavioural = alt.Chart(source_behavioral, title='Behavioral').mark_bar().encode(
+            x=alt.X('counts:Q').title(''),
+            y=alt.Y('feature:N').title(''),
+            color=alt.Color('value',
+                            legend=alt.Legend(title="Ratings"),
+                            scale=alt.Scale(scheme='lighttealblue')
+                            )
+        ).properties(
+            width=500,
+            height=250
+        )
+
+        # Save chart as png file in dedicated folder
+        chart_behavioural.save(FILE_BARCHART_FEATURES_BEHAVIOURAL)
+
+        # -----------------
         # Chart for h1n1
         chart_h1n1 = alt.Chart(source_h1n1, title='Opinion on H1N1 flu vaccine').mark_bar().encode(
             x=alt.X('counts:Q').title(''),
             y=alt.Y('feature:N').title(''),
             color = alt.Color('rating',
                               legend=alt.Legend(title="Ratings"),
-                              scale=alt.Scale(scheme='redblue')
+                              scale=alt.Scale(scheme='lighttealblue')
                               )
             ).properties(
                 width=250,
@@ -171,11 +234,8 @@ class FluShotData:
         chart_seas = alt.Chart(source_seas, title='Opinion on seasonal vaccine').mark_bar().encode(
             x=alt.X('counts:Q').title(''),
             y=alt.Y('feature:N').title(''),
-            color = alt.Color('rating',
-                              legend=alt.Legend(title="Ratings"),
-                              scale=alt.Scale(scheme='redblue')
-                              )
-        ).properties(
+            color = alt.Color('rating')
+            ).properties(
                 width=250,
                 height=150
             )
