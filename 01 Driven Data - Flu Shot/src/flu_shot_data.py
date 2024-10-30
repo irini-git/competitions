@@ -200,7 +200,7 @@ class FluShotData:
         source_behavioral = functools.reduce(lambda left, right: pd.concat([left, right]), dfs_behavioral)
 
         # Chart for behavioural
-        chart_behavioural = alt.Chart(source_behavioral, title='Behavioral').mark_bar().encode(
+        bars_behavioural = alt.Chart(source_behavioral, title='Behavioral').mark_bar().encode(
             x=alt.X('counts:Q').title(''),
             y=alt.Y('feature:N', axis=alt.Axis(labelLimit=380)).title(''),
             color=alt.Color('value',
@@ -218,7 +218,7 @@ class FluShotData:
         )
 
         # Save chart as png file in dedicated folder
-        chart_behavioural.save(FILE_BARCHART_FEATURES_BEHAVIOURAL)
+        bars_behavioural.save(FILE_BARCHART_FEATURES_BEHAVIOURAL)
 
         # -----------------
         # Chart for h1n1
