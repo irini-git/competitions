@@ -15,6 +15,7 @@ FILENAME_INPUT_DATA_FEATURES = '../data/Flu_Shot_Learning_Predict_H1N1_and_Seaso
 FILE_BARCHART_LABELS = '../fig/labels_bar_chart.png'
 FILE_BARCHART_FEATURES_RATING = '../fig/features_bar_chart_rating.png'
 FILE_BARCHART_FEATURES_BEHAVIOURAL = '../fig/features_bar_chart_behavioral.png'
+FILE_BARCHART_FEATURES_MEDICAL = '../fig/features_bar_chart_medical.png'
 
 class FluShotData:
     """
@@ -112,11 +113,11 @@ class FluShotData:
 
 
         # 2. Behavioral features Y/N
-        # Create a new feature (str) with Y for 1, N for 0 and 'dont know' for NaN
-        # Create a new feature (int) with 2 for 1.0, 0 for 0.0 and 1 for NaN
+        # Create a new feature (str) with Y for 1, N for 0 and 'No response' for NaN
+        # Create a new feature (int) with 2 for 1.0, 0 for 0.0 (dont know), and 1 for NaN
         # We address missing values in responses for behavioural features adding 'dont know' option.
         # Other technics are also possible, like imputation, deletion, subgroup analysis.
-        #
+
         features_behavioral = ['behavioral_antiviral_meds', 'behavioral_avoidance',
                                'behavioral_face_mask', 'behavioral_wash_hands',
                                'behavioral_large_gatherings', 'behavioral_outside_home',
@@ -139,12 +140,24 @@ class FluShotData:
                 return 1
 
         # Apply the mapping function for behavioral features and return stats
-        #
         for f in features_behavioral:
             df_train[f'{f}_desc'] = df_train[f].apply(float_to_word)
             df_train[f'{f}_int'] = df_train[f].apply(float_to_int)
             # print output to log file
-            print(100*df_train[f'{f}_int'].value_counts()/df_train.shape[0])
+            # print(100*df_train[f'{f}_int'].value_counts()/df_train.shape[0])
+            # print('-'*10)
+
+
+        # 3. Chronic condition and doctors recommendation
+        # Create a new feature (str) with Y for 1, N for 0 and 'No response' for NaN
+
+        features_medical = ['doctor_recc_h1n1', 'doctor_recc_seasonal', 'chronic_med_condition']
+
+        for f in features_medical:
+            df_train[f'{f}_desc'] = df_train[f].apply(float_to_word)
+            print(df_train[f].value_counts())
+            print(df_train[f].isnull().sum())
+            # print(100*df_train[f'{f}_int'].value_counts()/df_train.shape[0])
             print('-'*10)
 
         # -------------------------------------------------------
@@ -152,9 +165,9 @@ class FluShotData:
         columns = ['h1n1_vaccine', 'seasonal_vaccine']
         self.explore_labels(df_train[columns])
 
-        self.plot_stacked_bar_ratings_behaviour(df_train)
+        self.plot_stacked_bar_ratings_behaviour_medical(df_train)
 
-    def plot_stacked_bar_ratings_behaviour(self, df):
+    def plot_stacked_bar_ratings_behaviour_medical(self, df):
         """
         Visualisation of rating-like features in train data.
         Leading numbers added to descriptions for visual purpose to align the graphs.
@@ -210,6 +223,21 @@ class FluShotData:
         df15 = df['behavioral_touch_face_desc'].value_counts().rename_axis('value').reset_index(name='counts')
         df15['feature'] = 'Has avoided touching eyes, nose, or mouth'
 
+        # Medical: Chronic condition and doctors recommendation
+        #         features_medical = ['doctor_recc_h1n1', 'doctor_recc_seasonal', 'chronic_med_condition']
+        df16 = df['doctor_recc_h1n1_desc'].value_counts().rename_axis('value').reset_index(name='counts')
+        df16['feature'] = 'H1N1 flu vaccine'
+
+        df17 = df['doctor_recc_seasonal_desc'].value_counts().rename_axis('value').reset_index(name='counts')
+        df17['feature'] = 'Seasonal flu vaccine'
+
+        df18 = df['chronic_med_condition_desc'].value_counts().rename_axis('value').reset_index(name='counts')
+        df18['feature'] = 'chronic_med_condition'
+
+        # Dataframe for medical features
+        dfs_medical = [df16, df17]
+        source_medical = functools.reduce(lambda left, right: pd.concat([left, right]), dfs_medical)
+
         # Dataframes for h1n1 and seasonal flu
         dfs_h1n1 = [df3, df4, df5, df1, df2]
         dfs_seas = [df6, df7, df8]
@@ -219,6 +247,33 @@ class FluShotData:
         # Dataframe for behavioural
         dfs_behavioral = [df9, df10, df11, df12, df13, df14, df15]
         source_behavioral = functools.reduce(lambda left, right: pd.concat([left, right]), dfs_behavioral)
+
+
+        # # FILE_BARCHART_FEATURES_MEDICAL
+        # Chart for medical features
+        bars_medical = alt.Chart(source_medical, title='Vaccine was recommended by doctor').mark_bar().encode(
+            x=alt.X('counts:Q').title(''),
+            y=alt.Y(
+                'feature:N', axis=alt.Axis(labelLimit=380),
+                sort=['H1N1 flu vaccine',
+                      'Seasonal flu vaccine']
+            ).title(''),
+            color=alt.Color('value',
+                            legend=alt.Legend(title=''),
+                            scale=alt.Scale(scheme='rainbow'),
+                            )
+        ).configure_axis(
+            labelFontSize=12,
+            grid=False
+        ).properties(
+            width=500,
+            height=250
+        ).configure_view(
+            strokeWidth=0
+        )
+
+        # Save chart as png file in dedicated folder
+        bars_medical.save(FILE_BARCHART_FEATURES_MEDICAL)
 
         # Chart for behavioural
         bars_behavioural = alt.Chart(source_behavioral, title='Behavioral').mark_bar().encode(
