@@ -113,6 +113,10 @@ class FluShotData:
 
         # 2. Behavioral features Y/N
         # Create a new feature (str) with Y for 1, N for 0 and 'dont know' for NaN
+        # Create a new feature (int) with 2 for 1.0, 0 for 0.0 and 1 for NaN
+        # We address missing values in responses for behavioural features adding 'dont know' option.
+        # Other technics are also possible, like imputation, deletion, subgroup analysis.
+        #
         features_behavioral = ['behavioral_antiviral_meds', 'behavioral_avoidance',
                                'behavioral_face_mask', 'behavioral_wash_hands',
                                'behavioral_large_gatherings', 'behavioral_outside_home',
@@ -126,11 +130,21 @@ class FluShotData:
             else:
                 return 'No response'
 
-        # Apply the mapping function and return stats
+        def float_to_int(w):
+            if w == 0.0:
+                return 0
+            elif w == 1.0:
+                return 2
+            else:
+                return 1
+
+        # Apply the mapping function for behavioral features and return stats
+        #
         for f in features_behavioral:
             df_train[f'{f}_desc'] = df_train[f].apply(float_to_word)
-            print(df_train[f].value_counts())
-            print(df_train[f].isna().sum())
+            df_train[f'{f}_int'] = df_train[f].apply(float_to_int)
+            # print output to log file
+            print(100*df_train[f'{f}_int'].value_counts()/df_train.shape[0])
             print('-'*10)
 
         # -------------------------------------------------------
