@@ -126,11 +126,9 @@ class FluShotData:
             else:
                 return 'No response'
 
-        features_behavioral_desc = [f'{f}_desc' for f in features_behavioral]
-        df_train['behavioral_antiviral_meds_desc'] = df_train['behavioral_antiviral_meds'].apply(float_to_word)
-        print(df_train['behavioral_antiviral_meds_desc'])
-
+        # Apply the mapping function and return stats
         for f in features_behavioral:
+            df_train[f'{f}_desc'] = df_train[f].apply(float_to_word)
             print(df_train[f].value_counts())
             print(df_train[f].isna().sum())
             print('-'*10)
@@ -176,30 +174,26 @@ class FluShotData:
         df8['feature'] = '1 getting sick from vaccine'
 
         # Behaviour ------------------------
-        features_behavioral = ['behavioral_antiviral_meds', 'behavioral_avoidance',
-                               'behavioral_face_mask', 'behavioral_wash_hands',
-                               'behavioral_large_gatherings', 'behavioral_outside_home',
-                               'behavioral_touch_face']
 
-        df9 = df['behavioral_antiviral_meds'].value_counts().rename_axis('value').reset_index(name='counts')
+        df9 = df['behavioral_antiviral_meds_desc'].value_counts().rename_axis('value').reset_index(name='counts')
         df9['feature'] = 'Has taken antiviral medications'
 
-        df10 = df['behavioral_avoidance'].value_counts().rename_axis('value').reset_index(name='counts')
+        df10 = df['behavioral_avoidance_desc'].value_counts().rename_axis('value').reset_index(name='counts')
         df10['feature'] = 'Has avoided close contact with others with flu-like symptoms'
 
-        df11 = df['behavioral_face_mask'].value_counts().rename_axis('value').reset_index(name='counts')
+        df11 = df['behavioral_face_mask_desc'].value_counts().rename_axis('value').reset_index(name='counts')
         df11['feature'] = 'Has bought a face mask'
 
-        df12 = df['behavioral_wash_hands'].value_counts().rename_axis('value').reset_index(name='counts')
+        df12 = df['behavioral_wash_hands_desc'].value_counts().rename_axis('value').reset_index(name='counts')
         df12['feature'] = 'Has frequently washed hands or used hand sanitizer'
 
-        df13 = df['behavioral_large_gatherings'].value_counts().rename_axis('value').reset_index(name='counts')
+        df13 = df['behavioral_large_gatherings_desc'].value_counts().rename_axis('value').reset_index(name='counts')
         df13['feature'] = 'Has reduced time at large gatherings'
 
-        df14 = df['behavioral_outside_home'].value_counts().rename_axis('value').reset_index(name='counts')
+        df14 = df['behavioral_outside_home_desc'].value_counts().rename_axis('value').reset_index(name='counts')
         df14['feature'] = 'Has reduced contact with people outside of own household'
 
-        df15 = df['behavioral_touch_face'].value_counts().rename_axis('value').reset_index(name='counts')
+        df15 = df['behavioral_touch_face_desc'].value_counts().rename_axis('value').reset_index(name='counts')
         df15['feature'] = 'Has avoided touching eyes, nose, or mouth'
 
         # Dataframes for h1n1 and seasonal flu
@@ -226,8 +220,8 @@ class FluShotData:
                       'Has taken antiviral medications']
                     ).title(''),
             color=alt.Color('value',
-                            legend=alt.Legend(title="Ratings"),
-                            scale=alt.Scale(scheme='lighttealblue'),
+                            legend=alt.Legend(title=''),
+                            scale=alt.Scale(scheme='rainbow'),
                             )
         ).configure_axis(
             labelFontSize=12,
