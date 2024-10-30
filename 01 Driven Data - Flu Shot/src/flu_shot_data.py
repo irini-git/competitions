@@ -1,5 +1,6 @@
 from pyexpat import features
 
+import numpy as np
 import pandas as pd
 import os
 import altair as alt
@@ -111,11 +112,23 @@ class FluShotData:
 
 
         # 2. Behavioral features Y/N
-        # What to do with behavioral missing?
+        # Create a new feature (str) with Y for 1, N for 0 and 'dont know' for NaN
         features_behavioral = ['behavioral_antiviral_meds', 'behavioral_avoidance',
                                'behavioral_face_mask', 'behavioral_wash_hands',
                                'behavioral_large_gatherings', 'behavioral_outside_home',
                                'behavioral_touch_face']
+
+        def float_to_word(w):
+            if w == 0.0:
+                return 'No'
+            elif w == 1.0:
+                return 'Yes'
+            else:
+                return 'No response'
+
+        features_behavioral_desc = [f'{f}_desc' for f in features_behavioral]
+        df_train['behavioral_antiviral_meds_desc'] = df_train['behavioral_antiviral_meds'].apply(float_to_word)
+        print(df_train['behavioral_antiviral_meds_desc'])
 
         for f in features_behavioral:
             print(df_train[f].value_counts())
@@ -202,10 +215,19 @@ class FluShotData:
         # Chart for behavioural
         bars_behavioural = alt.Chart(source_behavioral, title='Behavioral').mark_bar().encode(
             x=alt.X('counts:Q').title(''),
-            y=alt.Y('feature:N', axis=alt.Axis(labelLimit=380)).title(''),
+            y=alt.Y(
+                'feature:N', axis=alt.Axis(labelLimit=380),
+                sort=['Has frequently washed hands or used hand sanitizer',
+                      'Has avoided close contact with others with flu-like symptoms',
+                      'Has avoided touching eyes, nose, or mouth',
+                      'Has reduced time at large gatherings',
+                      'Has reduced contact with people outside of own household',
+                      'Has bought a face mask',
+                      'Has taken antiviral medications']
+                    ).title(''),
             color=alt.Color('value',
                             legend=alt.Legend(title="Ratings"),
-                            scale=alt.Scale(scheme='lighttealblue')
+                            scale=alt.Scale(scheme='lighttealblue'),
                             )
         ).configure_axis(
             labelFontSize=12,
