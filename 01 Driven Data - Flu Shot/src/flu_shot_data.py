@@ -155,9 +155,8 @@ class FluShotData:
 
         for f in features_medical:
             df_train[f'{f}_desc'] = df_train[f].apply(float_to_word)
-            print(df_train[f].value_counts())
             print(df_train[f].isnull().sum())
-            # print(100*df_train[f'{f}_int'].value_counts()/df_train.shape[0])
+            print(100*df_train[f].value_counts()/df_train.shape[0])
             print('-'*10)
 
         # -------------------------------------------------------
