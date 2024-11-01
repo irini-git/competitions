@@ -185,6 +185,8 @@ class FluShotData:
         :return: bar chart saved as png file
         """
 
+        # TODO : Diverging Stacked Bar Chart for replies
+
         # Ratings ------------------------
         df1 = df['h1n1_concern_desc'].value_counts().rename_axis('rating').reset_index(name='counts')
         df1['feature'] = '4 concern'
@@ -286,21 +288,30 @@ class FluShotData:
         # Chart for personal features --------------------
         bar_sex = alt.Chart(df).mark_bar().encode(
             x=alt.X('sex:O').title(''),
-            y=alt.Y('count(sex):Q').title(''),
-            color='sex:N'
+            y=alt.Y('count(sex):Q', scale=alt.Scale(domain=[0, 19000])).title(''),
+            color = alt.Color('sex:N')
         )
 
         # Chart for personal features --------------------
         bar_empl_status = alt.Chart(df).mark_bar().encode(
             x=alt.X('employment_status:O').title(''),
-            y=alt.Y('count(employment_status):Q').title(''),
-            color='employment_status:N'
+            y=alt.Y('count(employment_status):Q', scale=alt.Scale(domain=[0, 19000])).title(''),
+            color=alt.Color('employment_status:N')
         )
 
-        # features_personal =['employment_status', 'rent_or_own', 'marital_status', 'sex']
+        bar_rent_or_own = alt.Chart(df).mark_bar().encode(
+            x=alt.X('rent_or_own:O').title(''),
+            y=alt.Y('count(rent_or_own):Q', scale=alt.Scale(domain=[0, 19000])).title(''),
+            color=alt.Color('rent_or_own:N')
+        )
 
+        bar_marital_status = alt.Chart(df).mark_bar().encode(
+            x=alt.X('marital_status:O').title(''),
+            y=alt.Y('count(marital_status):Q', scale=alt.Scale(domain=[0, 19000])).title(''),
+            color=alt.Color('marital_status:N', legend=None)
+        )
 
-        chart = bar_sex | bar_empl_status
+        chart = bar_sex | bar_empl_status | bar_rent_or_own | bar_marital_status
         chart.save(FILE_BARCHART_FEATURES_PERSONAL)
 
         # Population pyramid --------------------
