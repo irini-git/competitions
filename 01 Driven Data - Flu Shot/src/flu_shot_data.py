@@ -265,10 +265,6 @@ class FluShotData:
         df25 = df['sex'].value_counts().rename_axis('value').reset_index(name='counts')
         df25['feature'] = 'sex'
 
-        # Dataframe for personal features
-        dfs_personal = [df22, df23, df24, df25]
-        source_personal = functools.reduce(lambda left, right: pd.concat([left, right]), dfs_personal)
-
         # Dataframe for health-related features
         dfs_health = [df18, df19, df20, df21]
         source_health = functools.reduce(lambda left, right: pd.concat([left, right]), dfs_health)
@@ -287,37 +283,28 @@ class FluShotData:
         dfs_behavioral = [df9, df10, df11, df12, df13, df14, df15]
         source_behavioral = functools.reduce(lambda left, right: pd.concat([left, right]), dfs_behavioral)
 
-        # Population pyramid --------------------
-
-
-        # Chart for personal features -----------
-        # source_personal
-        bars_personal = alt.Chart(source_personal, title='Personal features').mark_bar().encode(
-            x=alt.X('counts:Q').title(''),
-            y=alt.Y(
-                'feature:N', axis=alt.Axis(labelLimit=380)#,
-                #sort=['Has health insurance',
-                #        'Has chronic medical conditions',
-                #        'Is a healthcare worker',
-                #        'Has regular close contact with a child under the age of six months',
-                #       ]
-            ).title(''),
-            color=alt.Color('value',
-                            legend=alt.Legend(title=''),
-                            scale=alt.Scale(scheme='rainbow'),
-                            )
-        ).configure_axis(
-            labelFontSize=12,
-            grid=False
-        ).properties(
-            width=500,
-            height=250
-        ).configure_view(
-            strokeWidth=0
+        # Chart for personal features --------------------
+        bar_sex = alt.Chart(df).mark_bar().encode(
+            x=alt.X('sex:O').title(''),
+            y=alt.Y('count(sex):Q').title(''),
+            color='sex:N'
         )
 
-        # Save chart as png file in dedicated folder
-        bars_personal.save(FILE_BARCHART_FEATURES_PERSONAL)
+        # Chart for personal features --------------------
+        bar_empl_status = alt.Chart(df).mark_bar().encode(
+            x=alt.X('employment_status:O').title(''),
+            y=alt.Y('count(employment_status):Q').title(''),
+            color='employment_status:N'
+        )
+
+        # features_personal =['employment_status', 'rent_or_own', 'marital_status', 'sex']
+
+
+        chart = bar_sex | bar_empl_status
+        chart.save(FILE_BARCHART_FEATURES_PERSONAL)
+
+        # Population pyramid --------------------
+
 
         # Chart for health features -------------
         bars_health = alt.Chart(source_health, title='Other information about respondents').mark_bar().encode(
