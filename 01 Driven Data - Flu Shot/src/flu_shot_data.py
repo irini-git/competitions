@@ -16,6 +16,7 @@ FILE_BARCHART_LABELS = '../fig/labels_bar_chart.png'
 FILE_BARCHART_FEATURES_RATING = '../fig/features_bar_chart_rating.png'
 FILE_BARCHART_FEATURES_BEHAVIOURAL = '../fig/features_bar_chart_behavioral.png'
 FILE_BARCHART_FEATURES_DOCTOR_REC = '../fig/features_bar_chart_doctor_recommendation.png'
+FILE_BARCHART_FEATURES_HEALTH = '../fig/features_bar_chart_health.png'
 FILE_BARCHART_FEATURES_PERSONAL = '../fig/features_bar_chart_personal.png'
 
 class FluShotData:
@@ -157,10 +158,14 @@ class FluShotData:
         for f in features_medical:
             df_train[f'{f}_desc'] = df_train[f].apply(float_to_word)
 
-        features_personal = ['chronic_med_condition', 'child_under_6_months', 'health_worker', 'health_insurance']
+        features_health = ['chronic_med_condition', 'child_under_6_months', 'health_worker', 'health_insurance']
+
+        for f in features_health:
+            df_train[f'{f}_desc'] = df_train[f].apply(float_to_word)
+
+        features_personal =['employment_status', 'rent_or_own', 'marital_status', 'sex']
 
         for f in features_personal:
-            df_train[f'{f}_desc'] = df_train[f].apply(float_to_word)
             print(df_train[f].isnull().sum())
             print(100 * df_train[f].value_counts() / df_train.shape[0])
             print('-' * 10)
@@ -206,7 +211,6 @@ class FluShotData:
         df8['feature'] = '1 getting sick from vaccine'
 
         # Behaviour ------------------------
-
         df9 = df['behavioral_antiviral_meds_desc'].value_counts().rename_axis('value').reset_index(name='counts')
         df9['feature'] = 'Has taken antiviral medications'
 
@@ -237,20 +241,37 @@ class FluShotData:
 
         # Features for private, personal
         df18 = df['chronic_med_condition_desc'].value_counts().rename_axis('value').reset_index(name='counts')
-        df18['feature'] = 'chronic_med_condition'
+        df18['feature'] = 'Has chronic medical conditions'
 
         df19 = df['child_under_6_months_desc'].value_counts().rename_axis('value').reset_index(name='counts')
-        df19['feature'] = 'child_under_6_months'
+        df19['feature'] = 'Has regular close contact with child under 6 months'
 
         df20 = df['health_worker_desc'].value_counts().rename_axis('value').reset_index(name='counts')
-        df20['feature'] = 'health_worker'
+        df20['feature'] = 'Is a healthcare worker'
 
-        df21 = df['health_insurance'].value_counts().rename_axis('value').reset_index(name='counts')
-        df21['feature'] = 'health_insurance'
+        df21 = df['health_insurance_desc'].value_counts().rename_axis('value').reset_index(name='counts')
+        df21['feature'] = 'Has health insurance'
 
-        # Dataframe for personal
-        dfs_personal = [df18, df19, df20, df21]
+        # Personal, family related features
+        df22 = df['employment_status'].value_counts().rename_axis('value').reset_index(name='counts')
+        df22['feature'] = 'employment_status'
+
+        df23 = df['rent_or_own'].value_counts().rename_axis('value').reset_index(name='counts')
+        df23['feature'] = 'rent_or_own'
+
+        df24 = df['marital_status'].value_counts().rename_axis('value').reset_index(name='counts')
+        df24['feature'] = 'marital_status'
+
+        df25 = df['sex'].value_counts().rename_axis('value').reset_index(name='counts')
+        df25['feature'] = 'sex'
+
+        # Dataframe for personal features
+        dfs_personal = [df22, df23, df24, df25]
         source_personal = functools.reduce(lambda left, right: pd.concat([left, right]), dfs_personal)
+
+        # Dataframe for health-related features
+        dfs_health = [df18, df19, df20, df21]
+        source_health = functools.reduce(lambda left, right: pd.concat([left, right]), dfs_health)
 
         # Dataframe for medical features
         dfs_medical = [df16, df17]
@@ -266,13 +287,20 @@ class FluShotData:
         dfs_behavioral = [df9, df10, df11, df12, df13, df14, df15]
         source_behavioral = functools.reduce(lambda left, right: pd.concat([left, right]), dfs_behavioral)
 
-        # Chart for personal features -------------
-        bars_personal = alt.Chart(source_medical, title='Title').mark_bar().encode(
+        # Population pyramid --------------------
+
+
+        # Chart for personal features -----------
+        # source_personal
+        bars_personal = alt.Chart(source_personal, title='Personal features').mark_bar().encode(
             x=alt.X('counts:Q').title(''),
             y=alt.Y(
                 'feature:N', axis=alt.Axis(labelLimit=380)#,
-                # sort=['H1N1 flu vaccine',
-                #       'Seasonal flu vaccine']
+                #sort=['Has health insurance',
+                #        'Has chronic medical conditions',
+                #        'Is a healthcare worker',
+                #        'Has regular close contact with a child under the age of six months',
+                #       ]
             ).title(''),
             color=alt.Color('value',
                             legend=alt.Legend(title=''),
@@ -290,6 +318,34 @@ class FluShotData:
 
         # Save chart as png file in dedicated folder
         bars_personal.save(FILE_BARCHART_FEATURES_PERSONAL)
+
+        # Chart for health features -------------
+        bars_health = alt.Chart(source_health, title='Other information about respondents').mark_bar().encode(
+            x=alt.X('counts:Q').title(''),
+            y=alt.Y(
+                'feature:N', axis=alt.Axis(labelLimit=380),
+                sort=['Has health insurance',
+                        'Has chronic medical conditions',
+                        'Is a healthcare worker',
+                        'Has regular close contact with a child under the age of six months',
+                       ]
+            ).title(''),
+            color=alt.Color('value',
+                            legend=alt.Legend(title=''),
+                            scale=alt.Scale(scheme='rainbow'),
+                            )
+        ).configure_axis(
+            labelFontSize=12,
+            grid=False
+        ).properties(
+            width=500,
+            height=250
+        ).configure_view(
+            strokeWidth=0
+        )
+
+        # Save chart as png file in dedicated folder
+        bars_health.save(FILE_BARCHART_FEATURES_HEALTH)
 
 
 

@@ -354,6 +354,36 @@ with a specific value), it is challenging to guess (and properly) the nature of 
 values.
 To cater for missing values, we will use imputing.
 
+- Health-related binary features
+In the code we refer to other binary features as health-related
+    -- has health insurance : Yes (47%), No (6.5%) and rest for missing values.
+       Naively, the missing values in this field might be connected with "No",
+       but there is no solid assurance for this assumption.
+       Since a large number of missing value, this feature to be dropped.
+    -- Has chronic medical conditions : Yes (27%), No (69%), with more people not having chronic conditions.
+    -- Is a healthcare worker : Yes (11%), No (86%)
+       In other circumstances, it would have been interesting to check the actual ratio of
+       healthcare workers in the USA population, but we are not referring to other
+       sources following the requirements of the competitions.
+    -- Has regular close contact with a child under the age of six months : Yes (89%), No (8%).
+       It might indeed reflect the real population, plus people who have regular
+       contact with children due to working conditions, for example.
+       Comment : this feature has been put into the group for health-related,
+       but it could potentially belong to another subgroup as well.
+
+- Personal binary features
+
+
+Cross check-related fields
+- recommended by doctor and vaccinated
+- is a healthcare worker and vaccinated
+- is a healthcare worker and behavioural features
+- has health insurance and behavioural features
+- has a chronic conditions and behav features
+- health care worker and opinions
+- has a contact with child under 6m and number of family members
+
+
 Code sharing:
 Privately sharing code or data outside of teams is not permitted.
 Participants are permitted to publicly share source or executable code developed in connection with or
