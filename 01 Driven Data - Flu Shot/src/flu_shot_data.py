@@ -186,6 +186,7 @@ class FluShotData:
         """
 
         # TODO : Diverging Stacked Bar Chart for replies
+        # https://altair-viz.github.io/gallery/diverging_stacked_bar_chart.html
 
         # Ratings ------------------------
         df1 = df['h1n1_concern_desc'].value_counts().rename_axis('rating').reset_index(name='counts')
