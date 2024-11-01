@@ -15,7 +15,8 @@ FILENAME_INPUT_DATA_FEATURES = '../data/Flu_Shot_Learning_Predict_H1N1_and_Seaso
 FILE_BARCHART_LABELS = '../fig/labels_bar_chart.png'
 FILE_BARCHART_FEATURES_RATING = '../fig/features_bar_chart_rating.png'
 FILE_BARCHART_FEATURES_BEHAVIOURAL = '../fig/features_bar_chart_behavioral.png'
-FILE_BARCHART_FEATURES_MEDICAL = '../fig/features_bar_chart_medical.png'
+FILE_BARCHART_FEATURES_DOCTOR_REC = '../fig/features_bar_chart_doctor_recommendation.png'
+FILE_BARCHART_FEATURES_PERSONAL = '../fig/features_bar_chart_personal.png'
 
 class FluShotData:
     """
@@ -155,9 +156,14 @@ class FluShotData:
 
         for f in features_medical:
             df_train[f'{f}_desc'] = df_train[f].apply(float_to_word)
+
+        features_personal = ['chronic_med_condition', 'child_under_6_months', 'health_worker', 'health_insurance']
+
+        for f in features_personal:
+            df_train[f'{f}_desc'] = df_train[f].apply(float_to_word)
             print(df_train[f].isnull().sum())
-            print(100*df_train[f].value_counts()/df_train.shape[0])
-            print('-'*10)
+            print(100 * df_train[f].value_counts() / df_train.shape[0])
+            print('-' * 10)
 
         # -------------------------------------------------------
         # Explore labels as is, without features
@@ -223,15 +229,28 @@ class FluShotData:
         df15['feature'] = 'Has avoided touching eyes, nose, or mouth'
 
         # Medical: Chronic condition and doctors recommendation
-        #         features_medical = ['doctor_recc_h1n1', 'doctor_recc_seasonal', 'chronic_med_condition']
         df16 = df['doctor_recc_h1n1_desc'].value_counts().rename_axis('value').reset_index(name='counts')
         df16['feature'] = 'H1N1 flu vaccine'
 
         df17 = df['doctor_recc_seasonal_desc'].value_counts().rename_axis('value').reset_index(name='counts')
         df17['feature'] = 'Seasonal flu vaccine'
 
+        # Features for private, personal
         df18 = df['chronic_med_condition_desc'].value_counts().rename_axis('value').reset_index(name='counts')
         df18['feature'] = 'chronic_med_condition'
+
+        df19 = df['child_under_6_months_desc'].value_counts().rename_axis('value').reset_index(name='counts')
+        df19['feature'] = 'child_under_6_months'
+
+        df20 = df['health_worker_desc'].value_counts().rename_axis('value').reset_index(name='counts')
+        df20['feature'] = 'health_worker'
+
+        df21 = df['health_insurance'].value_counts().rename_axis('value').reset_index(name='counts')
+        df21['feature'] = 'health_insurance'
+
+        # Dataframe for personal
+        dfs_personal = [df18, df19, df20, df21]
+        source_personal = functools.reduce(lambda left, right: pd.concat([left, right]), dfs_personal)
 
         # Dataframe for medical features
         dfs_medical = [df16, df17]
@@ -247,9 +266,34 @@ class FluShotData:
         dfs_behavioral = [df9, df10, df11, df12, df13, df14, df15]
         source_behavioral = functools.reduce(lambda left, right: pd.concat([left, right]), dfs_behavioral)
 
+        # Chart for personal features -------------
+        bars_personal = alt.Chart(source_medical, title='Title').mark_bar().encode(
+            x=alt.X('counts:Q').title(''),
+            y=alt.Y(
+                'feature:N', axis=alt.Axis(labelLimit=380)#,
+                # sort=['H1N1 flu vaccine',
+                #       'Seasonal flu vaccine']
+            ).title(''),
+            color=alt.Color('value',
+                            legend=alt.Legend(title=''),
+                            scale=alt.Scale(scheme='rainbow'),
+                            )
+        ).configure_axis(
+            labelFontSize=12,
+            grid=False
+        ).properties(
+            width=500,
+            height=250
+        ).configure_view(
+            strokeWidth=0
+        )
 
-        # # FILE_BARCHART_FEATURES_MEDICAL
-        # Chart for medical features
+        # Save chart as png file in dedicated folder
+        bars_personal.save(FILE_BARCHART_FEATURES_PERSONAL)
+
+
+
+        # Chart for medical features --------------
         bars_medical = alt.Chart(source_medical, title='Vaccine was recommended by doctor').mark_bar().encode(
             x=alt.X('counts:Q').title(''),
             y=alt.Y(
@@ -272,9 +316,9 @@ class FluShotData:
         )
 
         # Save chart as png file in dedicated folder
-        bars_medical.save(FILE_BARCHART_FEATURES_MEDICAL)
+        bars_medical.save(FILE_BARCHART_FEATURES_DOCTOR_REC)
 
-        # Chart for behavioural
+        # Chart for behavioural --------------
         bars_behavioural = alt.Chart(source_behavioral, title='Behavioral').mark_bar().encode(
             x=alt.X('counts:Q').title(''),
             y=alt.Y(
@@ -304,7 +348,7 @@ class FluShotData:
         # Save chart as png file in dedicated folder
         bars_behavioural.save(FILE_BARCHART_FEATURES_BEHAVIOURAL)
 
-        # -----------------
+        # Chart for vaccines --------------
         # Chart for h1n1
         chart_h1n1 = alt.Chart(source_h1n1, title='Opinion on H1N1 flu vaccine').mark_bar().encode(
             x=alt.X('counts:Q').title(''),

@@ -346,7 +346,13 @@ There are other techniques for dealing with missing values, like deletion, imput
     - Has taken antiviral medications   : Yes 5% | No 95% | Don't know <1%
 
 - Doctor recommendations
-
+Both N1H1 and seasonal vaccine are not generally recommended by doctors.
+About a third of respondents have N1H1 (27%) and seasonal (30%) vaccine recommended by doctors.
+There is a noticeable number of missing values in those fields,
+and contrary to other features (where there is some grounds and rational to replace missing values
+with a specific value), it is challenging to guess (and properly) the nature of missing
+values.
+To cater for missing values, we will use imputing.
 
 Code sharing:
 Privately sharing code or data outside of teams is not permitted.
