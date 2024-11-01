@@ -163,7 +163,8 @@ class FluShotData:
         for f in features_health:
             df_train[f'{f}_desc'] = df_train[f].apply(float_to_word)
 
-        features_personal =['employment_status', 'rent_or_own', 'marital_status', 'sex']
+        features_personal =['employment_status', 'rent_or_own', 'marital_status', 'sex',
+                            'household_children', 'household_adults']
 
         for f in features_personal:
             print(df_train[f].isnull().sum())
@@ -312,7 +313,19 @@ class FluShotData:
             color=alt.Color('marital_status:N', legend=None)
         )
 
-        chart = bar_sex | bar_empl_status | bar_rent_or_own | bar_marital_status
+        bar_household_children = alt.Chart(df).mark_bar().encode(
+            x=alt.X('household_children:O').title('# children in household'),
+            y=alt.Y('count(household_children):Q', scale=alt.Scale(domain=[0, 19000])).title(''),
+            color=alt.Color('household_children:N', legend=None)
+        )
+
+        bar_household_adults = alt.Chart(df).mark_bar().encode(
+            x=alt.X('household_adults:O').title('# other adults in household'),
+            y=alt.Y('count(household_adults):Q', scale=alt.Scale(domain=[0, 19000])).title(''),
+            color=alt.Color('household_adults:N', legend=None)
+        )
+
+        chart = bar_sex | bar_empl_status | bar_rent_or_own | bar_marital_status | bar_household_children | bar_household_adults
         chart.save(FILE_BARCHART_FEATURES_PERSONAL)
 
         # Population pyramid --------------------
