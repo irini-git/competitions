@@ -18,7 +18,7 @@ FILE_BARCHART_FEATURES_BEHAVIOURAL = '../fig/features_bar_chart_behavioral.png'
 FILE_BARCHART_FEATURES_DOCTOR_REC = '../fig/features_bar_chart_doctor_recommendation.png'
 FILE_BARCHART_FEATURES_HEALTH = '../fig/features_bar_chart_health.png'
 FILE_BARCHART_FEATURES_PERSONAL = '../fig/features_bar_chart_personal.png'
-
+FILE_BARCHART_FEATURES_EMPLOYMENT = '../fig/features_bar_chart_employment.png'
 
 class FluShotData:
     """
@@ -252,22 +252,36 @@ class FluShotData:
         """
         from vega_datasets import data
 
-        df1 = df['employment_occupation'].value_counts().rename_axis('value').reset_index(name='counts')
+        df_employment_occupation = df['employment_occupation'].value_counts().rename_axis('value').reset_index(name='counts')
+        df_employment_industry = df['employment_industry'].value_counts().rename_axis('value').reset_index(name='counts')
 
-        from vega_datasets import data
-
-        source = data.wheat()
-        print(df1.head(2))
-        print(source.head(2))
-
-        base = alt.Chart(df1).encode(
-            x='counts',
-            y="value",
-            text='counts'
+        # ----------------
+        base_occupation = alt.Chart(df_employment_occupation,
+                         title="Type of occupation of respondent"
+                         ).encode(
+            x=alt.X('counts').title(''),
+            y=alt.Y("value").sort('-x').title(''),
+            text='counts',
+            color=alt.condition(alt.datum.counts > 1000, alt.value('red'), alt.value('steelblue'))
         )
-        chart = base.mark_bar() + base.mark_text(align='left', dx=2)
 
-        chart.save('../fig/TEST.png')
+        chart_occupation = base_occupation.mark_bar() + base_occupation.mark_text(align='left', dx=2)
+
+        # ---------------------
+
+        base_industry = alt.Chart(df_employment_industry,
+                                    title="Type of industry respondent is employed in"
+                                    ).encode(
+            x=alt.X('counts').title(''),
+            y=alt.Y("value").sort('-x').title(''),
+            text='counts',
+            color=alt.condition(alt.datum.counts > 1000, alt.value('red'), alt.value('steelblue'))
+        )
+
+        chart_industry = base_industry.mark_bar() + base_industry.mark_text(align='left', dx=2)
+
+        chart = chart_occupation | chart_industry
+        chart.save(FILE_BARCHART_FEATURES_EMPLOYMENT)
 
     def plot_stacked_bar_behaviour_medical_personal(self, df):
         """
