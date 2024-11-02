@@ -151,7 +151,7 @@ class FluShotData:
 
         self.plot_stacked_bar_behaviour_medical_personal(df_train)
         self.plot_diverging_stacked_bar(df_train)
-        self.plot_bar_employement(df_train)
+        self.plot_bar_random_namings(df_train)
 
     def plot_diverging_stacked_bar(self, df):
         """
@@ -244,42 +244,37 @@ class FluShotData:
 
         bar_chart.save(FILE_BARCHART_FEATURES_SENTIMENT)
 
-    def plot_bar_employement(self, df):
+    def plot_bar_random_namings(self, df):
         """
         Explore employment-related features
         :param df: df train
-        :return:
+        :return: Chart in png files
         """
-        from vega_datasets import data
 
         df_employment_occupation = df['employment_occupation'].value_counts().rename_axis('value').reset_index(name='counts')
         df_employment_industry = df['employment_industry'].value_counts().rename_axis('value').reset_index(name='counts')
 
-        # ----------------
-        base_occupation = alt.Chart(df_employment_occupation,
-                         title="Type of occupation of respondent"
-                         ).encode(
-            x=alt.X('counts').title(''),
-            y=alt.Y("value").sort('-x').title(''),
-            text='counts',
-            color=alt.condition(alt.datum.counts > 1000, alt.value('red'), alt.value('steelblue'))
-        )
+        def plot_inner_chart(source, title):
+            """
+            Support function for plotting
+            :param source: source for data
+            :param title: title for the chart
+            :return: chart with base and text
+            """
+            base = alt.Chart(source, title=title).encode(
+                x=alt.X('counts').title(''),
+                y=alt.Y("value").sort('-x').title(''),
+                text='counts',
+                color=alt.condition(alt.datum.counts > 1000, alt.value('red'), alt.value('steelblue'))
+            )
+            chart_ = base.mark_bar() + base.mark_text(align='left', dx=2)
 
-        chart_occupation = base_occupation.mark_bar() + base_occupation.mark_text(align='left', dx=2)
+            return chart_
 
-        # ---------------------
+        chart_occupation = plot_inner_chart(df_employment_occupation, 'Type of occupation of respondent')
+        chart_industry = plot_inner_chart(df_employment_industry, 'Type of industry respondent is employed in')
 
-        base_industry = alt.Chart(df_employment_industry,
-                                    title="Type of industry respondent is employed in"
-                                    ).encode(
-            x=alt.X('counts').title(''),
-            y=alt.Y("value").sort('-x').title(''),
-            text='counts',
-            color=alt.condition(alt.datum.counts > 1000, alt.value('red'), alt.value('steelblue'))
-        )
-
-        chart_industry = base_industry.mark_bar() + base_industry.mark_text(align='left', dx=2)
-
+        # ---------------
         chart = chart_occupation | chart_industry
         chart.save(FILE_BARCHART_FEATURES_EMPLOYMENT)
 
@@ -357,45 +352,30 @@ class FluShotData:
         dfs_behavioral = [df9, df10, df11, df12, df13, df14, df15]
         source_behavioral = functools.reduce(lambda left, right: pd.concat([left, right]), dfs_behavioral)
 
-        # Chart for personal features --------------------
-        bar_sex = alt.Chart(df).mark_bar().encode(
-            x=alt.X('sex:O').title(''),
-            y=alt.Y('count(sex):Q', scale=alt.Scale(domain=[0, 19000])).title(''),
-            color = alt.Color('sex:N')
-        )
+        def plot_inner_chart(feature):
+            """
+            Creates a chart per feature
+            :param feature: feature (column) in scope
+            :return: sub plot for the overall chart
+            """
 
-        # Chart for personal features --------------------
-        bar_empl_status = alt.Chart(df).mark_bar().encode(
-            x=alt.X('employment_status:O').title(''),
-            y=alt.Y('count(employment_status):Q', scale=alt.Scale(domain=[0, 19000])).title(''),
-            color=alt.Color('employment_status:N')
-        )
+            bar_ = alt.Chart(df).mark_bar().encode(
+                x=alt.X(f'{feature}:O').title(''),
+                y=alt.Y(f'count({feature}):Q', scale=alt.Scale(domain=[0, 19000])).title(''),
+                color = alt.Color(f'{feature}:N',
+                                  legend=None)
+            )
+            return bar_
 
-        bar_rent_or_own = alt.Chart(df).mark_bar().encode(
-            x=alt.X('rent_or_own:O').title(''),
-            y=alt.Y('count(rent_or_own):Q', scale=alt.Scale(domain=[0, 19000])).title(''),
-            color=alt.Color('rent_or_own:N')
-        )
+        bar_sex = plot_inner_chart('sex')
+        bar_census_msa = plot_inner_chart('census_msa')
+        bar_empl_status = plot_inner_chart('employment_status')
+        bar_rent_or_own = plot_inner_chart('rent_or_own')
+        bar_marital_status = plot_inner_chart('marital_status')
+        bar_household_children = plot_inner_chart('household_children')
+        bar_household_adults = plot_inner_chart('household_adults')
 
-        bar_marital_status = alt.Chart(df).mark_bar().encode(
-            x=alt.X('marital_status:O').title(''),
-            y=alt.Y('count(marital_status):Q', scale=alt.Scale(domain=[0, 19000])).title(''),
-            color=alt.Color('marital_status:N', legend=None)
-        )
-
-        bar_household_children = alt.Chart(df).mark_bar().encode(
-            x=alt.X('household_children:O').title('# children in household'),
-            y=alt.Y('count(household_children):Q', scale=alt.Scale(domain=[0, 19000])).title(''),
-            color=alt.Color('household_children:N', legend=None)
-        )
-
-        bar_household_adults = alt.Chart(df).mark_bar().encode(
-            x=alt.X('household_adults:O').title('# other adults in household'),
-            y=alt.Y('count(household_adults):Q', scale=alt.Scale(domain=[0, 19000])).title(''),
-            color=alt.Color('household_adults:N', legend=None)
-        )
-
-        chart = bar_sex | bar_empl_status | bar_rent_or_own | bar_marital_status | bar_household_children | bar_household_adults
+        chart = bar_sex | bar_empl_status | bar_census_msa | bar_rent_or_own | bar_marital_status | bar_household_children | bar_household_adults
         chart.save(FILE_BARCHART_FEATURES_PERSONAL)
 
         # Population pyramid --------------------
