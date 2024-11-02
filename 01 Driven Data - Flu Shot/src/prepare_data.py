@@ -22,10 +22,6 @@ class CleanedFluShotData:
 
         return df_labels, df_features
 
-
-    def create_new_features(self):
-        pass
-
     def feature_engineering(self):
         """
         Creates new features based on existing, use insights from data exploration
@@ -63,3 +59,5 @@ class CleanedFluShotData:
 
 
         # https://inria.github.io/scikit-learn-mooc/python_scripts/03_categorical_pipeline_column_transformer.html
+
+        # pickle output data
