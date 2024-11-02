@@ -6,3 +6,10 @@ from prepare_data import CleanedFluShotData
 
 # 2. Feature engineering and encoding
 data_manager = CleanedFluShotData()
+
+# 3. Select and Build the model
+
+# 4. Predict and Evaluate the Model
+# Create a submission sample
+
+# End
