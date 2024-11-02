@@ -152,6 +152,7 @@ class FluShotData:
         self.plot_stacked_bar_behaviour_medical_personal(df_train)
         self.plot_diverging_stacked_bar(df_train)
         self.plot_bar_random_namings(df_train)
+        self.plot_age(df_train)
 
     def plot_diverging_stacked_bar(self, df):
         """
@@ -243,6 +244,48 @@ class FluShotData:
         )
 
         bar_chart.save(FILE_BARCHART_FEATURES_SENTIMENT)
+
+    def plot_age(self, df):
+
+        df_ = df[['age_group', 'sex']].copy()
+        print(df.head())
+        #multi_grouped = df.groupby(['Name', 'City'])
+
+        #print(df)
+
+        base = alt.Chart(df).properties(
+            width=250
+        )
+
+        color_scale = alt.Scale(domain=['Male', 'Female'],
+            range=['#1f77b4', '#e377c2'])
+
+
+        # left = base.encode(
+        #     alt.Y('age_group').axis(None),
+        #     alt.X('count(age_group):Q')
+        #     .title('population')
+        #     .sort('descending'),
+        #     alt.Color('gender:N')
+        #     .scale(color_scale)
+        #     .legend(None)
+        # ).mark_bar().properties(title='Female')
+        #
+        # middle = base.encode(
+        #     alt.Y('age_group').axis(None),
+        #     alt.Text('age_group'),
+        # ).mark_text().properties(width=20)
+        #
+        # right = base.encode(
+        #     alt.Y('age_group').axis(None),
+        #     alt.X('count(age_group):Q').title('population'),
+        #     alt.Color('gender:N').scale(color_scale).legend(None)
+        # ).mark_bar().properties(title='Male')
+        #
+        # chart = alt.concat(left, middle, right, spacing=5)
+        #
+        # chart.save('../fig/TEST.png')
+
 
     def plot_bar_random_namings(self, df):
         """
