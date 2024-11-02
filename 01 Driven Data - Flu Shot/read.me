@@ -395,6 +395,20 @@ In the code we refer to other binary features as health-related
        The proposal for creating a new feature : have children at all or not.
     -- MSA : Respondent's residence within metropolitan statistical areas (MSA) as defined by the U.S. Census.
        No null values, keep as is and impute as categorical feature.
+    -- Income / poverty
+       High variety but also high number of missing values,
+       this feature will be dropped for the model.
+    -- Race
+       The majority of respondents provided the same value.
+       There are two options :
+            --- drop the feature because of disproportional values, and because of sensitive data
+            of the feature. Is it ethical to use the race feature in the model?
+            --- create a new feature, with belongs to the majority or not.
+            Again, is it ethical to use the race-related information?
+
+-- Age and sex
+    -- Plot population pyramid, features to keep for the model.
+       Missing values to be imputed.
 
 - Employment occupation and industry
     -- To be considered in the model, even with non-readable entities.

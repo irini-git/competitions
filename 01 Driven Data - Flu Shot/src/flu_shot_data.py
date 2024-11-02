@@ -20,6 +20,7 @@ FILE_BARCHART_FEATURES_HEALTH = '../fig/features_bar_chart_health.png'
 FILE_BARCHART_FEATURES_PERSONAL = '../fig/features_bar_chart_personal.png'
 FILE_BARCHART_FEATURES_EMPLOYMENT = '../fig/features_bar_chart_employment.png'
 FILE_BARCHART_FEATURES_POPULATION = '../fig/features_bar_chart_population_pyramid.png'
+FILE_BARCHART_FEATURES_HOUSEHOLD = '../fig/features_bar_chart_household.png'
 
 class FluShotData:
     """
@@ -153,7 +154,7 @@ class FluShotData:
         self.plot_stacked_bar_behaviour_medical_personal(df_train)
         self.plot_diverging_stacked_bar(df_train)
         self.plot_bar_random_namings(df_train)
-        self.plot_age(df_train)
+        self.plot_population_pyramid(df_train)
 
     def plot_diverging_stacked_bar(self, df):
         """
@@ -246,14 +247,13 @@ class FluShotData:
 
         bar_chart.save(FILE_BARCHART_FEATURES_SENTIMENT)
 
-    def plot_age(self, df):
+    def plot_population_pyramid(self, df):
 
         # Group data by age and sex, count all instances
         df = df.groupby(['age_group', 'sex'])['respondent_id'].count().reset_index()
         df = df.rename(columns={'respondent_id': 'counts', 'sex':'gender', 'age_group':'age'})
 
-        print(df)
-
+        # Plot chart
         base = alt.Chart(df).properties(
             width=250
         )
@@ -320,10 +320,8 @@ class FluShotData:
 
         chart_occupation = plot_inner_chart(df_employment_occupation, 'Type of occupation of respondent')
         chart_industry = plot_inner_chart(df_employment_industry, 'Type of industry respondent is employed in')
-
-        # ---------------
-        chart = chart_occupation | chart_industry
-        chart.save(FILE_BARCHART_FEATURES_EMPLOYMENT)
+        chart_employment = chart_occupation | chart_industry
+        chart_employment.save(FILE_BARCHART_FEATURES_EMPLOYMENT)
 
     def plot_stacked_bar_behaviour_medical_personal(self, df):
         """
@@ -387,6 +385,15 @@ class FluShotData:
         df25 = df['sex'].value_counts().rename_axis('value').reset_index(name='counts')
         df25['feature'] = 'sex'
 
+        df_household_children = df['household_children'].value_counts().rename_axis('value').reset_index(name='counts')
+        df_household_children['feature'] = 'household_children'
+        df_household_adults = df['household_adults'].value_counts().rename_axis('value').reset_index(name='counts')
+        df_household_adults['feature'] = 'household_adults'
+
+        # Dataframe for household features
+        dfs_household = [df_household_children, df_household_adults]
+        source_household = functools.reduce(lambda left, right: pd.concat([left, right]), dfs_household)
+
         # Dataframe for health-related features
         dfs_health = [df18, df19, df20, df21]
         source_health = functools.reduce(lambda left, right: pd.concat([left, right]), dfs_health)
@@ -419,13 +426,15 @@ class FluShotData:
         bar_empl_status = plot_inner_chart('employment_status')
         bar_rent_or_own = plot_inner_chart('rent_or_own')
         bar_marital_status = plot_inner_chart('marital_status')
-        bar_household_children = plot_inner_chart('household_children')
-        bar_household_adults = plot_inner_chart('household_adults')
+        bar_education = plot_inner_chart('education')
+        bar_race = plot_inner_chart('race')
+        bar_income = plot_inner_chart('income_poverty')
 
-        chart = bar_sex | bar_empl_status | bar_census_msa | bar_rent_or_own | bar_marital_status | bar_household_children | bar_household_adults
+        chart = bar_sex | bar_empl_status | bar_census_msa | bar_rent_or_own | bar_marital_status | bar_education | bar_race | bar_income
         chart.save(FILE_BARCHART_FEATURES_PERSONAL)
 
-        # Population pyramid --------------------
+        # TODO : create a chart for household
+        #
 
         # Chart for health features -------------
         bars_health = alt.Chart(source_health, title='Other information about respondents').mark_bar().encode(
@@ -481,17 +490,7 @@ class FluShotData:
         bars_medical.save(FILE_BARCHART_FEATURES_DOCTOR_REC)
 
         # Chart for behavioural --------------
-
-        behavioural_color_scale = alt.Scale(
-            domain=[
-                "No",
-                "No response",
-                "Yes",
-            ],
-            range=["#c30d24", "#cccccc", "#1770ab"],
-        )
-
-        bars_behavioural = alt.Chart(source_behavioral, title='Behavioral').mark_bar().encode(
+        bars_behavioural = alt.Chart(source_behavioral).mark_bar().encode(
             x=alt.X('counts:Q').title(''),
             y=alt.Y(
                 'feature:N', axis=alt.Axis(labelLimit=380),
@@ -513,6 +512,8 @@ class FluShotData:
         ).configure_view(
             strokeWidth=0
         )
+
+        bars_behavioural.save(FILE_BARCHART_FEATURES_BEHAVIOURAL)
 
     def explore_labels(self, df):
         """
