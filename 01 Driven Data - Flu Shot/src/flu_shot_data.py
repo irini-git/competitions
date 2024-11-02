@@ -149,8 +149,9 @@ class FluShotData:
         columns = ['h1n1_vaccine', 'seasonal_vaccine']
         self.explore_labels(df_train[columns])
 
-        self.plot_stacked_bar_behaviour_medical(df_train)
+        self.plot_stacked_bar_behaviour_medical_personal(df_train)
         self.plot_diverging_stacked_bar(df_train)
+        self.plot_bar_employement(df_train)
 
     def plot_diverging_stacked_bar(self, df):
         """
@@ -200,8 +201,6 @@ class FluShotData:
             }
         )
 
-        print(source_sentiment)
-
         def compute_percentages(
                 group,
         ):
@@ -245,7 +244,32 @@ class FluShotData:
 
         bar_chart.save(FILE_BARCHART_FEATURES_SENTIMENT)
 
-    def plot_stacked_bar_behaviour_medical(self, df):
+    def plot_bar_employement(self, df):
+        """
+        Explore employment-related features
+        :param df: df train
+        :return:
+        """
+        from vega_datasets import data
+
+        df1 = df['employment_occupation'].value_counts().rename_axis('value').reset_index(name='counts')
+
+        from vega_datasets import data
+
+        source = data.wheat()
+        print(df1.head(2))
+        print(source.head(2))
+
+        base = alt.Chart(df1).encode(
+            x='counts',
+            y="value",
+            text='counts'
+        )
+        chart = base.mark_bar() + base.mark_text(align='left', dx=2)
+
+        chart.save('../fig/TEST.png')
+
+    def plot_stacked_bar_behaviour_medical_personal(self, df):
         """
         Plot graphs to explore features.
         :param df: train dataframe with all features
