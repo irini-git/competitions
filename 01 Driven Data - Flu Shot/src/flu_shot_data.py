@@ -14,10 +14,12 @@ FILENAME_INPUT_DATA_FEATURES = '../data/Flu_Shot_Learning_Predict_H1N1_and_Seaso
 
 FILE_BARCHART_LABELS = '../fig/labels_bar_chart.png'
 FILE_BARCHART_FEATURES_RATING = '../fig/features_bar_chart_rating.png'
+FILE_BARCHART_FEATURES_SENTIMENT = '../fig/features_bar_chart_sentiment.png'
 FILE_BARCHART_FEATURES_BEHAVIOURAL = '../fig/features_bar_chart_behavioral.png'
 FILE_BARCHART_FEATURES_DOCTOR_REC = '../fig/features_bar_chart_doctor_recommendation.png'
 FILE_BARCHART_FEATURES_HEALTH = '../fig/features_bar_chart_health.png'
 FILE_BARCHART_FEATURES_PERSONAL = '../fig/features_bar_chart_personal.png'
+
 
 class FluShotData:
     """
@@ -178,20 +180,29 @@ class FluShotData:
                               'opinion_seas_risk_desc', 'opinion_seas_sick_from_vacc_desc',
                               'h1n1_concern_desc', 'h1n1_knowledge_desc']
 
-        df1 = df['h1n1_concern_desc'].value_counts().rename_axis('type').reset_index(name='value')
-        df2 = df['h1n1_knowledge_desc'].value_counts().rename_axis('type').reset_index(name='value')
-        df3 = df['opinion_h1n1_vacc_effective_desc'].value_counts().rename_axis('type').reset_index(name='value')
-        df3 = df['opinion_h1n1_vacc_effective_desc'].value_counts().rename_axis('type').reset_index(name='value')
-        df4 = df['opinion_h1n1_risk_desc'].value_counts().rename_axis('type').reset_index(name='value')
+        df1 = df['opinion_h1n1_vacc_effective_desc'].value_counts().rename_axis('type').reset_index(name='value')
+        df2 = df['opinion_h1n1_risk_desc'].value_counts().rename_axis('type').reset_index(name='value')
 
-        df1['question'] = 'Level of concern about the H1N1 flu'
-        df2['question'] = 'Level of knowledge about H1N1 flu'
-        df3['question'] = "Respondent's opinion about H1N1 vaccine effectiveness"
+        df3 = df['opinion_h1n1_sick_from_vacc_desc'].value_counts().rename_axis('type').reset_index(name='value')
+        df4 = df['opinion_seas_vacc_effective_desc'].value_counts().rename_axis('type').reset_index(name='value')
 
-        df4['question'] = "Respondent's opinion about risk of getting sick with H1N1 flu without vaccine"
+        df5 = df['opinion_seas_risk_desc'].value_counts().rename_axis('type').reset_index(name='value')
+        df6 = df['opinion_seas_sick_from_vacc_desc'].value_counts().rename_axis('type').reset_index(name='value')
+
+        df7 = df['h1n1_concern_desc'].value_counts().rename_axis('type').reset_index(name='value')
+        df8 = df['h1n1_knowledge_desc'].value_counts().rename_axis('type').reset_index(name='value')
+
+        df1['question'] = "Respondent's opinion about H1N1 vaccine effectiveness"
+        df2['question'] = "opinion_h1n1_risk_desc"
+        df3['question'] = "opinion_h1n1_sick_from_vacc_desc"
+        df4['question'] = "opinion_seas_vacc_effective_desc"
+        df5['question'] = "opinion_seas_risk_desc"
+        df6['question'] = "opinion_seas_sick_from_vacc_desc"
+        df7['question'] = "h1n1_concern_desc"
+        df8['question'] = "h1n1_knowledge_desc"
 
         # Dataframe for medical features
-        dfs_sentiment = [df1, df2, df3, df4]
+        dfs_sentiment = [df1, df2, df3, df4, df5, df6, df7, df8]
         source_sentiment = functools.reduce(lambda left, right: pd.concat([left, right]), dfs_sentiment)
 
         # Add type_code that we can sort by
@@ -244,11 +255,11 @@ class FluShotData:
         bar_chart = alt.Chart(source_sentiment).mark_bar().encode(
             x=alt.X("percentage_start:Q").title(''),
             x2="percentage_end:Q",
-            y=alt.Y("question:N").axis(y_axis),
+            y=alt.Y("question:N").axis(y_axis).sort('-x'),
             color=alt.Color("type:N").title("Response").scale(color_scale),
         )
 
-        bar_chart.save('../fig/TEST.png')
+        bar_chart.save(FILE_BARCHART_FEATURES_SENTIMENT)
 
     def plot_stacked_bar_ratings_behaviour_medical(self, df):
         """
