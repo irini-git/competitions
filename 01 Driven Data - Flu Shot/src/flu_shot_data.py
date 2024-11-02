@@ -193,13 +193,13 @@ class FluShotData:
         df8 = df['h1n1_knowledge_desc'].value_counts().rename_axis('type').reset_index(name='value')
 
         df1['question'] = "Respondent's opinion about H1N1 vaccine effectiveness"
-        df2['question'] = "opinion_h1n1_risk_desc"
-        df3['question'] = "opinion_h1n1_sick_from_vacc_desc"
-        df4['question'] = "opinion_seas_vacc_effective_desc"
-        df5['question'] = "opinion_seas_risk_desc"
-        df6['question'] = "opinion_seas_sick_from_vacc_desc"
-        df7['question'] = "h1n1_concern_desc"
-        df8['question'] = "h1n1_knowledge_desc"
+        df2['question'] = "Respondent's opinion about risk of getting sick with H1N1 flu without vaccine"
+        df3['question'] = "Respondent's worry of getting sick from taking H1N1 vaccine"
+        df4['question'] = "Respondent's opinion about seasonal flu vaccine effectiveness"
+        df5['question'] = "Respondent's opinion about risk of getting sick with seasonal flu without vaccine"
+        df6['question'] = "Respondent's worry of getting sick from taking seasonal flu vaccine"
+        df7['question'] = "Level of concern about the H1N1 flu"
+        df8['question'] = "Level of knowledge about H1N1 flu"
 
         # Dataframe for medical features
         dfs_sentiment = [df1, df2, df3, df4, df5, df6, df7, df8]
