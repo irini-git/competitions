@@ -31,9 +31,6 @@ Rational for decision: Even though the description states that values are repres
 (b) same code could be reused for future cases where the employment occupation holds a value.
 - Observation : employment_industry, keep and treat as real value.
 Rational for decision: same as above. Review the decision after additional analysis.
-- Question : employment_occupation, employment_industry : what are the values in data? Perform some exploration
-whether these features are randomly represented in the distribution of vaccinated / not vaccinated.
-Based on the analysis, either encode or drop.
 
 - Observation : household_children, create a new feature have children at all or none.
 Rational for decision: comparable number of people having no children (69%) and any number of children.
@@ -42,26 +39,14 @@ Some percentage of missing values (6%).
 - Observation : household_adults
 Action 1 : cast to int.
 Rational for decision: same as above: 0 (8k), 1 (14.5k), 2 (2.8k) and 3 (1.1k).
-Action 2 : review how it is possible to have zeros (no adults)? Need to explore those entries carefully.
 
 - Observation : hhs_geo_region
 Action : keep as is.
 Rational for decision: this is 10-region geographic classification by US Dept. of Health.
 
 - Observation : employment_status
-Action 1 : keep as is for exploration
+Action 1 : keep as for the model
 Rational for decision: reasonable values as Employed (13.6k), Unemployed (1.4k) and Not in Labor Force (10.2k).
-
-Action 2 : create two new features for the model
-    - is_employed, Boolean but encoded as 0/1 for model
-        Employed          ... 1
-        Unemployed        ... 0
-    - empl_status
-        Employed           ... 2
-        Not in Labor Force ... 0 (custom choice, the value might be revisited)
-        Unemployed         ... 1
-
-Action 3 : create yet another feature using encoding
 
 - Observation : rent_or_own
 Action : change to is_own coded as 1 (Own) and 0 (Rent)
@@ -76,70 +61,37 @@ Current values :
     <= $75,000, Above Poverty    12777
     > $75,000                     6810
     Below Poverty                 2697
-Action :
-For the analysis, we will create three new features based on the income_poverty:
-    - is_income_gt_75k : boolean-like, coded as 0/1
-        <= $75,000, Above Poverty  ... 0
-        > $75,000                  ... 1
-        Below Poverty              ... 0
-    - is_above_poverty : boolean-like, coded as 0/1
-        <= $75,000, Above Poverty  ... 1
-        > $75,000                  ... 1
-        Below Poverty              ... 0
-    - social class : encode to 0,1,2 for low, middle and high class
-        <= $75,000, Above Poverty  ... 1 (middle class)
-        > $75,000                  ... 2 (high class)
-        Below Poverty              ... 0 (low class)
+Action : drop due to a large number of missing values
 
 - Observation : sex
 Action 1 : create a boolean-like feature is_woman with 0/1.
 Rational for decision: possible values are Female (15.9k) and Male (10.8k), possible to use is_condition logic.
 
-Action 2 : create a feature "gender" with values "man" or woman for charts.
-As per another feature with age, the youngest is 18 - 34 years, meaning there are no children in the sample.
-
 - Observation : race
 Action 1 : keep as is for exploration.
 Rational for decision : might get some insights from data.
-Action 2 : For the model, we will use Ordinal Encoder
+Action 2 : For the model, do not use.
 
 - Observation : Education
 Action 1 : keep as is for exploration.
 Rational for decision : might get some insights from data.
-
-Action 2 : create two news feature for the model (manual and auto)
-Rational for decision : for manual, encode the education as numerical value from low (0) to high (2).
-For auto, we will use Ordinal Encoder.
-This parameter is self-reported, not fully transparent how to translate values to numbers.
-    - is_educated_manual
-        12 Years            ... 2
-        < 12 Years          ... 1
-        College Graduate    ... 1
-        Some College        ... 0
-    - education_encoded
+Action 2 : use Ordinal Encoder.
 
 - Observation : age_group
 Action 1 : keep as is for visualisations
 Rational for decision: there might be interesting insights
-Action 2 : create a new numeric feature for the model
-Rational for decision: possible to implement numeric logic.
-    - age
-        65+ Years        ... 4
-        55 - 64 Years    ... 3
-        45 - 54 Years    ... 2
-        35 - 44 Years    ... 1
-        18 - 34 Years    ... 0
+Action 2 : use encoding.
 
 - Observation : opinion_seas_sick_from_vacc
 This is respondents worry of getting sick from seasonal flu vaccine.
 The majority of respondents are not worried (11.8k).
 Action 1 : Create a new feature based on it, integer. Keep "dont know" in the middle to have the same distance to Y/N.
     - is_worried_seas_sick_from_vacc
-        1.0     (not worried)       ... 0
-        2.0     (not very worried)  ... 1
-        3.0     (don't know)        ... 2
-        4.0     (somewhat worried)  ... 3
-        5.0     (very worried)      ... 4
+        1.0     (not worried)       ... -2
+        2.0     (not very worried)  ... -1
+        3.0     (don't know)        ... 0
+        4.0     (somewhat worried)  ... 1
+        5.0     (very worried)      ... 2
 
 Action 2 : Create a new feature with description (in English) for visualization
 
@@ -148,11 +100,11 @@ This is respondents opinion about risk of getting sick with seasonal flu without
 The majority of respondents replied "somewhat low" (8.9k).
 Action 1 : Create a new feature based on it, integer. Keep "dont know" in the middle to have the same distance to Y/N.
     - is_worried_seas_risk
-        1.0    (very low)      ... 0
-        2.0    (somewhat low)  ... 1
-        3.0    (dont know)     ... 2
-        4.0    (somewhat high) ... 3
-        5.0    (very high)     ... 4
+        1.0    (very low)      ... -2
+        2.0    (somewhat low)  ... -1
+        3.0    (dont know)     ... 0
+        4.0    (somewhat high) ... 1
+        5.0    (very high)     ... 2
 
 Action 2 : Create a new feature with description (in English) for visualization
 
@@ -161,9 +113,9 @@ Respondents opinion about seasonal flu vaccine effectiveness.
 The majority replied "Somewhat effective" (11.6k) and "Very effective" (9.9k)
 Action 1 : Create a new feature based on it, integer. Keep "dont know" in the middle to have the same distance to Y/N.
     - is_seas_vacc_effective
-        1.0    (not al all effective)   ... 0
-        2.0    (not very effective)     ... 1
-        3.0    (dont know)              ... 2
+        1.0    (not al all effective)   ... -2
+        2.0    (not very effective)     ... -1
+        3.0    (dont know)              ... 0
         4.0    (somewhat effective)     ... 3
         5.0    (very effective)         ... 4
 
@@ -174,11 +126,11 @@ This is respondents worry of getting sick from taking h1n1 vaccine.
 The majority of respondents are not very worried (9.1k).
 Action 1 : Create a new feature based on it, integer. Keep "dont know" in the middle to have the same distance to Y/N.
     - is_worried_h1n1_sick_from_vacc
-        1.0     (not worried)       ... 0
-        2.0     (not very worried)  ... 1
-        3.0     (don't know)        ... 2
-        4.0     (somewhat worried)  ... 3
-        5.0     (very worried)      ... 4
+        1.0     (not worried)       ... -2
+        2.0     (not very worried)  ... -1
+        3.0     (don't know)        ... 0
+        4.0     (somewhat worried)  ... 1
+        5.0     (very worried)      ... 2
 
 Action 2 : Create a new feature with description (in English) for visualization
 
@@ -187,11 +139,11 @@ Respondents opinion about risk of getting sick with h1n1 flu without vaccine.
 The majority of respondents replied "somewhat low" (9.9k).
 Action 1 : Create a new feature based on it, integer. Keep "dont know" in the middle to have the same distance to Y/N.
     - is_worried_h1n1_risk
-        1.0    (very low)      ... 0
-        2.0    (somewhat low)  ... 1
-        3.0    (dont know)     ... 2
-        4.0    (somewhat high) ... 3
-        5.0    (very high)     ... 4
+        1.0    (very low)
+        2.0    (somewhat low)
+        3.0    (dont know)
+        4.0    (somewhat high)
+        5.0    (very high)
 
 Action 2 : Create a new feature with description (in English) for visualization
 
@@ -200,19 +152,17 @@ Respondents opinion about h1n1 vaccine effectiveness.
 The majority replied "Somewhat effective" (11.6k).
 Action 1 : Create a new feature based on it, integer. Keep "dont know" in the middle to have the same distance to Y/N.
     - is_h1n1_vacc_effective
-        1.0    (not al all effective)   ... 0
-        2.0    (not very effective)     ... 1
-        3.0    (dont know)              ... 2
-        4.0    (somewhat effective)     ... 3
-        5.0    (very effective)         ... 4
+        1.0    (not al all effective)
+        2.0    (not very effective)
+        3.0    (dont know)
+        4.0    (somewhat effective)
+        5.0    (very effective)
 
 Action 2 : Create a new feature with description (in English) for visualization
 
 - Observation : health_insurance
 Current values are 0.0 (1 736) and 1.0 (12 697) with the majority of respondents having health insurance.
-Action : create a new int feature
-    - has_health_insurance, and cast floats to int (1.0 -> 1)
-Rational : create feature easily absorbed by a model
+Action : drop the feature due to a large number of missing values.
 
 - Observation : health_worker
 The most respondents have not reported themself being a healthcare worker, compare 23.k vs 2.9k.
@@ -225,7 +175,7 @@ The majority of respondents replied not having a regular contact with the child 
 while some did (2.1k).
 Action : create a new int feature (same logic as above)
     - has_child_under_6_months, and cast floats to int (1.0 -> 1)
-Rational : create feature easily absorbed by a model
+Rational : create feature to be easily absorbed by a model
 
 - Observation : chronic_med_condition
 The full list of chronically medical conditions in scope is provided in the materials by DataDriven with
@@ -246,7 +196,6 @@ Curiously, that h1n1 was recommended more broadly by doctors compared to seasona
 Action 1 : create a new int feature (same logic as above)
     - is_doctor_recc_h1n1, and cast floats to int (1.0 -> 1)
 Rational : create feature easily absorbed by a model
-Action 2 : investigate the fields with recommendations and actual receiving or not vaccines.
 
 - Observation : behavioral_touch_face
 Interesting how the majority of respondents (still not all) report themselves to avoid touching face : 18k vs 8.5k.
@@ -299,9 +248,9 @@ Action 1 : create new feature to adapt the logic of the knowledge pool
 Rational : changed "a lot of knowledge" to 3 to adapt a logic behind the degree of knowledge.
 If "none" is coded with 0, "a little" is coded as 1 then the next should be "somewhat knowledge" coded as 2.
     - has_h1n1_knowledge
-        0    (no knowledge)         ... 0
-        1    (a little knowledge)   ... 1
-        2    (a lot of knowledge)   ... 3  <- this is changed
+        0    (no knowledge)
+        1    (a little knowledge)
+        2    (a lot of knowledge)
 
 Action 2 : Create a new feature with description (in English) for visualization
 
@@ -310,11 +259,11 @@ Level of concern about the h1n1 flu.
 Action 1 : create a new feature with added a value in the middle to align with other concern/worried features.
 We wil also keep the current feature for the model,
 the recommendation is to perform the assessment of feature importance.
-        1     (not at all concerned)  ... 0
-        2     (not very concerned)    ... 1
-        3     (don't know)            ... 2   <- this is a new one
-        4     (somewhat concerned)    ... 3
-        5     (very concerned)        ... 4
+        1     (not at all concerned)
+        2     (not very concerned)
+        3     (don't know)               <- this is a new one
+        4     (somewhat concerned)
+        5     (very concerned)
 
 Action 2 : Create a new feature with description (in English) for visualization
 
@@ -335,8 +284,8 @@ Respondents either have no knowledge about h1n1 flu, a little knowledge or a lot
 
 - Behavioural features
 Respondents provide the testimony on multiple behavioural patterns. Here is the list of features ordered from
-those with more 'Yes' to less 'Yes'. In some cases no response is provided, and we assume here that
-missing value is equivalent to 'dont know' placed in the middle between Yes and No.
+those with more 'Yes' to less 'Yes'. If no response is provided, we assume that
+missing value is equivalent to 'dont know' that placed in the middle between Yes and No.
 There are other techniques for dealing with missing values, like deletion, imputation, group analysis.
     - Has frequently washed hands or used hand sanitizer            : Yes 82% | No 17% | Don't know <1%
     - Has avoided close contact with others with flu-like symptoms  : Yes 72% | No 27% | Don't know <1%
@@ -356,8 +305,7 @@ values.
 To cater for missing values, we will use imputing.
 
 - Health-related binary features
-In the code we refer to other binary features as health-related
-    -- has health insurance : Yes (47%), No (6.5%) and rest for missing values.
+    -- Has health insurance : Yes (47%), No (6.5%) and rest for missing values.
        Naively, the missing values in this field might be connected with "No",
        but there is no solid assurance for this assumption.
        Since a large number of missing value, this feature to be dropped.
@@ -367,14 +315,13 @@ In the code we refer to other binary features as health-related
        healthcare workers in the USA population, but we are not referring to other
        sources following the requirements of the competitions.
     -- Has regular close contact with a child under the age of six months : Yes (89%), No (8%).
-       It might indeed reflect the real population, plus people who have regular
+       The ration might indeed reflect the real population, plus people who have regular
        contact with children due to working conditions, for example.
        Comment : this feature has been put into the group for health-related,
        but it could potentially belong to another subgroup as well.
 
-- Personal binary features
+- Personal features
     -- Sex : Female (59%), Male (41%), with no missing value.
-       The distribution between Female / Male is not 50 / 50.
     -- Employment status : Employment (51%), Not in Labor Force (38%), Unemployed (5%).
        This field has some missing values, and it is difficult to assume how to replace it.
        We will use imputing.
@@ -387,7 +334,7 @@ In the code we refer to other binary features as health-related
        Potential action here would be to review the importance of the feature on the model
        at a later stage. The assumption is that it will not be a critical point in decision making,
        maybe unless the missing values to be attributed to married.
-       Overall missing information might be because of resistance to share some info.
+       Overall missing information might be because of resistance to share personal info.
     -- Number of other adults in household, some missing values, impute.
        Most popular values are one (54%) and two (30%).
     -- Number of children in household, some missing values, impute.
@@ -399,7 +346,7 @@ In the code we refer to other binary features as health-related
        High variety but also high number of missing values,
        this feature will be dropped for the model.
     -- Race
-       The majority of respondents provided the same value.
+       The majority of respondents provided the same reply.
        There are two options :
             --- drop the feature because of disproportional values, and because of sensitive data
             of the feature. Is it ethical to use the race feature in the model?
@@ -407,12 +354,13 @@ In the code we refer to other binary features as health-related
             Again, is it ethical to use the race-related information?
 
 -- Age and sex
-    -- Plot population pyramid, features to keep for the model.
+    -- Has provided the population pyramid, features to keep for the model.
+       The population is aging, with some exception in 18-35 y.o. range.
        Missing values to be imputed.
 
 - Employment occupation and industry
     -- To be considered in the model, even with non-readable entities.
-    In here we assume that the occupation and industry are encoded and could the results could be reused.
+       In here we assume that the occupation and industry are encoded and could the results could be reused.
 
 Cross check-related fields
 - recommended by doctor and vaccinated
@@ -422,7 +370,7 @@ Cross check-related fields
 - has a chronic conditions and behav features
 - health care worker and opinions
 - has a contact with child under 6m and number of family members
-
+- when vaccine is recommended is it received
 
 Code sharing:
 Privately sharing code or data outside of teams is not permitted.

@@ -406,6 +406,7 @@ class FluShotData:
         chart.save(FILE_BARCHART_FEATURES_PERSONAL)
 
         # TODO : create a chart for household
+        # TODO : create a chart for hhs_geo_region
 
         # Chart for health features -------------
         bars_health = alt.Chart(source_health, title='Other information about respondents').mark_bar().encode(
