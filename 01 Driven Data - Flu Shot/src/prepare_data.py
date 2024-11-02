@@ -40,7 +40,26 @@ class CleanedFluShotData:
         features_to_drop = ['income_poverty', 'health_insurance', 'race']
 
         # 2. Categorical features
+        features_employment = ['employment_occupation', 'employment_industry', 'employment_status']
+        features_other = ['census_msa', 'education', 'age_group', 'hhs_geo_region']
+
 
         # 3. Numerical features
+        # Binary Yes/No features are recognized as numeric
+        features_behavioral = ['behavioral_wash_hands', 'behavioral_avoidance', 'behavioral_touch_face',
+                               'behavioral_large_gatherings', 'behavioral_outside_home',
+                               'behavioral_face_mask', 'behavioral_antiviral_meds']
+
+        features_doctor_recommendations = ['doctor_recc_seasonal', 'doctor_recc_h1n1']
+
+        features_health = ['chronic_med_condition', 'health_worker', 'child_under_6_months']
+
+        # create based on current
+        features_personal = ['sex', 'rent_or_own', 'household_children', 'household_adults']
+        features_sentiment = ['h1n1_concern', 'h1n1_knowledge', 'opinion_h1n1_vacc_effective',
+                              'opinion_h1n1_risk', 'opinion_h1n1_sick_from_vacc',
+                              'opinion_seas_vacc_effective',
+                              'opinion_seas_risk', 'opinion_seas_sick_from_vacc']
+
 
         # https://inria.github.io/scikit-learn-mooc/python_scripts/03_categorical_pipeline_column_transformer.html
