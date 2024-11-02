@@ -21,3 +21,26 @@ class CleanedFluShotData:
         df_features = pd.read_csv(FILENAME_INPUT_DATA_FEATURES)
 
         return df_labels, df_features
+
+
+    def create_new_features(self):
+        pass
+
+    def feature_engineering(self):
+        """
+        Creates new features based on existing, use insights from data exploration
+        :return: new features
+        """
+
+        # 1. Features not to be used
+        # income_poverty - large N of missing values
+        # health_insurance - large N of missing values
+        # race - a majority of respondents having the same reply
+        # potentially: marital_status due to mostly equal distribution
+        features_to_drop = ['income_poverty', 'health_insurance', 'race']
+
+        # 2. Categorical features
+
+        # 3. Numerical features
+
+        # https://inria.github.io/scikit-learn-mooc/python_scripts/03_categorical_pipeline_column_transformer.html
