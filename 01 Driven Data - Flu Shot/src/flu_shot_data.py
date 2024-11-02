@@ -19,6 +19,7 @@ FILE_BARCHART_FEATURES_DOCTOR_REC = '../fig/features_bar_chart_doctor_recommenda
 FILE_BARCHART_FEATURES_HEALTH = '../fig/features_bar_chart_health.png'
 FILE_BARCHART_FEATURES_PERSONAL = '../fig/features_bar_chart_personal.png'
 FILE_BARCHART_FEATURES_EMPLOYMENT = '../fig/features_bar_chart_employment.png'
+FILE_BARCHART_FEATURES_POPULATION = '../fig/features_bar_chart_population_pyramid.png'
 
 class FluShotData:
     """
@@ -247,44 +248,47 @@ class FluShotData:
 
     def plot_age(self, df):
 
-        df_ = df[['age_group', 'sex']].copy()
-        print(df.head())
-        #multi_grouped = df.groupby(['Name', 'City'])
+        # Group data by age and sex, count all instances
+        df = df.groupby(['age_group', 'sex'])['respondent_id'].count().reset_index()
+        df = df.rename(columns={'respondent_id': 'counts', 'sex':'gender', 'age_group':'age'})
 
-        #print(df)
+        print(df)
 
         base = alt.Chart(df).properties(
             width=250
         )
 
         color_scale = alt.Scale(domain=['Male', 'Female'],
-            range=['#1f77b4', '#e377c2'])
+             range=['#1f77b4', '#e377c2'])
 
+        left = base.transform_filter(
+            alt.datum.gender == 'Female'
+        ).encode(
+            alt.Y('age:O').axis(None),
+            alt.X('counts:Q')
+            .title('population')
+            .sort('descending'),
+            alt.Color('gender:N')
+            .scale(color_scale)
+            .legend(None)
+        ).mark_bar().properties(title='Female')
 
-        # left = base.encode(
-        #     alt.Y('age_group').axis(None),
-        #     alt.X('count(age_group):Q')
-        #     .title('population')
-        #     .sort('descending'),
-        #     alt.Color('gender:N')
-        #     .scale(color_scale)
-        #     .legend(None)
-        # ).mark_bar().properties(title='Female')
-        #
-        # middle = base.encode(
-        #     alt.Y('age_group').axis(None),
-        #     alt.Text('age_group'),
-        # ).mark_text().properties(width=20)
-        #
-        # right = base.encode(
-        #     alt.Y('age_group').axis(None),
-        #     alt.X('count(age_group):Q').title('population'),
-        #     alt.Color('gender:N').scale(color_scale).legend(None)
-        # ).mark_bar().properties(title='Male')
-        #
-        # chart = alt.concat(left, middle, right, spacing=5)
-        #
-        # chart.save('../fig/TEST.png')
+        middle = base.encode(
+            alt.Y('age').axis(None),
+            alt.Text('age'),
+        ).mark_text().properties(width=20)
+
+        right = base.transform_filter(
+            alt.datum.gender == 'Male'
+        ).encode(
+            alt.Y('age:O').axis(None),
+            alt.X('counts:Q').title('population'),
+            alt.Color('gender:N').scale(color_scale).legend(None)
+        ).mark_bar().properties(title='Male')
+
+        chart = alt.concat(left, middle, right, spacing=5)
+
+        chart.save(FILE_BARCHART_FEATURES_POPULATION)
 
 
     def plot_bar_random_namings(self, df):
