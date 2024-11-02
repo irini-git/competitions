@@ -13,7 +13,6 @@ FILENAME_INPUT_DATA_LABELS = '../data/Flu_Shot_Learning_Predict_H1N1_and_Seasona
 FILENAME_INPUT_DATA_FEATURES = '../data/Flu_Shot_Learning_Predict_H1N1_and_Seasonal_Flu_Vaccines_-_Training_Features.csv'
 
 FILE_BARCHART_LABELS = '../fig/labels_bar_chart.png'
-FILE_BARCHART_FEATURES_RATING = '../fig/features_bar_chart_rating.png'
 FILE_BARCHART_FEATURES_SENTIMENT = '../fig/features_bar_chart_sentiment.png'
 FILE_BARCHART_FEATURES_BEHAVIOURAL = '../fig/features_bar_chart_behavioral.png'
 FILE_BARCHART_FEATURES_DOCTOR_REC = '../fig/features_bar_chart_doctor_recommendation.png'
@@ -67,21 +66,7 @@ class FluShotData:
         # Features with int values to be used for modeling.
 
         # Different features might have different ratings / scales
-        # Scale for a concern
-        # General scale for all sentiment features
-        sentiment_map = {
-                "None": -2,
-                "A little": -1,
-                "Don't know": 0,
-                "Somewhat": 1,
-                "A lot": 2,
-            }
-
-        # Replace missing values by "Neither agree nor disagree"
-        for c in ['opinion_h1n1_vacc_effective', 'opinion_h1n1_risk', 'opinion_h1n1_sick_from_vacc',
-                  'opinion_seas_vacc_effective', 'opinion_seas_risk', 'opinion_seas_sick_from_vacc',
-                  'h1n1_concern', 'h1n1_knowledge']:
-            df_train[f'{c}_sent'] = df_train[f'{c}'].fillna('Neither agree nor disagree')
+        # We translate sentiments to the same scale
 
         # H1N1_concern
         df_train['h1n1_concern_desc'] = df_train['h1n1_concern'].map({
@@ -92,23 +77,23 @@ class FluShotData:
                     }
                 )
 
-        # H1n1_knowledge
+        # H1N1_knowledge
         df_train['h1n1_knowledge_desc'] = df_train['h1n1_knowledge'].map({0.0: 'None',
                        1.0: 'A little',
                        2.0: 'A lot'})
 
         # Scale for effective, risk and sick
-        map_effective_desc = {1.0: 'None',
-                         2.0: 'A little',
-                         3.0: 'Dont know',
-                         4.0: 'Somewhat',
-                         5.0: 'A lot'}
+        map_effective_risk_sick_desc = {1.0: 'None',
+                                        2.0: 'A little',
+                                        3.0: 'Dont know',
+                                        4.0: 'Somewhat',
+                                        5.0: 'A lot'}
 
         # Apply the map
         for c in ['opinion_h1n1_vacc_effective', 'opinion_h1n1_risk', 'opinion_h1n1_sick_from_vacc',
                   'opinion_seas_vacc_effective', 'opinion_seas_risk', 'opinion_seas_sick_from_vacc']:
             # Replace numeric values by description
-            df_train[f'{c}_desc'] = df_train[c].map(map_effective_desc)
+            df_train[f'{c}_desc'] = df_train[c].map(map_effective_risk_sick_desc)
 
         # Replace missing values NaN by 'dont know'
         for c in ['opinion_h1n1_vacc_effective', 'opinion_h1n1_risk', 'opinion_h1n1_sick_from_vacc',
@@ -116,12 +101,11 @@ class FluShotData:
                   'h1n1_concern', 'h1n1_knowledge']:
             df_train[f'{c}_desc'] = df_train[f'{c}_desc'].fillna('Dont know')
 
-
         # 2. Behavioral features Y/N
         # Create a new feature (str) with Y for 1, N for 0 and 'No response' for NaN
         # Create a new feature (int) with 2 for 1.0, 0 for 0.0 (dont know), and 1 for NaN
         # We address missing values in responses for behavioural features adding 'dont know' option.
-        # Other technics are also possible, like imputation, deletion, subgroup analysis.
+        # Other technics are also possible, like imputation, deletion or subgroup analysis.
 
         features_behavioral = ['behavioral_antiviral_meds', 'behavioral_avoidance',
                                'behavioral_face_mask', 'behavioral_wash_hands',
@@ -165,7 +149,7 @@ class FluShotData:
         columns = ['h1n1_vaccine', 'seasonal_vaccine']
         self.explore_labels(df_train[columns])
 
-        self.plot_stacked_bar_ratings_behaviour_medical(df_train)
+        self.plot_stacked_bar_behaviour_medical(df_train)
         self.plot_diverging_stacked_bar(df_train)
 
     def plot_diverging_stacked_bar(self, df):
@@ -253,46 +237,20 @@ class FluShotData:
         y_axis = alt.Axis(title="", offset=5, ticks=False, minExtent=60, domain=False, labelLimit=380)
 
         bar_chart = alt.Chart(source_sentiment).mark_bar().encode(
-            x=alt.X("percentage_start:Q").title(''),
+            x=alt.X("percentage_start:Q"),
             x2="percentage_end:Q",
             y=alt.Y("question:N").axis(y_axis).sort('-x'),
-            color=alt.Color("type:N").title("Response").scale(color_scale),
+            color=alt.Color("type:N").title("Response").scale(color_scale)
         )
 
         bar_chart.save(FILE_BARCHART_FEATURES_SENTIMENT)
 
-    def plot_stacked_bar_ratings_behaviour_medical(self, df):
+    def plot_stacked_bar_behaviour_medical(self, df):
         """
-        Visualisation of rating-like features in train data.
-        Leading numbers added to descriptions for visual purpose to align the graphs.
+        Plot graphs to explore features.
         :param df: train dataframe with all features
         :return: bar chart saved as png file
         """
-
-        # Ratings ------------------------
-        df1 = df['h1n1_concern_desc'].value_counts().rename_axis('rating').reset_index(name='counts')
-        df1['feature'] = '4 concern'
-
-        df2 = df['h1n1_knowledge_desc'].value_counts().rename_axis('rating').reset_index(name='counts')
-        df2['feature'] = '3 knowledge'
-
-        df3 = df['opinion_h1n1_vacc_effective_desc'].value_counts().rename_axis('rating').reset_index(name='counts')
-        df3['feature'] = '0 vaccine effectiveness'
-
-        df4 = df['opinion_h1n1_risk_desc'].value_counts().rename_axis('rating').reset_index(name='counts')
-        df4['feature'] = '2 getting sick without vaccine'
-
-        df5 = df['opinion_h1n1_sick_from_vacc_desc'].value_counts().rename_axis('rating').reset_index(name='counts')
-        df5['feature'] = '1 getting sick from vaccine'
-
-        df6 = df['opinion_seas_risk_desc'].value_counts().rename_axis('rating').reset_index(name='counts')
-        df6['feature'] = '2 getting sick without vaccine'
-
-        df7 = df['opinion_seas_vacc_effective_desc'].value_counts().rename_axis('rating').reset_index(name='counts')
-        df7['feature'] = '0 vaccine effectiveness'
-
-        df8 = df['opinion_seas_sick_from_vacc_desc'].value_counts().rename_axis('rating').reset_index(name='counts')
-        df8['feature'] = '1 getting sick from vaccine'
 
         # Behaviour ------------------------
         df9 = df['behavioral_antiviral_meds_desc'].value_counts().rename_axis('value').reset_index(name='counts')
@@ -357,12 +315,6 @@ class FluShotData:
         dfs_medical = [df16, df17]
         source_medical = functools.reduce(lambda left, right: pd.concat([left, right]), dfs_medical)
 
-        # Dataframes for h1n1 and seasonal flu
-        dfs_h1n1 = [df3, df4, df5, df1, df2]
-        dfs_seas = [df6, df7, df8]
-        source_h1n1 = functools.reduce(lambda left, right: pd.concat([left, right]), dfs_h1n1)
-        source_seas = functools.reduce(lambda left, right: pd.concat([left, right]), dfs_seas)
-
         # Dataframe for behavioural
         dfs_behavioral = [df9, df10, df11, df12, df13, df14, df15]
         source_behavioral = functools.reduce(lambda left, right: pd.concat([left, right]), dfs_behavioral)
@@ -410,10 +362,6 @@ class FluShotData:
 
         # Population pyramid --------------------
 
-        # Diverging stacked bar chart for sentiments towards a set of questions
-
-
-
         # Chart for health features -------------
         bars_health = alt.Chart(source_health, title='Other information about respondents').mark_bar().encode(
             x=alt.X('counts:Q').title(''),
@@ -442,8 +390,6 @@ class FluShotData:
         # Save chart as png file in dedicated folder
         bars_health.save(FILE_BARCHART_FEATURES_HEALTH)
 
-
-
         # Chart for medical features --------------
         bars_medical = alt.Chart(source_medical, title='Vaccine was recommended by doctor').mark_bar().encode(
             x=alt.X('counts:Q').title(''),
@@ -470,6 +416,16 @@ class FluShotData:
         bars_medical.save(FILE_BARCHART_FEATURES_DOCTOR_REC)
 
         # Chart for behavioural --------------
+
+        behavioural_color_scale = alt.Scale(
+            domain=[
+                "No",
+                "No response",
+                "Yes",
+            ],
+            range=["#c30d24", "#cccccc", "#1770ab"],
+        )
+
         bars_behavioural = alt.Chart(source_behavioral, title='Behavioral').mark_bar().encode(
             x=alt.X('counts:Q').title(''),
             y=alt.Y(
@@ -482,10 +438,7 @@ class FluShotData:
                       'Has bought a face mask',
                       'Has taken antiviral medications']
                     ).title(''),
-            color=alt.Color('value',
-                            legend=alt.Legend(title=''),
-                            scale=alt.Scale(scheme='rainbow'),
-                            )
+            color=alt.Color("value:N").title("Response").scale('rainbow')
         ).configure_axis(
             labelFontSize=12,
             grid=False
@@ -495,40 +448,6 @@ class FluShotData:
         ).configure_view(
             strokeWidth=0
         )
-
-        # Save chart as png file in dedicated folder
-        bars_behavioural.save(FILE_BARCHART_FEATURES_BEHAVIOURAL)
-
-        # Chart for vaccines --------------
-        # Chart for h1n1
-        chart_h1n1 = alt.Chart(source_h1n1, title='Opinion on H1N1 flu vaccine').mark_bar().encode(
-            x=alt.X('counts:Q').title(''),
-            y=alt.Y('feature:N').title(''),
-            color = alt.Color('rating',
-                              legend=alt.Legend(title="Ratings"),
-                              scale=alt.Scale(scheme='lighttealblue')
-                              )
-            ).properties(
-                width=250,
-                height=250
-            )
-
-        # Chart for seasonal flu
-        chart_seas = alt.Chart(source_seas, title='Opinion on seasonal vaccine').mark_bar().encode(
-            x=alt.X('counts:Q').title(''),
-            y=alt.Y('feature:N').title(''),
-            color = alt.Color('rating')
-            ).properties(
-                width=250,
-                height=150
-            )
-
-        # Combined chart
-        chart = chart_h1n1 | chart_seas
-
-        # Save chart as png file in dedicated folder
-        chart.save(FILE_BARCHART_FEATURES_RATING)
-
 
     def explore_labels(self, df):
         """
