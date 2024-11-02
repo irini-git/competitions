@@ -47,18 +47,12 @@ class FluShotData:
 
         columns_explore = df_train.columns.tolist()
         columns_explore.remove("respondent_id")
-        print(columns_explore)
 
+        print(columns_explore)
         print(df_train.columns)
 
         print(f'Dataset has {df_train.shape[0]} entries.')
         print(f'Dataset has columns : {df_train.columns.tolist()}.')
-
-        # Check if empty records
-        # for c in df_train.columns:
-        #     print(c, df_train[c].isna().sum())
-
-        # plot distibution of values 
 
 
         # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
@@ -71,47 +65,54 @@ class FluShotData:
         # Features with int values to be used for modeling.
 
         # Different features might have different ratings / scales
-        # Scale for concern
-        map_concern_desc = {0.0: '0 - none',
-                       1.0: '1 - a little',
-                       2.0: '3 - somewhat',
-                       3.0: '4 - a lot'}
-        map_concern_int = {0.0: 0, 1.0: 1, 2.0: 3, 3.0: 4}
-        # Combine the map for concern with h1n1_concern
-        df_train['h1n1_concern_desc'] = df_train['h1n1_concern'].map(map_concern_desc)
-        df_train['h1n1_concern_int'] = df_train['h1n1_concern'].map(map_concern_int)
+        # Scale for a concern
+        # General scale for all sentiment features
+        sentiment_map = {
+                "None": -2,
+                "A little": -1,
+                "Don't know": 0,
+                "Somewhat": 1,
+                "A lot": 2,
+            }
 
-        # Scale for knowledge
-        map_knowledge_desc = {0.0: '0 - none',
-                       1.0: '1 - a little',
-                       2.0: '4 - a lot'}
-        map_knowledge_int = {0.0: 0, 1.0: 1, 2.0: 4}
-        # Combine the map for concern with h1n1_concern
-        df_train['h1n1_knowledge_desc'] = df_train['h1n1_knowledge'].map(map_knowledge_desc)
-        df_train['h1n1_knowledge_int'] = df_train['h1n1_knowledge'].map(map_knowledge_int)
+        # Replace missing values by "Neither agree nor disagree"
+        for c in ['opinion_h1n1_vacc_effective', 'opinion_h1n1_risk', 'opinion_h1n1_sick_from_vacc',
+                  'opinion_seas_vacc_effective', 'opinion_seas_risk', 'opinion_seas_sick_from_vacc',
+                  'h1n1_concern', 'h1n1_knowledge']:
+            df_train[f'{c}_sent'] = df_train[f'{c}'].fillna('Neither agree nor disagree')
+
+        # H1N1_concern
+        df_train['h1n1_concern_desc'] = df_train['h1n1_concern'].map({
+                    0.0: 'None',
+                    1.0: 'A little',
+                    2.0: 'Somewhat',
+                    3.0: 'A lot'
+                    }
+                )
+
+        # H1n1_knowledge
+        df_train['h1n1_knowledge_desc'] = df_train['h1n1_knowledge'].map({0.0: 'None',
+                       1.0: 'A little',
+                       2.0: 'A lot'})
 
         # Scale for effective, risk and sick
-        map_effective_desc = {1.0: '0 - none',
-                         2.0: '1 - a little',
-                         3.0: '2 - dont know',
-                         4.0: '3 - somewhat',
-                         5.0: '4 - a lot'}
-        map_effective_int = {1.0: 0, 2.0: 1, 3.0: 2, 4.0: 3, 5.0: 4}
+        map_effective_desc = {1.0: 'None',
+                         2.0: 'A little',
+                         3.0: 'Dont know',
+                         4.0: 'Somewhat',
+                         5.0: 'A lot'}
 
         # Apply the map
         for c in ['opinion_h1n1_vacc_effective', 'opinion_h1n1_risk', 'opinion_h1n1_sick_from_vacc',
                   'opinion_seas_vacc_effective', 'opinion_seas_risk', 'opinion_seas_sick_from_vacc']:
             # Replace numeric values by description
             df_train[f'{c}_desc'] = df_train[c].map(map_effective_desc)
-            df_train[f'{c}_int'] = df_train[c].map(map_effective_int)
 
         # Replace missing values NaN by 'dont know'
         for c in ['opinion_h1n1_vacc_effective', 'opinion_h1n1_risk', 'opinion_h1n1_sick_from_vacc',
                   'opinion_seas_vacc_effective', 'opinion_seas_risk', 'opinion_seas_sick_from_vacc',
                   'h1n1_concern', 'h1n1_knowledge']:
-            df_train[f'{c}_desc'] = df_train[f'{c}_desc'].fillna('2 - dont know')
-            df_train[f'{c}_int'] = df_train[f'{c}_int'].fillna(2)
-            df_train[f'{c}_int'] = df_train[f'{c}_int'].astype(int)
+            df_train[f'{c}_desc'] = df_train[f'{c}_desc'].fillna('Dont know')
 
 
         # 2. Behavioral features Y/N
@@ -133,43 +134,29 @@ class FluShotData:
             else:
                 return 'No response'
 
-        def float_to_int(w):
-            if w == 0.0:
-                return 0
-            elif w == 1.0:
-                return 2
-            else:
-                return 1
 
         # Apply the mapping function for behavioral features and return stats
         for f in features_behavioral:
             df_train[f'{f}_desc'] = df_train[f].apply(float_to_word)
-            df_train[f'{f}_int'] = df_train[f].apply(float_to_int)
             # print output to log file
             # print(100*df_train[f'{f}_int'].value_counts()/df_train.shape[0])
             # print('-'*10)
 
-
+        # -------------------------------------------------------
         # 3. Chronic condition and doctors recommendation
-        # Create a new feature (str) with Y for 1, N for 0 and 'No response' for NaN
-
         features_medical = ['doctor_recc_h1n1', 'doctor_recc_seasonal', 'chronic_med_condition']
-
-        for f in features_medical:
-            df_train[f'{f}_desc'] = df_train[f].apply(float_to_word)
-
         features_health = ['chronic_med_condition', 'child_under_6_months', 'health_worker', 'health_insurance']
 
-        for f in features_health:
+        for f in features_medical + features_health:
             df_train[f'{f}_desc'] = df_train[f].apply(float_to_word)
 
         features_personal =['employment_status', 'rent_or_own', 'marital_status', 'sex',
                             'household_children', 'household_adults']
 
-        for f in features_personal:
-            print(df_train[f].isnull().sum())
-            print(100 * df_train[f].value_counts() / df_train.shape[0])
-            print('-' * 10)
+        # for f in features_personal:
+        #     print(df_train[f].isnull().sum())
+        #     print(100 * df_train[f].value_counts() / df_train.shape[0])
+        #     print('-' * 10)
 
         # -------------------------------------------------------
         # Explore labels as is, without features
@@ -177,6 +164,91 @@ class FluShotData:
         self.explore_labels(df_train[columns])
 
         self.plot_stacked_bar_ratings_behaviour_medical(df_train)
+        self.plot_diverging_stacked_bar(df_train)
+
+    def plot_diverging_stacked_bar(self, df):
+        """
+        Plot diverging stacked bar chart for sentiments towards a set of questions,
+        displayed as percentages with neutral responses straddling the 0% mark.
+        :return: Chart saved as a png file.
+        """
+
+        features_sentiment = ['opinion_h1n1_vacc_effective_desc', 'opinion_h1n1_risk_desc',
+                              'opinion_h1n1_sick_from_vacc_desc',  'opinion_seas_vacc_effective_desc',
+                              'opinion_seas_risk_desc', 'opinion_seas_sick_from_vacc_desc',
+                              'h1n1_concern_desc', 'h1n1_knowledge_desc']
+
+        df1 = df['h1n1_concern_desc'].value_counts().rename_axis('type').reset_index(name='value')
+        df2 = df['h1n1_knowledge_desc'].value_counts().rename_axis('type').reset_index(name='value')
+        df3 = df['opinion_h1n1_vacc_effective_desc'].value_counts().rename_axis('type').reset_index(name='value')
+        df3 = df['opinion_h1n1_vacc_effective_desc'].value_counts().rename_axis('type').reset_index(name='value')
+        df4 = df['opinion_h1n1_risk_desc'].value_counts().rename_axis('type').reset_index(name='value')
+
+        df1['question'] = 'Level of concern about the H1N1 flu'
+        df2['question'] = 'Level of knowledge about H1N1 flu'
+        df3['question'] = "Respondent's opinion about H1N1 vaccine effectiveness"
+
+        df4['question'] = "Respondent's opinion about risk of getting sick with H1N1 flu without vaccine"
+
+        # Dataframe for medical features
+        dfs_sentiment = [df1, df2, df3, df4]
+        source_sentiment = functools.reduce(lambda left, right: pd.concat([left, right]), dfs_sentiment)
+
+        # Add type_code that we can sort by
+        source_sentiment['type_code'] = source_sentiment['type'].map(
+            {
+                "None": -2,
+                "A little": -1,
+                "Dont know": 0,
+                "Somewhat": 1,
+                "A lot": 2,
+            }
+        )
+
+        print(source_sentiment)
+
+        def compute_percentages(
+                group,
+        ):
+            # Set type_code as index and sort
+            group = group.set_index("type_code").sort_index()
+
+            # Compute percentage of value with question group
+            perc = (group["value"] / group["value"].sum()) * 100
+            group["percentage"] = perc
+
+            # Compute percentage end, centered on "Neither agree nor disagree" (type_code 0)
+            # Note that we access the perc series via index which is based on 'type_code'.
+            group["percentage_end"] = perc.cumsum() - (perc[-2] + perc[-1] + perc[0] / 2)
+
+            # Compute percentage start by subtracting percent
+            group["percentage_start"] = group["percentage_end"] - perc
+
+            return group
+
+        source_sentiment  = source_sentiment.groupby("question").apply(compute_percentages).reset_index(drop=True)
+
+        color_scale = alt.Scale(
+            domain=[
+                "None",
+                "A little",
+                "Dont know",
+                "Somewhat",
+                "A lot",
+            ],
+            range=["#c30d24", "#f3a583", "#cccccc", "#94c6da", "#1770ab"],
+        )
+
+        y_axis = alt.Axis(title="", offset=5, ticks=False, minExtent=60, domain=False, labelLimit=380)
+
+        bar_chart = alt.Chart(source_sentiment).mark_bar().encode(
+            x=alt.X("percentage_start:Q").title(''),
+            x2="percentage_end:Q",
+            y=alt.Y("question:N").axis(y_axis),
+            color=alt.Color("type:N").title("Response").scale(color_scale),
+        )
+
+        bar_chart.save('../fig/TEST.png')
 
     def plot_stacked_bar_ratings_behaviour_medical(self, df):
         """
@@ -185,9 +257,6 @@ class FluShotData:
         :param df: train dataframe with all features
         :return: bar chart saved as png file
         """
-
-        # TODO : Diverging Stacked Bar Chart for replies
-        # https://altair-viz.github.io/gallery/diverging_stacked_bar_chart.html
 
         # Ratings ------------------------
         df1 = df['h1n1_concern_desc'].value_counts().rename_axis('rating').reset_index(name='counts')
@@ -329,6 +398,9 @@ class FluShotData:
         chart.save(FILE_BARCHART_FEATURES_PERSONAL)
 
         # Population pyramid --------------------
+
+        # Diverging stacked bar chart for sentiments towards a set of questions
+
 
 
         # Chart for health features -------------
