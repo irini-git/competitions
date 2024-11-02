@@ -35,8 +35,10 @@ Rational for decision: same as above. Review the decision after additional analy
 whether these features are randomly represented in the distribution of vaccinated / not vaccinated.
 Based on the analysis, either encode or drop.
 
-- Observation : household_children, cast to int.
-Rational for decision: possible values are integer numbers: 0 (18.7k), 1 (3.2k), 2 (2.8k) and 3 (1.7k).
+- Observation : household_children, create a new feature have children at all or none.
+Rational for decision: comparable number of people having no children (69%) and any number of children.
+Some percentage of missing values (6%).
+
 
 - Observation : household_adults
 Action 1 : cast to int.
@@ -381,10 +383,17 @@ In the code we refer to other binary features as health-related
        The missing values to be imputed.
     -- Marital Status : Married (51%), Not Married (44%), with some missing values.
        The missing values to be imputed.
+       The distribution of marital status is almost equal, so there are some questions
+       on whether it plays a role in the vaccination.
+       Potential action here would be to review the importance of the feature on the model
+       at a later stage. The assumption is that it will not be a critical point in decision making,
+       maybe unless the missing values to be attributed to married.
+       Overall missing information might be because of resistance to share some info.
     -- Number of other adults in household, some missing values, impute.
        Most popular values are one (54%) and two (30%).
     -- Number of children in household, some missing values, impute.
        The majority of respondents have a child (70%).
+       The proposal for creating a new feature : have children at all or not.
 
 
 Cross check-related fields
