@@ -18,9 +18,9 @@ FILE_BARCHART_FEATURES_EMPLOYMENT = '../fig/features_bar_chart_employment.png'
 FILE_BARCHART_FEATURES_POPULATION = '../fig/features_bar_chart_population_pyramid.png'
 FILE_BARCHART_FEATURES_HOUSEHOLD = '../fig/features_bar_chart_household.png'
 
-class FluShotData:
+class RawFluShotData:
     """
-    Class responsible for Flu Shot Data
+    Class responsible for the exploration of Flu Shot Data
     """
     def __init__(self):
         self.df_labels, self.df_features = self.load_data()
@@ -47,11 +47,11 @@ class FluShotData:
         columns_explore = df_train.columns.tolist()
         columns_explore.remove("respondent_id")
 
-        print(columns_explore)
-        print(df_train.columns)
+        # print(columns_explore)
+        # print(df_train.columns)
 
-        print(f'Dataset has {df_train.shape[0]} entries.')
-        print(f'Dataset has columns : {df_train.columns.tolist()}.')
+        # print(f'Dataset has {df_train.shape[0]} entries.')
+        # print(f'Dataset has columns : {df_train.columns.tolist()}.')
 
         # Feature exploration
         # 1. Features with rating -----------------------------------
@@ -520,7 +520,8 @@ class FluShotData:
             # Concat dataframes to one
             df_counts_percentages = pd.concat([df_temp, df_counts_percentages])
 
-        print(df_counts_percentages)
+        #
+        # print(df_counts_percentages)
 
         # Plot bar chart
         self.plot_bar_chart_labels(df_counts_percentages)
