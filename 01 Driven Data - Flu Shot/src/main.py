@@ -1,3 +1,3 @@
-from flu_shot_data import FluShotData
+from explore_data import FluShotData
 
-flu_shot_data = FluShotData()
+explore_data = FluShotData()

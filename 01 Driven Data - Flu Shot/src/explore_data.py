@@ -1,10 +1,6 @@
-from pyexpat import features
-
-import numpy as np
 import pandas as pd
 import os
 import altair as alt
-import logging
 import functools
 
 # TODO : log data to file not print to screen
@@ -57,11 +53,7 @@ class FluShotData:
         print(f'Dataset has {df_train.shape[0]} entries.')
         print(f'Dataset has columns : {df_train.columns.tolist()}.')
 
-
-        # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-        #       print(df_train[columns_explore].describe())
-
-        # Feature engineering
+        # Feature exploration
         # 1. Features with rating -----------------------------------
         # Create a new feature (str) with description and a new int feature
         # Features with description to be used for visual exploration,
@@ -105,15 +97,12 @@ class FluShotData:
 
         # 2. Behavioral features Y/N
         # Create a new feature (str) with Y for 1, N for 0 and 'No response' for NaN
-        # Create a new feature (int) with 2 for 1.0, 0 for 0.0 (dont know), and 1 for NaN
-        # We address missing values in responses for behavioural features adding 'dont know' option.
-        # Other technics are also possible, like imputation, deletion or subgroup analysis.
+        # We address missing values in responses for behavioral features adding 'dont know' option.
 
         features_behavioral = ['behavioral_antiviral_meds', 'behavioral_avoidance',
                                'behavioral_face_mask', 'behavioral_wash_hands',
                                'behavioral_large_gatherings', 'behavioral_outside_home',
                                'behavioral_touch_face']
-
         def float_to_word(w):
             if w == 0.0:
                 return 'No'
@@ -121,7 +110,6 @@ class FluShotData:
                 return 'Yes'
             else:
                 return 'No response'
-
 
         # Apply the mapping function for behavioral features and return stats
         for f in features_behavioral:
@@ -132,29 +120,23 @@ class FluShotData:
 
         # -------------------------------------------------------
         # 3. Chronic condition and doctors recommendation
+        # Personal
         features_medical = ['doctor_recc_h1n1', 'doctor_recc_seasonal', 'chronic_med_condition']
         features_health = ['chronic_med_condition', 'child_under_6_months', 'health_worker', 'health_insurance']
 
         for f in features_medical + features_health:
             df_train[f'{f}_desc'] = df_train[f].apply(float_to_word)
 
-        features_personal =['employment_status', 'rent_or_own', 'marital_status', 'sex',
-                            'household_children', 'household_adults']
-
-        # for f in features_personal:
-        #     print(df_train[f].isnull().sum())
-        #     print(100 * df_train[f].value_counts() / df_train.shape[0])
-        #     print('-' * 10)
-
-        # -------------------------------------------------------
-        # Explore labels as is, without features
-        columns = ['h1n1_vaccine', 'seasonal_vaccine']
-        self.explore_labels(df_train[columns])
-
+        # 4. Explore other those and other features plotting charts
         self.plot_stacked_bar_behaviour_medical_personal(df_train)
         self.plot_diverging_stacked_bar(df_train)
         self.plot_bar_random_namings(df_train)
         self.plot_population_pyramid(df_train)
+
+        # -------------------------------------------------------
+        # 5. Explore labels as is, without features
+        columns = ['h1n1_vaccine', 'seasonal_vaccine']
+        self.explore_labels(df_train[columns])
 
     def plot_diverging_stacked_bar(self, df):
         """
@@ -248,6 +230,11 @@ class FluShotData:
         bar_chart.save(FILE_BARCHART_FEATURES_SENTIMENT)
 
     def plot_population_pyramid(self, df):
+        """
+        Create population pyramid for respondents
+        :param df: raw train data
+        :return: chart for population pyramid
+        """
 
         # Group data by age and sex, count all instances
         df = df.groupby(['age_group', 'sex'])['respondent_id'].count().reset_index()
@@ -261,6 +248,7 @@ class FluShotData:
         color_scale = alt.Scale(domain=['Male', 'Female'],
              range=['#1f77b4', '#e377c2'])
 
+        # Left component, female
         left = base.transform_filter(
             alt.datum.gender == 'Female'
         ).encode(
@@ -273,11 +261,13 @@ class FluShotData:
             .legend(None)
         ).mark_bar().properties(title='Female')
 
+        # Middle component, age groups
         middle = base.encode(
             alt.Y('age').axis(None),
             alt.Text('age'),
         ).mark_text().properties(width=20)
 
+        # Right component, male
         right = base.transform_filter(
             alt.datum.gender == 'Male'
         ).encode(
@@ -286,6 +276,7 @@ class FluShotData:
             alt.Color('gender:N').scale(color_scale).legend(None)
         ).mark_bar().properties(title='Male')
 
+        # Combined chart
         chart = alt.concat(left, middle, right, spacing=5)
 
         chart.save(FILE_BARCHART_FEATURES_POPULATION)
@@ -320,7 +311,9 @@ class FluShotData:
 
         chart_occupation = plot_inner_chart(df_employment_occupation, 'Type of occupation of respondent')
         chart_industry = plot_inner_chart(df_employment_industry, 'Type of industry respondent is employed in')
+
         chart_employment = chart_occupation | chart_industry
+
         chart_employment.save(FILE_BARCHART_FEATURES_EMPLOYMENT)
 
     def plot_stacked_bar_behaviour_medical_personal(self, df):
@@ -372,27 +365,6 @@ class FluShotData:
         df21 = df['health_insurance_desc'].value_counts().rename_axis('value').reset_index(name='counts')
         df21['feature'] = 'Has health insurance'
 
-        # Personal, family related features
-        df22 = df['employment_status'].value_counts().rename_axis('value').reset_index(name='counts')
-        df22['feature'] = 'employment_status'
-
-        df23 = df['rent_or_own'].value_counts().rename_axis('value').reset_index(name='counts')
-        df23['feature'] = 'rent_or_own'
-
-        df24 = df['marital_status'].value_counts().rename_axis('value').reset_index(name='counts')
-        df24['feature'] = 'marital_status'
-
-        df25 = df['sex'].value_counts().rename_axis('value').reset_index(name='counts')
-        df25['feature'] = 'sex'
-
-        df_household_children = df['household_children'].value_counts().rename_axis('value').reset_index(name='counts')
-        df_household_children['feature'] = 'household_children'
-        df_household_adults = df['household_adults'].value_counts().rename_axis('value').reset_index(name='counts')
-        df_household_adults['feature'] = 'household_adults'
-
-        # Dataframe for household features
-        dfs_household = [df_household_children, df_household_adults]
-        source_household = functools.reduce(lambda left, right: pd.concat([left, right]), dfs_household)
 
         # Dataframe for health-related features
         dfs_health = [df18, df19, df20, df21]
@@ -434,7 +406,6 @@ class FluShotData:
         chart.save(FILE_BARCHART_FEATURES_PERSONAL)
 
         # TODO : create a chart for household
-        #
 
         # Chart for health features -------------
         bars_health = alt.Chart(source_health, title='Other information about respondents').mark_bar().encode(
@@ -531,10 +502,6 @@ class FluShotData:
         for c in df.columns:
             # Calculate counts and percentages
             counts = df[c].value_counts() # value counts
-
-            # Values for a log file, easier to read
-            # percentages_round = round(100*(df[c].value_counts(normalize=True)),1).astype(str) + '%' # percentage as str with % sign
-
             percentages = 100*df[c].value_counts(normalize=True) # percentage value as is
 
             # Combines counts and percentages
@@ -552,7 +519,6 @@ class FluShotData:
             # Concat dataframes to one
             df_counts_percentages = pd.concat([df_temp, df_counts_percentages])
 
-        # TODO : output to log file
         print(df_counts_percentages)
 
         # Plot bar chart
