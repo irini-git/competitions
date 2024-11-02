@@ -502,7 +502,7 @@ class FluShotData:
                       'Has bought a face mask',
                       'Has taken antiviral medications']
                     ).title(''),
-            color=alt.Color("value:N").title("Response").scale('rainbow')
+            color=alt.Color("value:N").title("Response")
         ).configure_axis(
             labelFontSize=12,
             grid=False
