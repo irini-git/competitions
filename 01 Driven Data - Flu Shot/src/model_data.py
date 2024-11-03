@@ -36,6 +36,12 @@ class CleanedFluShotData:
 
         return df_labels, df_features
 
+    def evaluate_model(self):
+        """
+        Placeholder for model validation
+        :return:
+        """
+
     def create_model(self, categorical_features, numeric_features):
         """
         Create the preprocessing pipelines for numeric and categorical data
