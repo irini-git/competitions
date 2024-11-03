@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.linear_model import LogisticRegression
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import train_test_split
@@ -20,8 +21,9 @@ class CleanedFluShotData:
     """
     def __init__(self):
         self.df_labels, self.df_features = self.load_data()
-        categorical_features, numeric_features, data_train = self.feature_engineering()
-        self.create_model(categorical_features, numeric_features)
+        categorical_features, numeric_features, X, y = self.feature_engineering()
+        self.create_model(categorical_features, numeric_features, X, y)
+
 
     def load_data(self):
         """
@@ -38,7 +40,7 @@ class CleanedFluShotData:
 
     def prepare_sumbission(self):
         """
-        Placeholder to create a submission in required format
+        Placeholder to create a submission in the required format
         :return:
         """
 
@@ -48,7 +50,7 @@ class CleanedFluShotData:
         :return:
         """
 
-    def create_model(self, categorical_features, numeric_features):
+    def create_model(self, categorical_features, numeric_features, X, y):
         """
         Create the preprocessing pipelines for numeric and categorical data
         :return:
@@ -56,14 +58,14 @@ class CleanedFluShotData:
 
         categorical_transformer = Pipeline(
             steps=[
-                ('imputer', SimpleImputer(strategy='most_frequent', missing_values=np.NaN)),
+                ('imputer', SimpleImputer(strategy='most_frequent', missing_values=np.nan)),
                 ('encoder', OneHotEncoder(handle_unknown='ignore'))
                 ]
             )
 
         numeric_transformer = Pipeline(
             steps=[
-                ('imputer', SimpleImputer(strategy='median', missing_values=np.NaN)),
+                ('imputer', SimpleImputer(strategy='median', missing_values=np.nan)),
                 ('scaler', StandardScaler())
                 ]
             )
@@ -79,13 +81,16 @@ class CleanedFluShotData:
         # work in progress, classifier to be changed
         # assign X, y
         clf = Pipeline(
-            steps=[("preprocessor", preprocessor), ("classifier", LogisticRegression())]
-        )
+            steps=[("preprocessor", preprocessor), ("classifier", LogisticRegression(multi_class='ovr'))]
+            )
 
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
+        y_h1n1 = y.iloc[:, 0]
+        y_seasonal = y.iloc[:, 1]
 
-        # clf.fit(X_train, y_train)
-        # print("model score: %.3f" % clf.score(X_test, y_test))
+        for y in [y_h1n1, y_seasonal]:
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
+            clf.fit(X_train, y_train)
+            print("model score: %.3f" % clf.score(X_test, y_test))
 
 
     def feature_engineering(self):
@@ -172,7 +177,17 @@ class CleanedFluShotData:
 
         data_train = self.df_features[['respondent_id'] + features_numerical + features_categorical].copy()
 
+        # Precaution for mismatch in train data and train target
+        # What if the order of entries is not pursued?
+        # To cater for this, let's join features with labels, and them split into two dataframes
+
+        data = data_train.join(self.df_labels.set_index('respondent_id'), on='respondent_id', how='left')
+        data.set_index('respondent_id', inplace=True)
+
+        y = data.iloc[:, 28:30]
+        X = data.iloc[:, :28]
+
         # Pickle cleaned data
         data_train.to_pickle(FILENAME_CLEANED_DATA_FEATURES)
 
-        return features_categorical, features_numerical, data_train
+        return features_categorical, features_numerical, X, y
