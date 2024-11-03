@@ -362,6 +362,33 @@ To cater for missing values, we will use imputing.
     -- To be considered in the model, even with non-readable entities.
        In here we assume that the occupation and industry are encoded and could the results could be reused.
 
+Missing values
+- There are three types of missing data:
+   -- Missing Completely At Random (MCAR)
+      The probability of missing data is unrelated to both the observed and unobserved data.
+      This means that the 'missingness' is completely random and occurs purely by chance.
+   -- Missing At Random (MAR):
+      The probability of missing data depends only on the observed data, and not the unobserved data.
+   -- Missing Not At Random (MNAR)
+      The probability of missing data is related to both the observed and unobserved data.
+      This means that the missingness is not random and is related to some unknown factor
+      that is not captured in the data.
+- Why data is missing from dataset?
+   -- Past data might get corrupted due to improper maintenance.
+   -- Observations are not recorded for certain fields due to some reasons.
+      There might be a failure in recording the values due to human error.
+   -- The user has not provided the values intentionally.
+      The information might be not provided by respondents or by third-party.
+- For numerical features : Median imputation
+   -- it replaces missing values with the median of the non-missing values in the feature.
+      Median imputation is a robust method that is less sensitive to extreme values and outliers than mean imputation.
+      However, median imputation can lead to biased imputations if the feature distribution is highly skewed.
+      There is a potential to ameliorate the imputing technics, for example introduce with k nearest neighbor’s algorithm.
+      Median imputation might be treaky choice, especially for some features that are indeed skewed,
+      for example 'is a health care worker' or 'has a regular contact with the child under 6 months'.
+
+
+Ideas for future exploration
 Cross check-related fields
 - recommended by doctor and vaccinated
 - is a healthcare worker and vaccinated
@@ -389,9 +416,8 @@ not provided on these competition pages.
 Abbreviations:
 MSA - Metropolitan statistical areas
 
-Potential inspiration:
-https://scikit-learn.org/stable/auto_examples/inspection/plot_permutation_importance.html
-https://datascience.stackexchange.com/questions/79570/when-to-one-hot-encode-categorical-data-when-following-crisp-dm/79575#79575
+Inspiration and references
+https://medium.com/aiskunks/imputation-techniques-for-numerical-features-1331d427fff1
 
 Project:
 Saving charts in 'png' format requires the vl-convert-python package

@@ -1,14 +1,16 @@
 import pandas as pd
-from narwhals.selectors import categorical
+import numpy as np
 from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
+from sklearn.model_selection import train_test_split
 
 FILENAME_INPUT_DATA_LABELS = '../data/Flu_Shot_Learning_Predict_H1N1_and_Seasonal_Flu_Vaccines_-_Training_Labels.csv'
 FILENAME_INPUT_DATA_FEATURES = '../data/Flu_Shot_Learning_Predict_H1N1_and_Seasonal_Flu_Vaccines_-_Training_Features.csv'
 
-FILENAME_CLEANED_DATA_FEATURES = '../data/df_train.pkl'
+FILENAME_CLEANED_DATA_FEATURES = '../data/data_train.pkl'
+FILENAME_DATA_TARGET_TRAIN = '../data/target_train.pkl'
 
 class CleanedFluShotData:
     """
@@ -18,7 +20,8 @@ class CleanedFluShotData:
     """
     def __init__(self):
         self.df_labels, self.df_features = self.load_data()
-        features_categorical, features_numerical, data_train = self.feature_engineering()
+        categorical_features, numeric_features, data_train = self.feature_engineering()
+        self.create_model(categorical_features, numeric_features)
 
     def load_data(self):
         """
@@ -28,24 +31,51 @@ class CleanedFluShotData:
         df_labels = pd.read_csv(FILENAME_INPUT_DATA_LABELS)
         df_features = pd.read_csv(FILENAME_INPUT_DATA_FEATURES)
 
+        # Pickle target data
+        df_labels.to_pickle(FILENAME_DATA_TARGET_TRAIN)
+
         return df_labels, df_features
 
-    def create_model(self):
+    def create_model(self, categorical_features, numeric_features):
         """
-        Create a model, work in progress
+        Create the preprocessing pipelines for numeric and categorical data
         :return:
         """
 
-        categorical_transformer = Pipeline(steps=[
-            ('imputer', SimpleImputer(strategy='constant', fill_value='missing')),
-            ('encoder', OneHotEncoder(handle_unknown='ignore'))])
+        categorical_transformer = Pipeline(
+            steps=[
+                ('imputer', SimpleImputer(strategy='constant', fill_value='missing')),
+                ('encoder', OneHotEncoder(handle_unknown='ignore'))
+                ]
+            )
 
-        numerical_transformer = []
+        numeric_transformer = Pipeline(
+            steps=[
+                ('imputer', SimpleImputer(strategy='median', missing_values=np.NaN)),
+                ('scaler', StandardScaler())
+                ]
+            )
+
 
         preprocessor = ColumnTransformer(
             transformers=[
-                ('cat', categorical_transformer, [0])
-            ])
+                ("num", numeric_transformer, numeric_features),
+                ("cat", categorical_transformer, categorical_features),
+            ]
+        )
+
+        # Append classifier to preprocessing pipeline
+        # work in progress, classifier to be changed
+        # assign X, y
+        clf = Pipeline(
+            steps=[("preprocessor", preprocessor), ("classifier", LogisticRegression())]
+        )
+
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
+
+        # clf.fit(X_train, y_train)
+        # print("model score: %.3f" % clf.score(X_test, y_test))
+
 
     def feature_engineering(self):
         """
@@ -129,9 +159,9 @@ class CleanedFluShotData:
         features_numerical = (features_behavioral + features_doctor_recommendations +
                               features_household + features_sentiment)
 
-        df = self.df_features[['respondent_id'] + features_numerical + features_categorical].copy()
+        data_train = self.df_features[['respondent_id'] + features_numerical + features_categorical].copy()
 
         # Pickle cleaned data
-        df.to_pickle(FILENAME_CLEANED_DATA_FEATURES)
+        data_train.to_pickle(FILENAME_CLEANED_DATA_FEATURES)
 
-        return features_categorical, features_numerical, df
+        return features_categorical, features_numerical, data_train

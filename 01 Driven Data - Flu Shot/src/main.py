@@ -1,5 +1,5 @@
 from explore_data import RawFluShotData
-from prepare_data import CleanedFluShotData
+from model_data import CleanedFluShotData
 
 # 1. Load and Explore data
 # data_explore = RawFluShotData()
