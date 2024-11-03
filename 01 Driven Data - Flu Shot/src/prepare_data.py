@@ -62,7 +62,11 @@ class CleanedFluShotData:
         # race - a majority of respondents having the same reply
         # potentially: marital_status due to mostly equal distribution
         # household_children - replaced by if any child in a household
-        features_to_drop = ['income_poverty', 'health_insurance', 'race', 'household_children']
+        # h1n1_knowledge - replaced by a feature with the same scale as other ratings
+        # h1n1_concern - replaced by a feature with the same scale as other ratings
+
+        features_to_drop = ['income_poverty', 'health_insurance', 'race', 'household_children',
+                            'h1n1_knowledge', 'h1n1_concern']
 
         # 2. Categorical features
         # No manual transformation, ready for the pipeline
@@ -97,19 +101,34 @@ class CleanedFluShotData:
         # Ready for a pipeline
         features_household = ['household_adults', 'household_child']
 
-        for f in features_household:
-            print(self.df_features[f].value_counts())
-            print(f'Null values : {self.df_features[f].isna().sum()}')
-            print('-'*10)
-
         # 3.4 Sentiment features (ratings)
-        # Unify the scale
+        # Unify the scale so that concern and knowledge aligned with effective, risk and sick from vaccine
         features_sentiment = ['h1n1_concern', 'h1n1_knowledge', 'opinion_h1n1_vacc_effective',
                               'opinion_h1n1_risk', 'opinion_h1n1_sick_from_vacc',
                               'opinion_seas_vacc_effective',
                               'opinion_seas_risk', 'opinion_seas_sick_from_vacc']
 
+        features_concern_knowledge = ['h1n1_conc', 'h1n1_knwl']
+
+        self.df_features['h1n1_knwl'] = self.df_features['h1n1_knowledge'].map({
+                    0.0: 1,
+                    1.0: 2,
+                    2.0: 5
+                    }
+                )
+
+        self.df_features['h1n1_conc'] = self.df_features['h1n1_concern'].map({
+                    0.0: 1,
+                    1.0: 2,
+                    2.0: 4,
+                    3.0: 5
+                    }
+                )
 
 
+        for f in features_concern_knowledge:
+            print(self.df_features[f].value_counts())
+            print(f'Null values : {self.df_features[f].isna().sum()}')
+            print('-'*10)
 
         # pickle output data
