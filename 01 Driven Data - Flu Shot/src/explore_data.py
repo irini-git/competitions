@@ -405,9 +405,6 @@ class RawFluShotData:
         chart = bar_sex | bar_empl_status | bar_census_msa | bar_rent_or_own | bar_marital_status | bar_education | bar_race | bar_income
         chart.save(FILE_BARCHART_FEATURES_PERSONAL)
 
-        # TODO : create a chart for household
-        # TODO : create a chart for hhs_geo_region
-
         # Chart for health features -------------
         bars_health = alt.Chart(source_health, title='Other information about respondents').mark_bar().encode(
             x=alt.X('counts:Q').title(''),
