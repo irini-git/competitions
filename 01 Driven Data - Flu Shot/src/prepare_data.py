@@ -8,6 +8,8 @@ from sklearn.pipeline import Pipeline
 FILENAME_INPUT_DATA_LABELS = '../data/Flu_Shot_Learning_Predict_H1N1_and_Seasonal_Flu_Vaccines_-_Training_Labels.csv'
 FILENAME_INPUT_DATA_FEATURES = '../data/Flu_Shot_Learning_Predict_H1N1_and_Seasonal_Flu_Vaccines_-_Training_Features.csv'
 
+FILENAME_CLEANED_DATA_FEATURES = '../data/df_train.pkl'
+
 class CleanedFluShotData:
     """
     Class responsible for the feature engineering and encoding of Flu Shot Data.
@@ -16,7 +18,7 @@ class CleanedFluShotData:
     """
     def __init__(self):
         self.df_labels, self.df_features = self.load_data()
-        self.feature_engineering()
+        features_categorical, features_numerical, data_train = self.feature_engineering()
 
     def load_data(self):
         """
@@ -72,6 +74,7 @@ class CleanedFluShotData:
         # No manual transformation, ready for the pipeline
         features_employment = ['employment_occupation', 'employment_industry', 'employment_status']
         features_other = ['census_msa', 'education', 'age_group', 'hhs_geo_region', 'sex', 'rent_or_own']
+        features_categorical = features_employment + features_other
 
         # 3. Numerical features
         # 3.1 Binary Yes/No features are recognized as numeric
@@ -79,7 +82,6 @@ class CleanedFluShotData:
         features_behavioral = ['behavioral_wash_hands', 'behavioral_avoidance', 'behavioral_touch_face',
                                'behavioral_large_gatherings', 'behavioral_outside_home',
                                'behavioral_face_mask', 'behavioral_antiviral_meds']
-
 
         # 3.2 Doctor recommendations and related to health ready for a pipeline
         # no manual transformation
@@ -103,12 +105,10 @@ class CleanedFluShotData:
 
         # 3.4 Sentiment features (ratings)
         # Unify the scale so that concern and knowledge aligned with effective, risk and sick from vaccine
-        features_sentiment = ['h1n1_concern', 'h1n1_knowledge', 'opinion_h1n1_vacc_effective',
+        features_sentiment = ['h1n1_conc', 'h1n1_knwl', 'opinion_h1n1_vacc_effective',
                               'opinion_h1n1_risk', 'opinion_h1n1_sick_from_vacc',
                               'opinion_seas_vacc_effective',
                               'opinion_seas_risk', 'opinion_seas_sick_from_vacc']
-
-        features_concern_knowledge = ['h1n1_conc', 'h1n1_knwl']
 
         self.df_features['h1n1_knwl'] = self.df_features['h1n1_knowledge'].map({
                     0.0: 1,
@@ -126,9 +126,12 @@ class CleanedFluShotData:
                 )
 
 
-        for f in features_concern_knowledge:
-            print(self.df_features[f].value_counts())
-            print(f'Null values : {self.df_features[f].isna().sum()}')
-            print('-'*10)
+        features_numerical = (features_behavioral + features_doctor_recommendations +
+                              features_household + features_sentiment)
 
-        # pickle output data
+        df = self.df_features[['respondent_id'] + features_numerical + features_categorical].copy()
+
+        # Pickle cleaned data
+        df.to_pickle(FILENAME_CLEANED_DATA_FEATURES)
+
+        return features_categorical, features_numerical, df
