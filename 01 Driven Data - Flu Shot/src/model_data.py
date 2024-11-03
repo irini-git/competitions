@@ -36,6 +36,12 @@ class CleanedFluShotData:
 
         return df_labels, df_features
 
+    def prepare_sumbission(self):
+        """
+        Placeholder to create a submission in required format
+        :return:
+        """
+
     def evaluate_model(self):
         """
         Placeholder for model validation
