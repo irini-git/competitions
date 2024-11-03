@@ -25,8 +25,13 @@ class CleanedFluShotData:
     def feature_engineering(self):
         """
         Creates new features based on existing, use insights from data exploration
-        :return: new features
+        :return:  new features
         """
+
+        # We have identified two ways to split categorical and numerical features
+        # a. (applied within current approach) manually inspect the content
+        # b. (potential to be used) use of make_column_selector.
+        # Option b was not chosen here, as we wanted to carefully inspect all features.
 
         # 1. Features not to be used
         # income_poverty - large N of missing values
@@ -38,6 +43,8 @@ class CleanedFluShotData:
         # 2. Categorical features
         features_employment = ['employment_occupation', 'employment_industry', 'employment_status']
         features_other = ['census_msa', 'education', 'age_group', 'hhs_geo_region']
+
+
 
 
         # 3. Numerical features
