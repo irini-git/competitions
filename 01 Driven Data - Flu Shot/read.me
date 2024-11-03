@@ -386,6 +386,16 @@ Missing values
       There is a potential to ameliorate the imputing technics, for example introduce with k nearest neighbor’s algorithm.
       Median imputation might be treaky choice, especially for some features that are indeed skewed,
       for example 'is a health care worker' or 'has a regular contact with the child under 6 months'.
+- For categorical features : Most frequent value.
+   -- Replace missing using the most frequent value along each column.
+      Another decent option is to use the strategy “constant”,
+      and replace missing values with fill_value.
+
+Scaling numeric features
+Standardization of a dataset is a common requirement for many machine learning estimators:
+they might behave badly if the individual features do not more or less look like standard normally distributed data.
+StandardScaler is sensitive to outliers, and the features may scale differently from each other
+in the presence of outliers.
 
 
 Ideas for future exploration

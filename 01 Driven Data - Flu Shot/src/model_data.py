@@ -56,7 +56,7 @@ class CleanedFluShotData:
 
         categorical_transformer = Pipeline(
             steps=[
-                ('imputer', SimpleImputer(strategy='constant', fill_value='missing')),
+                ('imputer', SimpleImputer(strategy='most_frequent', missing_values=np.NaN)),
                 ('encoder', OneHotEncoder(handle_unknown='ignore'))
                 ]
             )
@@ -67,7 +67,6 @@ class CleanedFluShotData:
                 ('scaler', StandardScaler())
                 ]
             )
-
 
         preprocessor = ColumnTransformer(
             transformers=[
