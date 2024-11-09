@@ -24,8 +24,10 @@ class CleanedFluShotData:
     """
     def __init__(self):
         self.df_labels, self.df_features = self.load_data()
-        categorical_features, numeric_features, X, y = self.feature_engineering()
-        # self.create_model(categorical_features, numeric_features, X, y)
+        self.categorical_features, self.numeric_features = self.split_categorical_numerical_features()
+        data_train = self.feature_engineering(self.df_features)
+        # data_test = self.feature_engineering(self.df_test)
+        # self.create_model(categorical_features, numeric_features, data_train, self.df_labels)
 
 
     def load_data(self):
@@ -96,11 +98,10 @@ class CleanedFluShotData:
             print("model score: %.3f" % clf.score(X_test, y_test))
 
 
-    def feature_engineering(self):
+    def split_categorical_numerical_features(self):
         """
-        Creates new features based on existing, use insights from data exploration
-        Need to apply same modifications for train and test daat
-        :return:  new features
+        Split categorical and numeric features based on insights from the data exploration
+        :return: list of categorical vs. numerical features
         """
 
         # There are two ways to split categorical and numerical features
@@ -124,7 +125,7 @@ class CleanedFluShotData:
         # No manual transformation, ready for the pipeline
         features_employment = ['employment_occupation', 'employment_industry', 'employment_status']
         features_other = ['census_msa', 'education', 'age_group', 'hhs_geo_region', 'sex', 'rent_or_own']
-        features_categorical = features_employment + features_other
+        categorical_features = features_employment + features_other
 
         # 3. Numerical features
         # 3.1 Binary Yes/No features are recognized as numeric
@@ -138,18 +139,6 @@ class CleanedFluShotData:
         features_doctor_recommendations = ['doctor_recc_seasonal', 'doctor_recc_h1n1']
         features_health = ['chronic_med_condition', 'health_worker', 'child_under_6_months']
 
-        # 3.3 Household features (adults and children)
-        # Create a numeric feature based on household_children
-        # Logic: any child in a household: 1 - Yes, 0 - No
-        self.df_features['household_child'] = self.df_features['household_children'].map(
-            {
-                0: 0,
-                1: 1,
-                2: 1,
-                3: 1
-            }
-        )
-
         # Ready for a pipeline
         features_household = ['household_adults', 'household_child']
 
@@ -160,14 +149,38 @@ class CleanedFluShotData:
                               'opinion_seas_vacc_effective',
                               'opinion_seas_risk', 'opinion_seas_sick_from_vacc']
 
-        self.df_features['h1n1_knwl'] = self.df_features['h1n1_knowledge'].map({
+        numeric_features = (features_behavioral + features_doctor_recommendations +
+                            features_household + features_sentiment)
+
+        return categorical_features, numeric_features
+
+    def feature_engineering(self, df):
+        """
+        Create new features based on data exploration
+        :param df: input dataframe, train or test
+        :return: train (or test) data ready for the model
+        """
+
+        # Create a numeric feature based on household_children
+        # Logic: any child in a household: 1 - Yes, 0 - No
+        df['household_child'] = df['household_children'].map(
+            {
+                0: 0,
+                1: 1,
+                2: 1,
+                3: 1
+            }
+        )
+
+        # Unify ratings
+        df['h1n1_knwl'] = df['h1n1_knowledge'].map({
                     0.0: 1,
                     1.0: 2,
                     2.0: 5
                     }
                 )
 
-        self.df_features['h1n1_conc'] = self.df_features['h1n1_concern'].map({
+        df['h1n1_conc'] = df['h1n1_concern'].map({
                     0.0: 1,
                     1.0: 2,
                     2.0: 4,
@@ -175,28 +188,6 @@ class CleanedFluShotData:
                     }
                 )
 
+        data = df[['respondent_id'] + self.numeric_features + self.categorical_features].copy()
 
-        features_numerical = (features_behavioral + features_doctor_recommendations +
-                              features_household + features_sentiment)
-
-        data_train = self.df_features[['respondent_id'] + features_numerical + features_categorical].copy()
-
-        # Precaution for mismatch in train data and train target
-        # What if the order of entries is not pursued?
-        # To cater for this, let's join features with labels, and them split into two dataframes
-
-        # data = data_train.join(self.df_labels.set_index('respondent_id'), on='respondent_id', how='left')
-        # data.set_index('respondent_id', inplace=True)
-
-        print(data_train.columns)
-        print(data_train.head(10))
-        # y = data_train.iloc[:, 28:30]
-        # X = data_train.iloc[:, :28]
-
-        X = []
-        y = []
-
-        # Pickle cleaned data
-        # data_train.to_pickle(FILENAME_CLEANED_DATA_FEATURES)
-
-        return features_categorical, features_numerical, X, y
+        return data
