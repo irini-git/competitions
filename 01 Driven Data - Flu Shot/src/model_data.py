@@ -6,6 +6,9 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import train_test_split
+import torch
+import torch.nn as nn
+import sys
 
 FILENAME_INPUT_DATA_LABELS = '../data/Flu_Shot_Learning_Predict_H1N1_and_Seasonal_Flu_Vaccines_-_Training_Labels.csv'
 FILENAME_INPUT_DATA_FEATURES = '../data/Flu_Shot_Learning_Predict_H1N1_and_Seasonal_Flu_Vaccines_-_Training_Features.csv'
@@ -22,7 +25,7 @@ class CleanedFluShotData:
     def __init__(self):
         self.df_labels, self.df_features = self.load_data()
         categorical_features, numeric_features, X, y = self.feature_engineering()
-        self.create_model(categorical_features, numeric_features, X, y)
+        # self.create_model(categorical_features, numeric_features, X, y)
 
 
     def load_data(self):
@@ -96,10 +99,11 @@ class CleanedFluShotData:
     def feature_engineering(self):
         """
         Creates new features based on existing, use insights from data exploration
+        Need to apply same modifications for train and test daat
         :return:  new features
         """
 
-        # We have identified two ways to split categorical and numerical features
+        # There are two ways to split categorical and numerical features
         # a. (applied within current approach) manually inspect the content
         # b. (potential to be used) use of make_column_selector.
         # Option b was not chosen here, as we wanted to carefully inspect all features.
@@ -181,13 +185,18 @@ class CleanedFluShotData:
         # What if the order of entries is not pursued?
         # To cater for this, let's join features with labels, and them split into two dataframes
 
-        data = data_train.join(self.df_labels.set_index('respondent_id'), on='respondent_id', how='left')
-        data.set_index('respondent_id', inplace=True)
+        # data = data_train.join(self.df_labels.set_index('respondent_id'), on='respondent_id', how='left')
+        # data.set_index('respondent_id', inplace=True)
 
-        y = data.iloc[:, 28:30]
-        X = data.iloc[:, :28]
+        print(data_train.columns)
+        print(data_train.head(10))
+        # y = data_train.iloc[:, 28:30]
+        # X = data_train.iloc[:, :28]
+
+        X = []
+        y = []
 
         # Pickle cleaned data
-        data_train.to_pickle(FILENAME_CLEANED_DATA_FEATURES)
+        # data_train.to_pickle(FILENAME_CLEANED_DATA_FEATURES)
 
         return features_categorical, features_numerical, X, y

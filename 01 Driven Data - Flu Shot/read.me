@@ -19,7 +19,7 @@ You are provided a dataset with 36 columns.
 The first column respondent_id is a unique and random identifier.
 The remaining 35 features are described below.
 
-Data exploration:
+I. Data exploration:
 1. Explore labels : if received h1n1 / seasonal vaccine
 More people received a seasonal vaccine compared to h1n1:
 about a 1/2 of population received a seasonal vaccine (46.5%) and 1/5 received h1n1 vaccine (21.2%).
@@ -304,6 +304,7 @@ with a specific value), it is challenging to guess (and properly) the nature of 
 values.
 To cater for missing values, we will use imputing.
 
+II. Feature engineering
 - Health-related binary features
     -- Has health insurance : Yes (47%), No (6.5%) and rest for missing values.
        Naively, the missing values in this field might be connected with "No",
@@ -391,6 +392,7 @@ Missing values
       Another decent option is to use the strategy “constant”,
       and replace missing values with fill_value.
 
+III. Classification
 Scaling numeric features
 Standardization of a dataset is a common requirement for many machine learning estimators:
 they might behave badly if the individual features do not more or less look like standard normally distributed data.
@@ -416,6 +418,9 @@ Types of multiclass classifications
        To implement, use the logistic regression model of sklearn,
        with the ‘multi_class’ parameter set to ‘ovr’.
        Ovr is a short term for ‘one-vs-rest’ or ‘one-vs-all’, which informs the model on what strategy to adopt.
+
+
+
 
 
 Ideas for future exploration

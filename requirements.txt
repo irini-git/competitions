@@ -2,3 +2,5 @@ pandas
 altair
 vl-convert-python
 scikit-learn
+transformers
+torch
