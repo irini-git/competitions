@@ -27,7 +27,7 @@ class CleanedFluShotData:
         self.categorical_features, self.numeric_features = self.split_categorical_numerical_features()
         data_train = self.feature_engineering(self.df_features)
         # data_test = self.feature_engineering(self.df_test)
-        # self.create_model(categorical_features, numeric_features, data_train, self.df_labels)
+        self.create_model(data_train, self.df_labels)
 
 
     def load_data(self):
@@ -55,15 +55,17 @@ class CleanedFluShotData:
         :return:
         """
 
-    def create_model(self, categorical_features, numeric_features, X, y):
+    def create_model(self, X, y):
         """
         Create the preprocessing pipelines for numeric and categorical data
         :return:
         """
 
+        # Build a pipeline for our dataset.
+        # Make two preprocessing pipelines; one for the categorical and one for the numeric features
         categorical_transformer = Pipeline(
             steps=[
-                ('imputer', SimpleImputer(strategy='most_frequent', missing_values=np.nan)),
+                ('imputer', SimpleImputer(strategy='most_frequent', missing_values='missing')),
                 ('encoder', OneHotEncoder(handle_unknown='ignore'))
                 ]
             )
@@ -75,28 +77,34 @@ class CleanedFluShotData:
                 ]
             )
 
-        preprocessor = ColumnTransformer(
+        # Make our ColumnTransformer. (preprocessor)
+        col_transformer = ColumnTransformer(
             transformers=[
-                ("num", numeric_transformer, numeric_features),
-                ("cat", categorical_transformer, categorical_features),
+                ("numeric", numeric_transformer, self.numeric_features),
+                ("categorical", categorical_transformer, self.categorical_features),
             ]
         )
 
-        # Append classifier to preprocessing pipeline
+
         # work in progress, classifier to be changed
-        # assign X, y
-        clf = Pipeline(
-            steps=[("preprocessor", preprocessor), ("classifier", LogisticRegression(multi_class='ovr'))]
-            )
+        # FutureWarning: 'multi_class' was deprecated in version 1.5 and will be removed in 1.7.
+        # clf = Pipeline(
+        #     steps=[("preprocessor", preprocessor), ("classifier", LogisticRegression(multi_class='auto'))]
+        #     )
 
         y_h1n1 = y.iloc[:, 0]
         y_seasonal = y.iloc[:, 1]
 
         for y in [y_h1n1, y_seasonal]:
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
-            clf.fit(X_train, y_train)
-            print("model score: %.3f" % clf.score(X_test, y_test))
+            for c in X_train.columns:
+                print(f'{c} : {X_train[c].isna().sum()}')
+            # Foreshadow that just like we’ve seen with most syntax in sklearn we need to fit our ColumnTransformer.
+            # col_transformer.fit(X_train)
 
+
+        #     clf.fit(X_train, y_train)
+        #     print("model score: %.3f" % clf.score(X_test, y_test))
 
     def split_categorical_numerical_features(self):
         """
@@ -188,6 +196,7 @@ class CleanedFluShotData:
                     }
                 )
 
-        data = df[['respondent_id'] + self.numeric_features + self.categorical_features].copy()
+        # Q for respondent id : keep or drop
+        data = df[self.numeric_features + self.categorical_features].copy()
 
         return data
