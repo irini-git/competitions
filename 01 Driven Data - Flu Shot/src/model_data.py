@@ -63,6 +63,13 @@ class CleanedFluShotData:
 
         # Build a pipeline for our dataset.
         # Make two preprocessing pipelines; one for the categorical and one for the numeric features
+
+        # What happens if there are categories in the test data, that are not in the training data?
+        # In the OneHotEncoder we can specify handle_unknown="ignore" which will then create a row with all zeros.
+        # That means that all categories that are not recognized to the transformer will appear the same for this feature.
+
+        # binary : sex (male, female), rent_or_own (Own, Rent)
+
         categorical_transformer = Pipeline(
             steps=[
                 ('imputer', SimpleImputer(strategy='most_frequent', missing_values='missing')),
@@ -85,7 +92,6 @@ class CleanedFluShotData:
             ]
         )
 
-
         # work in progress, classifier to be changed
         # FutureWarning: 'multi_class' was deprecated in version 1.5 and will be removed in 1.7.
         # clf = Pipeline(
@@ -95,10 +101,17 @@ class CleanedFluShotData:
         y_h1n1 = y.iloc[:, 0]
         y_seasonal = y.iloc[:, 1]
 
-        for y in [y_h1n1, y_seasonal]:
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
-            for c in X_train.columns:
-                print(f'{c} : {X_train[c].isna().sum()}')
+        # for y in [y_h1n1, y_seasonal]:
+        print(self.categorical_features)
+        y = y_h1n1
+        X_train, X_test, y_train, y_test = train_test_split(X[self.categorical_features], y, test_size=0.2, random_state=0)
+        categorical_transformer.fit(X_train)
+        X_train_ohe = categorical_transformer.transform(X_train)
+
+        print(X_train_ohe)
+
+            # for c in X_train.columns:
+            #     print(f'{c} : {X_train[c].isna().sum()}')
             # Foreshadow that just like we’ve seen with most syntax in sklearn we need to fit our ColumnTransformer.
             # col_transformer.fit(X_train)
 
