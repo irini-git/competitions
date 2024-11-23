@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from sklearn.compose import ColumnTransformer
+from sklearn.neighbors import KNeighborsRegressor
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
@@ -8,7 +9,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline
 from skmultilearn.adapt import MLkNN
 from sklearn.model_selection import GridSearchCV
-from sklearn.neighbors import KNeighborsRegressor
+from sklearn.model_selection import cross_validate
 
 FILENAME_INPUT_DATA_LABELS = '../data/Flu_Shot_Learning_Predict_H1N1_and_Seasonal_Flu_Vaccines_-_Training_Labels.csv'
 FILENAME_INPUT_DATA_FEATURES = '../data/Flu_Shot_Learning_Predict_H1N1_and_Seasonal_Flu_Vaccines_-_Training_Features.csv'
@@ -131,16 +132,17 @@ class CleanedFluShotData:
 
 
         y_h1n1 = y.iloc[:, 1]
-        # y_seasonal = y.iloc[:, 1]
+        y_seasonal = y.iloc[:, 2]
 
-        # Split data into train and test sets
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        for y in [y_h1n1, y_seasonal]:
+            # Split data into train and test sets
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-        from sklearn.model_selection import cross_validate
-
-        with_categorical_scores = cross_validate(main_pipe, X_train, y_train, return_train_score=True)
-        categorical_score = pd.DataFrame(with_categorical_scores)
-        print(categorical_score)
+            # We can then use cross_validate() and find our mean training and validation scores!
+            with_categorical_scores = cross_validate(main_pipe, X_train, y_train, return_train_score=True)
+            categorical_score = pd.DataFrame(with_categorical_scores)
+            print(categorical_score)
+            print('-'*30)
 
         # main_pipe.fit(np.array(X_train), np.array(y_train))
         # print(main_pipe.score(X_train, y_train))

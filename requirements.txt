@@ -4,3 +4,4 @@ vl-convert-python
 scikit-learn
 transformers
 scikit-multilearn
+fastparquet
