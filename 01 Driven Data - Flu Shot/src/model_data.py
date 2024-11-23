@@ -77,6 +77,15 @@ class CleanedFluShotData:
                 ]
             )
 
+        categorical_transformer_binary = Pipeline(
+            steps=[
+                ('imputer', SimpleImputer(strategy='most_frequent', missing_values=np.nan)),
+                ('encoder', OneHotEncoder(sparse_output=False, dtype='int', drop="if_binary"))
+                ]
+            )
+
+
+
         numeric_transformer = Pipeline(
             steps=[
                 ('imputer', SimpleImputer(strategy='median', missing_values=np.nan)),
@@ -85,10 +94,19 @@ class CleanedFluShotData:
             )
 
         # Make our ColumnTransformer. (preprocessor)
+        numeric_features = self.numeric_features
+        categorical_features_binary = ['sex', 'rent_or_own']
+        categorical_features = ['employment_occupation', 'employment_industry', 'employment_status', 'census_msa', 'education', 'age_group', 'hhs_geo_region']
+
+        X_toy = X['rent_or_own'].to_frame().reset_index()
+        X_toy_ohe = categorical_transformer_binary.fit_transform(X_toy)
+        print(X_toy_ohe)
+
         col_transformer = ColumnTransformer(
             transformers=[
-                ("numeric", numeric_transformer, self.numeric_features),
-                ("categorical", categorical_transformer, self.categorical_features),
+                ("numeric", numeric_transformer, numeric_features),
+                ("categorical", categorical_transformer, categorical_features),
+                ("categorical_binary", categorical_transformer_binary, categorical_features_binary)
             ]
         )
 
@@ -98,17 +116,8 @@ class CleanedFluShotData:
         #     steps=[("preprocessor", preprocessor), ("classifier", LogisticRegression(multi_class='auto'))]
         #     )
 
-        y_h1n1 = y.iloc[:, 0]
-        y_seasonal = y.iloc[:, 1]
-
-        # for y in [y_h1n1, y_seasonal]:
-        print(self.categorical_features)
-        y = y_h1n1
-        X_train, X_test, y_train, y_test = train_test_split(X[self.categorical_features], y, test_size=0.2, random_state=0)
-        categorical_transformer.fit(X_train)
-        X_train_ohe = categorical_transformer.transform(X_train)
-
-        print(X_train_ohe)
+        # y_h1n1 = y.iloc[:, 0]
+        # y_seasonal = y.iloc[:, 1]
 
             # for c in X_train.columns:
             #     print(f'{c} : {X_train[c].isna().sum()}')
