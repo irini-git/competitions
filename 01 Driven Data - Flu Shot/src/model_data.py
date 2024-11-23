@@ -97,11 +97,13 @@ class CleanedFluShotData:
         categorical_features_binary = ['sex', 'rent_or_own']
         categorical_features = ['employment_occupation', 'employment_industry', 'employment_status', 'census_msa', 'education', 'age_group', 'hhs_geo_region']
 
-        # X_toy = X['rent_or_own'].to_frame().reset_index()
-        X_toy = X[numeric_features]
+
+        print(numeric_features)
+        # X_toy = X['behavioral_wash_hands'].to_frame().reset_index()
+        X_toy = X['behavioral_wash_hands'].copy()
         print(X_toy)
-        # X_toy_ohe = numeric_features.fit_transform(X_toy)
-        # print(X_toy_ohe)
+        X_toy_ohe = numeric_transformer.fit_transform(X_toy)
+        print(X_toy_ohe)
 
         col_transformer = ColumnTransformer(
             transformers=[
