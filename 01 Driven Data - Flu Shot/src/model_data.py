@@ -30,7 +30,6 @@ class CleanedFluShotData:
         # data_test = self.feature_engineering(self.df_test)
         self.create_model(data_train, self.df_labels)
 
-
     def load_data(self):
         """
         Load raw data (features and labels) from csv files.
@@ -99,15 +98,6 @@ class CleanedFluShotData:
         numeric_features = self.numeric_features
         categorical_features_binary = ['sex', 'rent_or_own']
         categorical_features = ['employment_occupation', 'employment_industry', 'employment_status', 'census_msa', 'education', 'age_group', 'hhs_geo_region']
-
-        # testing
-        # print(numeric_features)
-        # X_toy = X['behavioral_wash_hands'].to_frame().reset_index()
-        # X_toy = X['behavioral_wash_hands'].copy()
-        # print(X_toy)
-        # X_toy_ohe = numeric_transformer.fit_transform(X_toy)
-        # print(X_toy_ohe)
-
 
         # Set remainder="passthrough" to keep the columns in our feature table which do not need any preprocessing.
         col_transformer = ColumnTransformer(
@@ -194,8 +184,7 @@ class CleanedFluShotData:
                                'behavioral_large_gatherings', 'behavioral_outside_home',
                                'behavioral_face_mask', 'behavioral_antiviral_meds']
 
-        # 3.2 Doctor recommendations and related to health ready for a pipeline
-        # no manual transformation
+        # 3.2 Doctor recommendations
         features_doctor_recommendations = ['doctor_recc_seasonal', 'doctor_recc_h1n1']
         features_health = ['chronic_med_condition', 'health_worker', 'child_under_6_months']
 

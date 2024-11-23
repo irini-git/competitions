@@ -2,6 +2,7 @@ import pandas as pd
 import os
 import altair as alt
 import functools
+import seaborn as sns
 
 # TODO : log data to file not print to screen
 

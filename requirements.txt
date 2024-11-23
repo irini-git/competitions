@@ -5,3 +5,4 @@ scikit-learn
 transformers
 scikit-multilearn
 fastparquet
+xgboost
