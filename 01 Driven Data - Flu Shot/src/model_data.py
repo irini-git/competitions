@@ -72,19 +72,18 @@ class CleanedFluShotData:
 
         categorical_transformer = Pipeline(
             steps=[
-                ('imputer', SimpleImputer(strategy='most_frequent', missing_values='missing')),
+                ('imputer', SimpleImputer(strategy='most_frequent', missing_values=np.nan)),
                 ('encoder', OneHotEncoder(handle_unknown='ignore'))
                 ]
             )
 
+        # missing value = np.nan : otherwise get an error
         categorical_transformer_binary = Pipeline(
             steps=[
                 ('imputer', SimpleImputer(strategy='most_frequent', missing_values=np.nan)),
                 ('encoder', OneHotEncoder(sparse_output=False, dtype='int', drop="if_binary"))
                 ]
             )
-
-
 
         numeric_transformer = Pipeline(
             steps=[
@@ -98,9 +97,11 @@ class CleanedFluShotData:
         categorical_features_binary = ['sex', 'rent_or_own']
         categorical_features = ['employment_occupation', 'employment_industry', 'employment_status', 'census_msa', 'education', 'age_group', 'hhs_geo_region']
 
-        X_toy = X['rent_or_own'].to_frame().reset_index()
-        X_toy_ohe = categorical_transformer_binary.fit_transform(X_toy)
-        print(X_toy_ohe)
+        # X_toy = X['rent_or_own'].to_frame().reset_index()
+        X_toy = X[numeric_features]
+        print(X_toy)
+        # X_toy_ohe = numeric_features.fit_transform(X_toy)
+        # print(X_toy_ohe)
 
         col_transformer = ColumnTransformer(
             transformers=[
