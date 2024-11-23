@@ -3,4 +3,4 @@ altair
 vl-convert-python
 scikit-learn
 transformers
-torch
+scikit-multilearn

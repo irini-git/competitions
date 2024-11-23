@@ -2,13 +2,13 @@ import pandas as pd
 import numpy as np
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
-from sklearn.linear_model import LogisticRegression
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import train_test_split
-import torch
-import torch.nn as nn
-import sys
+from sklearn.pipeline import make_pipeline
+from skmultilearn.adapt import MLkNN
+from sklearn.model_selection import GridSearchCV
+from sklearn.neighbors import KNeighborsRegressor
 
 FILENAME_INPUT_DATA_LABELS = '../data/Flu_Shot_Learning_Predict_H1N1_and_Seasonal_Flu_Vaccines_-_Training_Labels.csv'
 FILENAME_INPUT_DATA_FEATURES = '../data/Flu_Shot_Learning_Predict_H1N1_and_Seasonal_Flu_Vaccines_-_Training_Features.csv'
@@ -62,12 +62,14 @@ class CleanedFluShotData:
         """
 
         # Build a pipeline for our dataset.
-        # Make two preprocessing pipelines; one for the categorical and one for the numeric features
+        # Make three preprocessing pipelines;
+        # - one for the categorical,
+        # - one for the numeric features,
+        # - and one for categorical binary.
 
         # What happens if there are categories in the test data, that are not in the training data?
         # In the OneHotEncoder we can specify handle_unknown="ignore" which will then create a row with all zeros.
         # That means that all categories that are not recognized to the transformer will appear the same for this feature.
-
         # binary : sex (male, female), rent_or_own (Own, Rent)
 
         categorical_transformer = Pipeline(
@@ -97,38 +99,61 @@ class CleanedFluShotData:
         categorical_features_binary = ['sex', 'rent_or_own']
         categorical_features = ['employment_occupation', 'employment_industry', 'employment_status', 'census_msa', 'education', 'age_group', 'hhs_geo_region']
 
-
-        print(numeric_features)
+        # testing
+        # print(numeric_features)
         # X_toy = X['behavioral_wash_hands'].to_frame().reset_index()
-        X_toy = X['behavioral_wash_hands'].copy()
-        print(X_toy)
-        X_toy_ohe = numeric_transformer.fit_transform(X_toy)
-        print(X_toy_ohe)
+        # X_toy = X['behavioral_wash_hands'].copy()
+        # print(X_toy)
+        # X_toy_ohe = numeric_transformer.fit_transform(X_toy)
+        # print(X_toy_ohe)
 
+
+        # Set remainder="passthrough" to keep the columns in our feature table which do not need any preprocessing.
         col_transformer = ColumnTransformer(
             transformers=[
                 ("numeric", numeric_transformer, numeric_features),
                 ("categorical", categorical_transformer, categorical_features),
                 ("categorical_binary", categorical_transformer_binary, categorical_features_binary)
-            ]
+            ],
+            remainder='passthrough'
         )
 
-        # work in progress, classifier to be changed
-        # FutureWarning: 'multi_class' was deprecated in version 1.5 and will be removed in 1.7.
-        # clf = Pipeline(
-        #     steps=[("preprocessor", preprocessor), ("classifier", LogisticRegression(multi_class='auto'))]
-        #     )
+        # View pipeline
+        # k (int) – number of neighbours of each input instance to take into account
+        # pipe = make_pipeline(col_transformer,  MLkNN(k=20))
+        # print(pipe)
 
-        # y_h1n1 = y.iloc[:, 0]
+        # Make
+        main_pipe = Pipeline(
+            steps=[
+                ("preprocessor", col_transformer),  # <-- this is the ColumnTransformer we just created
+                ("classifier", KNeighborsRegressor())])
+
+
+        y_h1n1 = y.iloc[:, 1]
         # y_seasonal = y.iloc[:, 1]
 
-            # for c in X_train.columns:
-            #     print(f'{c} : {X_train[c].isna().sum()}')
-            # Foreshadow that just like we’ve seen with most syntax in sklearn we need to fit our ColumnTransformer.
-            # col_transformer.fit(X_train)
+        # Split data into train and test sets
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
+        from sklearn.model_selection import cross_validate
 
-        #     clf.fit(X_train, y_train)
+        with_categorical_scores = cross_validate(main_pipe, X_train, y_train, return_train_score=True)
+        categorical_score = pd.DataFrame(with_categorical_scores)
+        print(categorical_score)
+
+        # main_pipe.fit(np.array(X_train), np.array(y_train))
+        # print(main_pipe.score(X_train, y_train))
+
+        #for y in [y_h1n1]:
+           # main_pipe = Pipeline(
+            #    steps=[
+            #        ("preprocessor", col_transformer),  # <-- this is the ColumnTransformer we just created
+            #        ("classifier", MLkNN(k=5))])
+
+            # main_pipe.fit(X, y)
+            # print(main_pipe.best_params_, main_pipe.best_score_)
+
         #     print("model score: %.3f" % clf.score(X_test, y_test))
 
     def split_categorical_numerical_features(self):
