@@ -121,10 +121,10 @@ class CleanedFluShotData:
         # Make pipeline
         main_pipe = Pipeline(
             steps=[
-                ("preprocessor", col_transformer),  # <-- this is the ColumnTransformer we just created
+                ("preprocessor", col_transformer),  # <-- this is the ColumnTransformer we created
                 ("classifier", classifier)])
 
-        # Change the type of y : to numpy and remove id
+        # Change the type of y: to numpy and remove id
         y_ = y.iloc[:,1:].to_numpy()
 
         # Split data into train and test sets
