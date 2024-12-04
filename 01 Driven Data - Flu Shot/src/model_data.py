@@ -1,11 +1,15 @@
+import re
+from symbol import parameters
+
 import pandas as pd
 import numpy as np
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, learning_curve
 from sklearn.multioutput import MultiOutputClassifier
+from sympy.abc import alpha
 from xgboost import XGBClassifier
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import confusion_matrix
@@ -116,26 +120,67 @@ class CleanedFluShotData:
         # print(pipe)
 
         # Classifier
+        # Best set of hyperparameters:  {'model__estimator__learning_rate': np.float64(1.2589254117941673), 'model__estimator__alpha': np.float64(46.41588833612773)}
         classifier = MultiOutputClassifier(XGBClassifier())
 
         # Make pipeline
         main_pipe = Pipeline(
             steps=[
                 ("preprocessor", col_transformer),  # <-- this is the ColumnTransformer we created
-                ("classifier", classifier)])
+                ("model", classifier)])
+
+        # Access the parameter keys of the individual estimators
+        # model_parameters = [p for p in main_pipe.get_params().keys() if re.search(r'^model__estimator__', p)]
+        # print(model_parameters)
 
         # Change the type of y: to numpy and remove id
         y_ = y.iloc[:,1:].to_numpy()
 
         # Split data into train and test sets
-        X_train, X_test, y_train, y_test = train_test_split(X, y_, test_size=0.2, random_state=42)
+        X_train, X_test, y_train, y_test = train_test_split(X, y_, test_size=0.3, random_state=42)
 
-        main_pipe.fit(X_train, y_train)
+        # --------------
+        from sklearn.model_selection import RandomizedSearchCV
 
-        print(f"Score : {main_pipe.score(X_train, y_train)}")
+        # ['model__estimator__objective', 'model__estimator__base_score', 'model__estimator__booster',
+        #  'model__estimator__callbacks', 'model__estimator__colsample_bylevel', 'model__estimator__colsample_bynode',
+        #  'model__estimator__colsample_bytree', 'model__estimator__device', 'model__estimator__early_stopping_rounds',
+        #  'model__estimator__enable_categorical', 'model__estimator__eval_metric', 'model__estimator__feature_types',
+        #  'model__estimator__gamma', 'model__estimator__grow_policy', 'model__estimator__importance_type',
+        #  'model__estimator__interaction_constraints', 'model__estimator__learning_rate', 'model__estimator__max_bin',
+        #  'model__estimator__max_cat_threshold', 'model__estimator__max_cat_to_onehot',
+        #  'model__estimator__max_delta_step', 'model__estimator__max_depth', 'model__estimator__max_leaves',
+        #  'model__estimator__min_child_weight', 'model__estimator__missing', 'model__estimator__monotone_constraints',
+        #  'model__estimator__multi_strategy', 'model__estimator__n_estimators', 'model__estimator__n_jobs',
+        #  'model__estimator__num_parallel_tree', 'model__estimator__random_state', 'model__estimator__reg_alpha',
+        #  'model__estimator__reg_lambda', 'model__estimator__sampling_method', 'model__estimator__scale_pos_weight',
+        #  'model__estimator__subsample', 'model__estimator__tree_method', 'model__estimator__validate_parameters',
+        #  'model__estimator__verbosity']
+
+
+        search = RandomizedSearchCV(
+            estimator=main_pipe,
+             param_distributions={
+                'model__estimator__booster': ['gbtree', 'gblinear'],
+                'model__estimator__learning_rate' : np.linspace(0.001,0.1, 3),
+                'model__estimator__lambda': np.linspace(0.001,0.1, 4),
+             },
+            scoring=['accuracy', 'precision_micro', 'recall_micro'],
+            refit='precision_micro',
+            cv=5
+        )
+
+        # create a gridsearch of the pipeline, the fit the best model
+        best_model = search.fit(X_train, y_train)
+
+        # Print the best set of hyperparameters and the corresponding score
+        print("Best set of hyperparameters: ", search.best_params_)
+        print("Best score: ", search.best_score_)
+
+        print(f"The mean accuracy of the model is : {best_model.score(X_train, y_train)}")
 
         # We'll predict the test data.
-        yhat = main_pipe.predict(X_test)
+        yhat = best_model.predict(X_test)
 
         # Check the area under the ROC with the roc_auc_score function
         auc_y1 = roc_auc_score(y_test[:, 0], yhat[:, 0])
@@ -150,8 +195,8 @@ class CleanedFluShotData:
         print(f"Confusion matrix for y2 {cm_y2}")
 
         # Check the classification report with the classification_report function
-        cr_y1 = classification_report(y_test[:, 0], yhat[:, 0])
-        cr_y2 = classification_report(y_test[:, 1], yhat[:, 1])
+        cr_y1 = classification_report(y_test[:, 0], yhat[:, 0], zero_division=0)
+        cr_y2 = classification_report(y_test[:, 1], yhat[:, 1], zero_division=0)
         print(f"Classification report for y1 {cr_y1}")
         print(f"Classification report for y2 {cr_y2}")
 
