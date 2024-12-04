@@ -8,7 +8,7 @@ from model_data import CleanedFluShotData
 data_manager = CleanedFluShotData()
 
 # 3. Select and Build the model
-
+# data_manager.create_model()
 # 4. Predict and Evaluate the Model
 # Create a submission sample
 

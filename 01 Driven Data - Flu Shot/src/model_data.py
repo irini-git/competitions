@@ -1,15 +1,16 @@
 import pandas as pd
 import numpy as np
 from sklearn.compose import ColumnTransformer
-from sklearn.neighbors import KNeighborsRegressor
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import train_test_split
-from sklearn.pipeline import make_pipeline
-from skmultilearn.adapt import MLkNN
-from sklearn.model_selection import GridSearchCV
-from sklearn.model_selection import cross_validate
+from sklearn.multioutput import MultiOutputClassifier
+from xgboost import XGBClassifier
+from sklearn.metrics import roc_auc_score
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import classification_report
+
 
 FILENAME_INPUT_DATA_LABELS = '../data/Flu_Shot_Learning_Predict_H1N1_and_Seasonal_Flu_Vaccines_-_Training_Labels.csv'
 FILENAME_INPUT_DATA_FEATURES = '../data/Flu_Shot_Learning_Predict_H1N1_and_Seasonal_Flu_Vaccines_-_Training_Features.csv'
@@ -114,39 +115,45 @@ class CleanedFluShotData:
         # pipe = make_pipeline(col_transformer,  MLkNN(k=20))
         # print(pipe)
 
-        # Make
+        # Classifier
+        classifier = MultiOutputClassifier(XGBClassifier())
+
+        # Make pipeline
         main_pipe = Pipeline(
             steps=[
                 ("preprocessor", col_transformer),  # <-- this is the ColumnTransformer we just created
-                ("classifier", KNeighborsRegressor())])
+                ("classifier", classifier)])
 
+        # Change the type of y : to numpy and remove id
+        y_ = y.iloc[:,1:].to_numpy()
 
-        y_h1n1 = y.iloc[:, 1]
-        y_seasonal = y.iloc[:, 2]
+        # Split data into train and test sets
+        X_train, X_test, y_train, y_test = train_test_split(X, y_, test_size=0.2, random_state=42)
 
-        for y in [y_h1n1, y_seasonal]:
-            # Split data into train and test sets
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        main_pipe.fit(X_train, y_train)
 
-            # We can then use cross_validate() and find our mean training and validation scores!
-            with_categorical_scores = cross_validate(main_pipe, X_train, y_train, return_train_score=True)
-            categorical_score = pd.DataFrame(with_categorical_scores)
-            print(categorical_score)
-            print('-'*30)
+        print(f"Score : {main_pipe.score(X_train, y_train)}")
 
-        # main_pipe.fit(np.array(X_train), np.array(y_train))
-        # print(main_pipe.score(X_train, y_train))
+        # We'll predict the test data.
+        yhat = main_pipe.predict(X_test)
 
-        #for y in [y_h1n1]:
-           # main_pipe = Pipeline(
-            #    steps=[
-            #        ("preprocessor", col_transformer),  # <-- this is the ColumnTransformer we just created
-            #        ("classifier", MLkNN(k=5))])
+        # Check the area under the ROC with the roc_auc_score function
+        auc_y1 = roc_auc_score(y_test[:, 0], yhat[:, 0])
+        auc_y2 = roc_auc_score(y_test[:, 1], yhat[:, 1])
+        print("ROC AUC y1: %.4f, y2: %.4f" % (auc_y1, auc_y2))
 
-            # main_pipe.fit(X, y)
-            # print(main_pipe.best_params_, main_pipe.best_score_)
+        # Check the confusion matrices
+        cm_y1 = confusion_matrix(y_test[:, 0], yhat[:, 0])
+        cm_y2 = confusion_matrix(y_test[:, 1], yhat[:, 1])
 
-        #     print("model score: %.3f" % clf.score(X_test, y_test))
+        print(f"Confusion matrix for y1 {cm_y1}")
+        print(f"Confusion matrix for y2 {cm_y2}")
+
+        # Check the classification report with the classification_report function
+        cr_y1 = classification_report(y_test[:, 0], yhat[:, 0])
+        cr_y2 = classification_report(y_test[:, 1], yhat[:, 1])
+        print(f"Classification report for y1 {cr_y1}")
+        print(f"Classification report for y2 {cr_y2}")
 
     def split_categorical_numerical_features(self):
         """
