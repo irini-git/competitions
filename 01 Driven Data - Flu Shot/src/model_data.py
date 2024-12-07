@@ -120,7 +120,6 @@ class CleanedFluShotData:
         # print(pipe)
 
         # Classifier
-        # Best set of hyperparameters:  {'model__estimator__learning_rate': np.float64(1.2589254117941673), 'model__estimator__alpha': np.float64(46.41588833612773)}
         classifier = MultiOutputClassifier(XGBClassifier())
 
         # Make pipeline
@@ -140,7 +139,7 @@ class CleanedFluShotData:
         X_train, X_test, y_train, y_test = train_test_split(X, y_, test_size=0.3, random_state=42)
 
         # --------------
-        from sklearn.model_selection import RandomizedSearchCV
+        # from sklearn.model_selection import RandomizedSearchCV
 
         # ['model__estimator__objective', 'model__estimator__base_score', 'model__estimator__booster',
         #  'model__estimator__callbacks', 'model__estimator__colsample_bylevel', 'model__estimator__colsample_bynode',
@@ -158,29 +157,31 @@ class CleanedFluShotData:
         #  'model__estimator__verbosity']
 
 
-        search = RandomizedSearchCV(
-            estimator=main_pipe,
-             param_distributions={
-                'model__estimator__booster': ['gbtree', 'gblinear'],
-                'model__estimator__learning_rate' : np.linspace(0.001,0.1, 3),
-                'model__estimator__lambda': np.linspace(0.001,0.1, 4),
-             },
-            scoring=['accuracy', 'precision_micro', 'recall_micro'],
-            refit='precision_micro',
-            cv=5
-        )
+        # search = RandomizedSearchCV(
+        #     estimator=main_pipe,
+        #      param_distributions={
+        #         'model__estimator__booster': ['gbtree', 'gblinear'],
+        #         'model__estimator__learning_rate' : np.linspace(0.001,0.1, 3),
+        #         'model__estimator__lambda': np.linspace(0.001,0.1, 4),
+        #      },
+        #     scoring=['accuracy', 'precision_micro', 'recall_micro'],
+        #     refit='precision_micro',
+        #     cv=5
+        # )
 
         # create a gridsearch of the pipeline, the fit the best model
-        best_model = search.fit(X_train, y_train)
+        main_pipe.fit(X_train, y_train)
 
         # Print the best set of hyperparameters and the corresponding score
-        print("Best set of hyperparameters: ", search.best_params_)
-        print("Best score: ", search.best_score_)
+        # print("Best set of hyperparameters: ", main_pipe.best_params_)
+        # print("Best score: ", main_pipe.best_score_)
 
-        print(f"The mean accuracy of the model is : {best_model.score(X_train, y_train)}")
+        # print(f"The mean accuracy of the model is : {main_pipe.(X_train, y_train)}")
 
         # We'll predict the test data.
-        yhat = best_model.predict(X_test)
+        yhat = main_pipe.predict(X_test)
+
+        # print(yhat)
 
         # Check the area under the ROC with the roc_auc_score function
         auc_y1 = roc_auc_score(y_test[:, 0], yhat[:, 0])
@@ -188,17 +189,17 @@ class CleanedFluShotData:
         print("ROC AUC y1: %.4f, y2: %.4f" % (auc_y1, auc_y2))
 
         # Check the confusion matrices
-        cm_y1 = confusion_matrix(y_test[:, 0], yhat[:, 0])
-        cm_y2 = confusion_matrix(y_test[:, 1], yhat[:, 1])
+        # cm_y1 = confusion_matrix(y_test[:, 0], yhat[:, 0])
+        # cm_y2 = confusion_matrix(y_test[:, 1], yhat[:, 1])
 
-        print(f"Confusion matrix for y1 {cm_y1}")
-        print(f"Confusion matrix for y2 {cm_y2}")
+        # print(f"Confusion matrix for y1 {cm_y1}")
+        # print(f"Confusion matrix for y2 {cm_y2}")
 
         # Check the classification report with the classification_report function
-        cr_y1 = classification_report(y_test[:, 0], yhat[:, 0], zero_division=0)
-        cr_y2 = classification_report(y_test[:, 1], yhat[:, 1], zero_division=0)
-        print(f"Classification report for y1 {cr_y1}")
-        print(f"Classification report for y2 {cr_y2}")
+        # cr_y1 = classification_report(y_test[:, 0], yhat[:, 0], zero_division=0)
+        # cr_y2 = classification_report(y_test[:, 1], yhat[:, 1], zero_division=0)
+        # print(f"Classification report for y1 {cr_y1}")
+        # print(f"Classification report for y2 {cr_y2}")
 
     def split_categorical_numerical_features(self):
         """

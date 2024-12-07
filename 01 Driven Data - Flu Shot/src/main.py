@@ -5,10 +5,9 @@ from model_data import CleanedFluShotData
 # data_explore = RawFluShotData()
 
 # 2. Feature engineering and encoding
+# 3. Select and Build the model
 data_manager = CleanedFluShotData()
 
-# 3. Select and Build the model
-# data_manager.create_model()
 # 4. Predict and Evaluate the Model
 # Create a submission sample
 
