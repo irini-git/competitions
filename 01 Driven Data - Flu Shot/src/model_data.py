@@ -12,10 +12,10 @@ from sklearn.multioutput import MultiOutputClassifier
 from sklearn.linear_model import LogisticRegression
 from sympy.abc import alpha
 from xgboost import XGBClassifier
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_curve, roc_auc_score
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import classification_report
-
+import matplotlib.pyplot as plt
 
 FILENAME_INPUT_DATA_LABELS = '../data/Flu_Shot_Learning_Predict_H1N1_and_Seasonal_Flu_Vaccines_-_Training_Labels.csv'
 FILENAME_INPUT_DATA_FEATURES = '../data/Flu_Shot_Learning_Predict_H1N1_and_Seasonal_Flu_Vaccines_-_Training_Features.csv'
@@ -37,7 +37,8 @@ class CleanedFluShotData:
         self.categorical_features, self.numeric_features = self.split_categorical_numerical_features()
         data_train = self.feature_engineering(self.df_features)
         # data_test = self.feature_engineering(self.df_test)
-        self.create_model(data_train, self.df_labels)
+        self.y_preds, self.y_test = self.create_model(data_train, self.df_labels)
+        self.evaluate_model()
 
     def load_data(self):
         """
@@ -60,9 +61,41 @@ class CleanedFluShotData:
 
     def evaluate_model(self):
         """
-        Placeholder for model validation
-        :return:
+        From Data Driven
+        This competition uses ROC AUC as the metric.
+        Let's plot ROC curves and take a look.
+        Unfortunately, scikit-learn's convenient plot_roc_curve doesn't support multilabel,
+        so we'll need to make the plot ourselves.
+        :return: model evaluation
         """
+
+        def plot_roc(y_true, y_score, label_name, ax):
+            fpr, tpr, thresholds = roc_curve(y_true, y_score)
+            ax.plot(fpr, tpr)
+            ax.plot([0, 1], [0, 1], color='grey', linestyle='--')
+            ax.set_ylabel('TPR')
+            ax.set_xlabel('FPR')
+            ax.set_title(
+                f"{label_name}: AUC = {roc_auc_score(y_true, y_score):.4f}"
+            )
+
+        fig, ax = plt.subplots(1, 2, figsize=(7, 3.5))
+
+        plot_roc(
+            self.y_test['h1n1_vaccine'],
+            self.y_preds['h1n1_vaccine'],
+            'h1n1_vaccine',
+            ax=ax[0]
+        )
+        plot_roc(
+            self.y_test['seasonal_vaccine'],
+            self.y_preds['seasonal_vaccine'],
+            'seasonal_vaccine',
+            ax=ax[1]
+        )
+        fig.tight_layout()
+        plt.savefig('../fig/ROC curves.png', bbox_inches='tight')
+        plt.close(fig)
 
     def create_model(self, X, y):
         """
@@ -155,18 +188,15 @@ class CleanedFluShotData:
 
         # Predict on evaluation set
         # This competition wants probabilities, not labels
-        yhat = main_pipe.predict(X_test)
+        # yhat = main_pipe.predict(X_test)
 
         preds = main_pipe.predict_proba(X_test)
-
-        # print(preds)
-        # print(yhat)
 
         # Print results
         # From Data Driven
         # The first array is for h1n1_vaccine, and the second array is for seasonal_vaccine.
-        print("test_probas[0].shape", preds[0].shape)
-        print("test_probas[1].shape", preds[1].shape)
+        # print("test_probas[0].shape", preds[0].shape)
+        # print("test_probas[1].shape", preds[1].shape)
 
         # From Data Driven
         # The two columns for each array are probabilities for class 0 and class 1 respectively.
@@ -180,8 +210,17 @@ class CleanedFluShotData:
             },
             index=X_test.index
         )
-        print("y_preds.shape:", y_preds.shape)
 
+        # same for y_test
+        y_test_ = pd.DataFrame(
+            {
+                "h1n1_vaccine": [item[0] for item in y_test],
+                "seasonal_vaccine": [item[1] for item in y_test],
+            },
+            index=X_test.index
+        )
+
+        return y_preds, y_test_
 
         # Check the area under the ROC with the roc_auc_score function
         # auc_y1 = roc_auc_score(y_test[:, 0], yhat[:, 0])
