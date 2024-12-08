@@ -9,6 +9,7 @@ from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import train_test_split, learning_curve
 from sklearn.multioutput import MultiOutputClassifier
+from sklearn.linear_model import LogisticRegression
 from sympy.abc import alpha
 from xgboost import XGBClassifier
 from sklearn.metrics import roc_auc_score
@@ -21,6 +22,9 @@ FILENAME_INPUT_DATA_FEATURES = '../data/Flu_Shot_Learning_Predict_H1N1_and_Seaso
 
 FILENAME_CLEANED_DATA_FEATURES = '../data/data_train.pkl'
 FILENAME_DATA_TARGET_TRAIN = '../data/target_train.pkl'
+
+# Set a random seed for reproducibility
+RANDOM_SEED = 6
 
 class CleanedFluShotData:
     """
@@ -94,8 +98,8 @@ class CleanedFluShotData:
 
         numeric_transformer = Pipeline(
             steps=[
-                ('imputer', SimpleImputer(strategy='median', missing_values=np.nan)),
-                ('scaler', StandardScaler())
+                ('scaler', StandardScaler()),
+                ('imputer', SimpleImputer(strategy='median', missing_values=np.nan))
                 ]
             )
 
@@ -120,13 +124,17 @@ class CleanedFluShotData:
         # print(pipe)
 
         # Classifier
-        classifier = MultiOutputClassifier(XGBClassifier())
+        # classifier = MultiOutputClassifier(XGBClassifier())
+
+        estimators = MultiOutputClassifier(
+            estimator=LogisticRegression(penalty="l2", C=1)
+        )
 
         # Make pipeline
         main_pipe = Pipeline(
             steps=[
                 ("preprocessor", col_transformer),  # <-- this is the ColumnTransformer we created
-                ("model", classifier)])
+                ("model", estimators)])
 
         # Access the parameter keys of the individual estimators
         # model_parameters = [p for p in main_pipe.get_params().keys() if re.search(r'^model__estimator__', p)]
@@ -136,50 +144,18 @@ class CleanedFluShotData:
         y_ = y.iloc[:,1:].to_numpy()
 
         # Split data into train and test sets
-        X_train, X_test, y_train, y_test = train_test_split(X, y_, test_size=0.3, random_state=42)
+        X_train, X_test, y_train, y_test = train_test_split(X, y_, test_size=0.33,
+                                            shuffle=True,
+                                            stratify=y_,
+                                            random_state=RANDOM_SEED
+                                        )
 
-        # --------------
-        # from sklearn.model_selection import RandomizedSearchCV
-
-        # ['model__estimator__objective', 'model__estimator__base_score', 'model__estimator__booster',
-        #  'model__estimator__callbacks', 'model__estimator__colsample_bylevel', 'model__estimator__colsample_bynode',
-        #  'model__estimator__colsample_bytree', 'model__estimator__device', 'model__estimator__early_stopping_rounds',
-        #  'model__estimator__enable_categorical', 'model__estimator__eval_metric', 'model__estimator__feature_types',
-        #  'model__estimator__gamma', 'model__estimator__grow_policy', 'model__estimator__importance_type',
-        #  'model__estimator__interaction_constraints', 'model__estimator__learning_rate', 'model__estimator__max_bin',
-        #  'model__estimator__max_cat_threshold', 'model__estimator__max_cat_to_onehot',
-        #  'model__estimator__max_delta_step', 'model__estimator__max_depth', 'model__estimator__max_leaves',
-        #  'model__estimator__min_child_weight', 'model__estimator__missing', 'model__estimator__monotone_constraints',
-        #  'model__estimator__multi_strategy', 'model__estimator__n_estimators', 'model__estimator__n_jobs',
-        #  'model__estimator__num_parallel_tree', 'model__estimator__random_state', 'model__estimator__reg_alpha',
-        #  'model__estimator__reg_lambda', 'model__estimator__sampling_method', 'model__estimator__scale_pos_weight',
-        #  'model__estimator__subsample', 'model__estimator__tree_method', 'model__estimator__validate_parameters',
-        #  'model__estimator__verbosity']
-
-
-        # search = RandomizedSearchCV(
-        #     estimator=main_pipe,
-        #      param_distributions={
-        #         'model__estimator__booster': ['gbtree', 'gblinear'],
-        #         'model__estimator__learning_rate' : np.linspace(0.001,0.1, 3),
-        #         'model__estimator__lambda': np.linspace(0.001,0.1, 4),
-        #      },
-        #     scoring=['accuracy', 'precision_micro', 'recall_micro'],
-        #     refit='precision_micro',
-        #     cv=5
-        # )
-
-        # create a gridsearch of the pipeline, the fit the best model
+        # Train model
         main_pipe.fit(X_train, y_train)
 
-        # Print the best set of hyperparameters and the corresponding score
-        # print("Best set of hyperparameters: ", main_pipe.best_params_)
-        # print("Best score: ", main_pipe.best_score_)
-
-        # print(f"The mean accuracy of the model is : {main_pipe.(X_train, y_train)}")
-
-        # We'll predict the test data.
-        yhat = main_pipe.predict(X_test)
+        # Predict on evaluation set
+        # This competition wants probabilities, not labels
+        yhat = main_pipe.predict_proba(X_test)
 
         # print(yhat)
 

@@ -3,6 +3,7 @@ import os
 import altair as alt
 import functools
 import seaborn as sns
+import numpy as np
 
 # TODO : log data to file not print to screen
 
@@ -53,6 +54,13 @@ class RawFluShotData:
 
         # print(f'Dataset has {df_train.shape[0]} entries.')
         # print(f'Dataset has columns : {df_train.columns.tolist()}.')
+
+        # from Driven Data
+        # Let's double-check that the rows between the features and the labels match up.
+        # We don't want to have the wrong labels.
+        # Numpy's assert_array_equal will error if the two arrays—the row indices of the two data frames
+        # don't match up.
+        # np.testing.assert_array_equal(features_df.index.values, labels_df.index.values)
 
         # Feature exploration
         # 1. Features with rating -----------------------------------
