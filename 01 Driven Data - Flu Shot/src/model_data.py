@@ -7,7 +7,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
-from sklearn.model_selection import train_test_split, learning_curve
+from sklearn.model_selection import train_test_split, learning_curve, GridSearchCV
 from sklearn.multioutput import MultiOutputClassifier
 from sklearn.linear_model import LogisticRegression
 from sympy.abc import alpha
@@ -15,6 +15,7 @@ from xgboost import XGBClassifier
 from sklearn.metrics import roc_curve, roc_auc_score
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import classification_report
+from sklearn.model_selection import RandomizedSearchCV
 import matplotlib.pyplot as plt
 
 FILENAME_INPUT_DATA_LABELS = '../data/Flu_Shot_Learning_Predict_H1N1_and_Seasonal_Flu_Vaccines_-_Training_Labels.csv'
@@ -22,7 +23,6 @@ FILENAME_INPUT_DATA_FEATURES = '../data/Flu_Shot_Learning_Predict_H1N1_and_Seaso
 
 FILENAME_INPUT_DATA_TEST_FEATURES = '../data/Flu_Shot_Learning_Predict_H1N1_and_Seasonal_Flu_Vaccines_-_Test_Features.csv'
 FILENAME_INPUT_DATA_SUBMISSION = '../data/Flu_Shot_Learning_Predict_H1N1_and_Seasonal_Flu_Vaccines_-_Submission_Format.csv'
-
 
 FILENAME_CLEANED_DATA_FEATURES = '../data/data_train.pkl'
 FILENAME_DATA_TARGET_TRAIN = '../data/target_train.pkl'
@@ -43,7 +43,7 @@ class CleanedFluShotData:
         data_test = self.feature_engineering(self.test_features_df)
         self.y_preds, self.y_test, self.main_pipe = self.create_model(data_train, self.df_labels)
         self.evaluate_model()
-        self.prepare_sumbission(data_test)
+        # self.prepare_sumbission(data_test)
 
     def load_data(self):
         """
@@ -192,7 +192,7 @@ class CleanedFluShotData:
         # estimator=LogisticRegression(penalty="l2", C=1)
 
         estimators = MultiOutputClassifier(
-            estimator=XGBClassifier()
+            estimator=LogisticRegression()
         )
 
         # Make pipeline
@@ -202,8 +202,8 @@ class CleanedFluShotData:
                 ("model", estimators)])
 
         # Access the parameter keys of the individual estimators
-        # model_parameters = [p for p in main_pipe.get_params().keys() if re.search(r'^model__estimator__', p)]
-        # print(model_parameters)
+        model_parameters = [p for p in main_pipe.get_params().keys() if re.search(r'^model__estimator__', p)]
+        print(model_parameters)
 
         # Change the type of y: to numpy and remove id
         y_ = y.iloc[:,1:].to_numpy()
@@ -215,14 +215,39 @@ class CleanedFluShotData:
                                             random_state=RANDOM_SEED
                                         )
 
+        #
+        search = RandomizedSearchCV(
+            estimator=main_pipe,
+            param_distributions={
+                'model__estimator__C': np.logspace(-1, 1, 10),
+                'model__estimator__solver' : ['lbfgs', 'liblinear', 'newton-cg', 'sag', 'saga'],
+                'model__estimator__maxiter' : [100, 1000, 2500, 5000]
+
+
+            },
+            scoring=['accuracy', 'precision_micro', 'recall_micro'],
+            refit='precision_micro',
+            cv=3,
+            error_score='raise'
+        )
+
+        # create a gridsearch of the pipeline, the fit the best model
+        best_model = search.fit(X_train, y_train)
+
+        # Print the best set of hyperparameters and the corresponding score
+        print("Best set of hyperparameters: ", search.best_params_)
+        print("Best score: ", search.best_score_)
+
+        print(f"The mean accuracy of the model is : {best_model.score(X_train, y_train)}")
+
         # Train model
-        main_pipe.fit(X_train, y_train)
+        # clf.fit(X_train, y_train)
 
         # Predict on evaluation set
         # This competition wants probabilities, not labels
         # yhat = main_pipe.predict(X_test)
 
-        preds = main_pipe.predict_proba(X_test)
+        preds = best_model.predict_proba(X_test)
 
         # Print results
         # From Data Driven
@@ -252,7 +277,7 @@ class CleanedFluShotData:
             index=X_test.index
         )
 
-        return y_preds, y_test_, main_pipe
+        return y_preds, y_test_, best_model
 
 
         # Check the confusion matrices
