@@ -20,6 +20,10 @@ import matplotlib.pyplot as plt
 FILENAME_INPUT_DATA_LABELS = '../data/Flu_Shot_Learning_Predict_H1N1_and_Seasonal_Flu_Vaccines_-_Training_Labels.csv'
 FILENAME_INPUT_DATA_FEATURES = '../data/Flu_Shot_Learning_Predict_H1N1_and_Seasonal_Flu_Vaccines_-_Training_Features.csv'
 
+FILENAME_INPUT_DATA_TEST_FEATURES = '../data/Flu_Shot_Learning_Predict_H1N1_and_Seasonal_Flu_Vaccines_-_Test_Features.csv'
+FILENAME_INPUT_DATA_SUBMISSION = '../data/Flu_Shot_Learning_Predict_H1N1_and_Seasonal_Flu_Vaccines_-_Submission_Format.csv'
+
+
 FILENAME_CLEANED_DATA_FEATURES = '../data/data_train.pkl'
 FILENAME_DATA_TARGET_TRAIN = '../data/target_train.pkl'
 
@@ -33,12 +37,13 @@ class CleanedFluShotData:
     because the exploration step may be omitted.
     """
     def __init__(self):
-        self.df_labels, self.df_features = self.load_data()
+        self.df_labels, self.df_features, self.test_features_df = self.load_data()
         self.categorical_features, self.numeric_features = self.split_categorical_numerical_features()
         data_train = self.feature_engineering(self.df_features)
-        # data_test = self.feature_engineering(self.df_test)
-        self.y_preds, self.y_test = self.create_model(data_train, self.df_labels)
+        data_test = self.feature_engineering(self.test_features_df)
+        self.y_preds, self.y_test, self.main_pipe = self.create_model(data_train, self.df_labels)
         self.evaluate_model()
+        self.prepare_sumbission(data_test)
 
     def load_data(self):
         """
@@ -47,17 +52,35 @@ class CleanedFluShotData:
         """
         df_labels = pd.read_csv(FILENAME_INPUT_DATA_LABELS)
         df_features = pd.read_csv(FILENAME_INPUT_DATA_FEATURES)
+        test_features_df = pd.read_csv(FILENAME_INPUT_DATA_TEST_FEATURES,
+                                       index_col="respondent_id")
 
         # Pickle target data
         df_labels.to_pickle(FILENAME_DATA_TARGET_TRAIN)
 
-        return df_labels, df_features
+        return df_labels, df_features, test_features_df
 
-    def prepare_sumbission(self):
+    def prepare_sumbission(self, test_features_df):
         """
-        Placeholder to create a submission in the required format
+        Create a submission in the required format
         :return:
         """
+
+        submission_df = pd.read_csv(FILENAME_INPUT_DATA_SUBMISSION,
+                                    index_col="respondent_id")
+
+        test_probas = self.main_pipe.predict_proba(test_features_df)
+
+        # Make sure we have the rows in the same order
+        np.testing.assert_array_equal(test_features_df.index.values,
+                                      submission_df.index.values)
+
+        # Save predictions to submission data frame
+        submission_df["h1n1_vaccine"] = test_probas[0][:, 1]
+        submission_df["seasonal_vaccine"] = test_probas[1][:, 1]
+
+        # Save sumbission to csv
+        submission_df.to_csv('../data/my_submission.csv', index=True)
 
     def evaluate_model(self):
         """
@@ -97,10 +120,18 @@ class CleanedFluShotData:
         plt.savefig('../fig/ROC curves.png', bbox_inches='tight')
         plt.close(fig)
 
+
+        # Check the area under the ROC with the roc_auc_score function
+        auc_y = roc_auc_score(self.y_test, self.y_preds)
+        # auc_y1 = roc_auc_score(y_test[:, 0], yhat[:, 0])
+        # auc_y2 = roc_auc_score(y_test[:, 1], yhat[:, 1])
+        print("ROC AUC : %.4f" % (auc_y))
+
+
     def create_model(self, X, y):
         """
         Create the preprocessing pipelines for numeric and categorical data
-        :return:
+        :return: main pipe
         """
 
         # Build a pipeline for our dataset.
@@ -220,12 +251,8 @@ class CleanedFluShotData:
             index=X_test.index
         )
 
-        return y_preds, y_test_
+        return y_preds, y_test_, main_pipe
 
-        # Check the area under the ROC with the roc_auc_score function
-        # auc_y1 = roc_auc_score(y_test[:, 0], yhat[:, 0])
-        # auc_y2 = roc_auc_score(y_test[:, 1], yhat[:, 1])
-        # print("ROC AUC y1: %.4f, y2: %.4f" % (auc_y1, auc_y2))
 
         # Check the confusion matrices
         # cm_y1 = confusion_matrix(y_test[:, 0], yhat[:, 0])
