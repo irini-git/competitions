@@ -189,9 +189,10 @@ class CleanedFluShotData:
 
         # Classifier
         # classifier = MultiOutputClassifier(XGBClassifier())
+        # estimator=LogisticRegression(penalty="l2", C=1)
 
         estimators = MultiOutputClassifier(
-            estimator=LogisticRegression(penalty="l2", C=1)
+            estimator=XGBClassifier()
         )
 
         # Make pipeline
