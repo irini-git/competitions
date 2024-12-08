@@ -155,14 +155,38 @@ class CleanedFluShotData:
 
         # Predict on evaluation set
         # This competition wants probabilities, not labels
-        yhat = main_pipe.predict_proba(X_test)
+        yhat = main_pipe.predict(X_test)
 
+        preds = main_pipe.predict_proba(X_test)
+
+        # print(preds)
         # print(yhat)
 
+        # Print results
+        # From Data Driven
+        # The first array is for h1n1_vaccine, and the second array is for seasonal_vaccine.
+        print("test_probas[0].shape", preds[0].shape)
+        print("test_probas[1].shape", preds[1].shape)
+
+        # From Data Driven
+        # The two columns for each array are probabilities for class 0 and class 1 respectively.
+        # That means we want the second column (index 1) for each of the two arrays.
+        # Let's grab those and put them in a data frame.
+
+        y_preds = pd.DataFrame(
+            {
+                "h1n1_vaccine": preds[0][:, 1],
+                "seasonal_vaccine": preds[1][:, 1],
+            },
+            index=X_test.index
+        )
+        print("y_preds.shape:", y_preds.shape)
+
+
         # Check the area under the ROC with the roc_auc_score function
-        auc_y1 = roc_auc_score(y_test[:, 0], yhat[:, 0])
-        auc_y2 = roc_auc_score(y_test[:, 1], yhat[:, 1])
-        print("ROC AUC y1: %.4f, y2: %.4f" % (auc_y1, auc_y2))
+        # auc_y1 = roc_auc_score(y_test[:, 0], yhat[:, 0])
+        # auc_y2 = roc_auc_score(y_test[:, 1], yhat[:, 1])
+        # print("ROC AUC y1: %.4f, y2: %.4f" % (auc_y1, auc_y2))
 
         # Check the confusion matrices
         # cm_y1 = confusion_matrix(y_test[:, 0], yhat[:, 0])
