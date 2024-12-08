@@ -214,19 +214,16 @@ class CleanedFluShotData:
                                             stratify=y_,
                                             random_state=RANDOM_SEED
                                         )
-
         #
         search = RandomizedSearchCV(
             estimator=main_pipe,
             param_distributions={
                 'model__estimator__C': np.logspace(-1, 1, 10),
-                'model__estimator__solver' : ['lbfgs', 'liblinear', 'newton-cg', 'sag', 'saga'],
-                'model__estimator__maxiter' : [100, 1000, 2500, 5000]
-
-
+                'model__estimator__solver' : ['lbfgs', 'liblinear'],
+                'model__estimator__max_iter' : [2500, 5000]
             },
-            scoring=['accuracy', 'precision_micro', 'recall_micro'],
-            refit='precision_micro',
+            scoring=['accuracy', 'precision_micro', 'recall_micro', 'roc_auc'],
+            refit='roc_auc',
             cv=3,
             error_score='raise'
         )
@@ -238,7 +235,7 @@ class CleanedFluShotData:
         print("Best set of hyperparameters: ", search.best_params_)
         print("Best score: ", search.best_score_)
 
-        print(f"The mean accuracy of the model is : {best_model.score(X_train, y_train)}")
+        print(f"The mean accuracy of the model is : {roc_auc_score(X_train, y_train)}")
 
         # Train model
         # clf.fit(X_train, y_train)
