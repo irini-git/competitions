@@ -235,7 +235,7 @@ class CleanedFluShotData:
         print("Best set of hyperparameters: ", search.best_params_)
         print("Best score: ", search.best_score_)
 
-        print(f"The mean accuracy of the model is : {roc_auc_score(X_train, y_train)}")
+        # print(f"The mean accuracy of the model is : {roc_auc_score(X_train, y_train)}")
 
         # Train model
         # clf.fit(X_train, y_train)
