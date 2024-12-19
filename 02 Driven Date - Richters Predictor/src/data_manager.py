@@ -1,5 +1,7 @@
 import pandas as pd
-
+import matplotlib.pyplot as plt
+import seaborn as sns
+from PIL.features import features
 
 # Constants
 FILENAME_TEST_VALUES = '../data/Richters_Predictor_Modeling_Earthquake_Damage_-_Test_Values.csv'
@@ -40,5 +42,29 @@ class EarthquakeData:
             print(f'Null values in database : {df.isnull().sum().sum()}')
             print(df.info())
             with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-                print(df.describe(include=object))
+                print(df.describe(include='all'))
+
+        def plot_figure(feature_):
+            # Set the palette to the "pastel" default palette:
+            # sns.set_palette("pastel")
+
+            palette = ["#FFDE91", "#FE7E03", "#9B1D1E"]
+
+
+            plt.figure(figsize=(10,6))
+            sns.countplot(data=self.df_train,
+                          x = feature_,
+                          hue='damage_grade',
+                          palette=sns.color_palette(palette, len(palette)))
+            plt.title(f'Damage vs {feature_}')
+            plt.xlabel(f'{feature_}')
+            plt.ylabel('')
+            # plt.rcParams['axes.spines.top'] = False
+            # plt.rcParams['axes.spines.right'] = False
+
+            plt.savefig(f'../fig/Explore_count_{feature_}.png')
+
+        for f in ['land_surface_condition', 'foundation_type', 'roof_type',
+                  'ground_floor_type', 'other_floor_type', 'position', 'legal_ownership_status']:
+            plot_figure(feature_=f)
 

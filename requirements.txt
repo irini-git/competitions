@@ -7,3 +7,4 @@ scikit-multilearn
 fastparquet
 xgboost
 hyperopt
+matplotlib
