@@ -2,6 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import altair as alt
+import numpy as np
 
 # Constants
 FILENAME_TEST_VALUES = '../data/Richters_Predictor_Modeling_Earthquake_Damage_-_Test_Values.csv'
@@ -78,46 +79,71 @@ class EarthquakeData:
         #  position                                260601 non-null  object
         #  plan_configuration                      260601 non-null  object
         #  legal_ownership_status                  260601 non-null  object
-        for f in ['land_surface_condition', 'foundation_type', 'roof_type', 'plan_configuration',
-                  'ground_floor_type', 'other_floor_type', 'position', 'legal_ownership_status']:
+        # for f in ['land_surface_condition', 'foundation_type', 'roof_type', 'plan_configuration',
+        #          'ground_floor_type', 'other_floor_type', 'position', 'legal_ownership_status']:
 
             # Plot counts for obj variables
             # plot_seaborn_counts(feature_=f)
-            pass
+            # pass
 
-        def plot_altair_counts():
+        def plot_altair_counts(binary_columns, title_):
 
+            def create_support_df(feature_):
+                """
+                Create support pivoted data for binary features
+                Used as input for plots
+                :return:
+                """
 
-            binary_columns = ['has_secondary_use_other', 'has_secondary_use_use_police']
-            with pd.option_context('display.max_rows', None, 'display.max_columns',
-                                   None):
-                # print(self.df_train[binary_columns].head(4))
-                # temp = self.df_train['has_secondary_use_other'].value_counts().to_frame().reset_index()
-                # temp = self.df_train.groupby(['has_secondary_use_other', 'damage_grade'], as_index=False).sum()
+                # print(self.df_train[['has_secondary_use_other', 'damage_grade']].head(10))
+                temp = self.df_train.groupby([feature_,  'damage_grade'],as_index=False)['building_id'].count()
 
                 # Add a column with feature name
-                # temp['feature'] = temp.columns[0]
+                temp['feature'] = temp.columns[0]
 
-                # Rename first column
-                # temp.rename(columns={temp.columns[0]: "your value"}, inplace=True)
+                # Rename columns
+                return temp.rename({'building_id': 'count', feature_: 'value'}, axis='columns')
 
-                # print(temp)
-                # print(temp.columns)
-                pass
+            # Prepare data
+            df = pd.DataFrame(None, columns=['value','damage_grade','count', 'feature'])
+            for c in binary_columns:
+                temp = create_support_df(c)
+                df = pd.concat([temp, df])
 
-            from vega_datasets import data
+            # Plot
+            chart = alt.Chart(df).mark_bar().encode(
+                column="value:O",
+                x="count",
+                y="feature",
+                color="damage_grade",
+            ).properties(
+                width=220,
+                title=f'{title_}'
+            )
 
-            source = data.barley()
-            print(source.head(4))
+            chart.save(f'../fig/Explore_altair_numeric_{title_.lower()}.png')
 
-            chart = alt.Chart(source).mark_bar().encode(
-                column="year:O",
-                x="yield",
-                y="variety",
-                color="site",
-            ).properties(width=220)
+        # Has secondary columns
+        features_has_secondary_use = ['has_secondary_use_other', 'has_secondary_use_use_police',
+                          'has_secondary_use_gov_office', 'has_secondary_use_health_post',
+                          'has_secondary_use_industry', 'has_secondary_use_school',
+                          'has_secondary_use_institution', 'has_secondary_use_rental',
+                          'has_secondary_use_hotel', 'has_secondary_use_agriculture',
+                          'has_secondary_use']
+        title_has_secondary_use = 'Has secondary use'
+        plot_altair_counts(features_has_secondary_use, title_has_secondary_use)
 
-            chart.save('../fig/Explore_altair_numeric.png')
-
-        plot_altair_counts()
+        # Has superstructure
+        features_has_superstructure = ['has_superstructure_other', 'has_superstructure_rc_engineered',
+                                       'has_superstructure_rc_non_engineered',
+                                       'has_superstructure_bamboo',
+                                       'has_superstructure_timber',
+                                       'has_superstructure_cement_mortar_brick',
+                                       'has_superstructure_mud_mortar_brick',
+                                       'has_superstructure_cement_mortar_stone',
+                                       'has_superstructure_stone_flag',
+                                       'has_superstructure_mud_mortar_stone',
+                                       'has_superstructure_adobe_mud']
+        title_has_superstructure = 'Has superstructure'
+        plot_altair_counts(features_has_superstructure, title_has_superstructure)
 
