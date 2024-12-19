@@ -3,66 +3,13 @@
 Labels
 There are both categorical and numeric features.
 
-geo_level_1_id
-6     8104
-17    7452
-26    7387
-10    7320
-7     6571
-8     6385
-20    5545
-21    5055
-4     4894
-27    4254
-13    3238
-11    2675
-3     2455
-22    2106
-25    1865
-16    1392
-0     1347
-9     1255
-18    1011
-12    1010
-30     909
-5      889
-1      887
-15     814
-14     605
-24     427
-23     377
-2      290
-29     141
-19     124
-28      84
-Name: count, dtype: int64
-geo_level_2_id
-39      1329
-158      797
-181      725
-157      651
-1387     635
-        ...
-494        1
-224        1
-59         1
-796        1
-646        1
-Name: count, Length: 1364, dtype: int64
-geo_level_3_id
-9133     209
-633      190
-621      171
-11246    163
-11440    159
-        ...
-5457       1
-5542       1
-11113      1
-11017      1
-2748       1
-Name: count, Length: 10213, dtype: int64
-count_floors_pre_eq
+- geo_level_1_id, geo_level_2_id, geo_level_3_id (type: int):
+geographic region in which building exists,
+from largest (level 1) to most specific sub-region (level 3).
+Possible values: level 1: 0-30, level 2: 0-1427, level 3: 0-12567.
+
+- count_floors_pre_eq (type: int):
+number of floors in the building before the earthquake.
 2    52406
 3    18554
 1    13264
@@ -71,273 +18,183 @@ count_floors_pre_eq
 6       74
 7       13
 8        2
-Name: count, dtype: int64
-age
-10     12784
-15     12064
-5      11348
-20     10610
-0       8684
-25      8220
-30      5949
-35      3710
-40      3491
-50      2362
-45      1544
-60      1161
-80      1032
-70       704
-55       662
-100      516
-995      461
-65       374
-90       341
-85       286
-75       181
-95       133
-120       56
-110       42
-150       37
-200       34
-105       30
-125       25
-115        9
-180        4
-130        4
-155        3
-160        2
-140        2
-190        2
-170        1
-Name: count, dtype: int64
-area_percentage
-6     13946
-7     12388
-5     10832
-8      9543
-9      7373
-      ...
-80        1
-43        1
-83        1
-59        1
-51        1
-Name: count, Length: 73, dtype: int64
-height_percentage
-5     26356
-6     15360
-4     12664
-7     11895
-3      8578
-8      4558
-2      3043
-9      1770
-10     1442
-12      339
-11      325
-13      277
-15      107
-16       67
-18       24
-14       19
-32       15
-21        8
-20        8
-22        3
-17        2
-24        2
-31        1
-26        1
-19        1
-23        1
-29        1
-25        1
-Name: count, dtype: int64
 
-land_surface_condition
+- age (type: int):
+age of the building in years.
+
+- area_percentage (type: int):
+normalized area of the building footprint.
+
+- height_percentage (type: int):
+normalized height of the building footprint.
+
+- land_surface_condition (type: categorical):
+surface condition of the land where the building was built. Possible values: n, o, t.
 t    72180
 n    11885
 o     2803
-Name: count, dtype: int64
 
-
-foundation_type
+- foundation_type (type: categorical):
+type of foundation used while building. Possible values: h, i, r, u, w.
 r    73178
 w     4930
 u     4648
 i     3603
 h      509
-Name: count, dtype: int64
 
-roof_type
+- roof_type (type: categorical):
+type of roof used while building. Possible values: n, q, x
 n    61133
 q    20329
 x     5406
-Name: count, dtype: int64
 
-ground_floor_type
+- ground_floor_type (type: categorical):
+type of the ground floor. Possible values: f, m, v, x, z.
 f    69972
 x     8232
 v     8138
 z      330
 m      196
-Name: count, dtype: int64
 
-other_floor_type
+- other_floor_type (type: categorical):
+type of constructions used in higher than the ground floors (except of roof)
 q    55004
 x    14691
 j    13069
 s     4104
-Name: count, dtype: int64
 
-position
+- position (type: categorical):
+position of the building
 s    67373
 t    14362
 j     4365
 o      768
-Name: count, dtype: int64
 
-plan_configuration
+- plan_configuration (type: categorical):
+building plan configuration.
 d    83255
 q     1949
 u     1260
-c      125
-s      103
-a      101
-o       36
-m       18
-n       16
-f        5
-Name: count, dtype: int64
+...
 
-has_superstructure_adobe_mud
+- has_superstructure_adobe_mud (type: binary):
+flag variable that indicates if the superstructure was made of Adobe/Mud.
 0    79054
 1     7814
-Name: count, dtype: int64
 
-has_superstructure_mud_mortar_stone
+- has_superstructure_mud_mortar_stone (type: binary):
+flag variable that indicates if the superstructure was made of Mud Mortar - Stone.
 1    66237
 0    20631
-Name: count, dtype: int64
 
-has_superstructure_stone_flag
+- has_superstructure_stone_flag (type: binary):
+flag variable that indicates if the superstructure was made of Stone.
 0    83874
 1     2994
-Name: count, dtype: int64
 
-has_superstructure_cement_mortar_stone
+has_superstructure_cement_mortar_stone (type: binary):
+flag variable that indicates if the superstructure was made of Cement Mortar - Stone.
 0    85255
 1     1613
-Name: count, dtype: int64
 
-has_superstructure_mud_mortar_brick
+- has_superstructure_mud_mortar_brick (type: binary):
+flag variable that indicates if the superstructure was made of Mud Mortar - Brick.
 0    81008
 1     5860
-Name: count, dtype: int64
 
-has_superstructure_cement_mortar_brick
+- has_superstructure_cement_mortar_brick (type: binary):
+flag variable that indicates if the superstructure was made of Cement Mortar - Brick.
 0    80454
 1     6414
-Name: count, dtype: int64
 
 has_superstructure_timber
 0    64844
 1    22024
 Name: count, dtype: int64
 
-has_superstructure_bamboo
+- has_superstructure_timber (type: binary):
+flag variable that indicates if the superstructure was made of Timber.
 0    79599
 1     7269
-Name: count, dtype: int64
 
-has_superstructure_rc_non_engineered
+- has_superstructure_bamboo (type: binary):
+flag variable that indicates if the superstructure was made of Bamboo.
 0    83176
 1     3692
-Name: count, dtype: int64
 
-has_superstructure_rc_engineered
+- has_superstructure_rc_non_engineered (type: binary):
+flag variable that indicates if the superstructure was made of non-engineered reinforced concrete.
 0    85496
 1     1372
-Name: count, dtype: int64
 
-has_superstructure_other
+- has_superstructure_other (type: binary):
+flag variable that indicates if the superstructure was made of any other material.
 0    85547
 1     1321
-Name: count, dtype: int64
 
-legal_ownership_status
+- legal_ownership_status (type: categorical):
+legal ownership status of the land where building was built.
 v    83694
 a     1795
 w      862
 r      517
-Name: count, dtype: int64
 
-count_families
+- count_families (type: int): number of families that live in the building.
 1    75262
 0     7075
 2     3716
-3      613
-4      158
-5       31
-6       11
-7        1
-8        1
-Name: count, dtype: int64
+...
 
-has_secondary_use
+- has_secondary_use (type: binary):
+flag variable that indicates if the building was used for any secondary purpose.
 0    77185
 1     9683
-Name: count, dtype: int64
 
-has_secondary_use_agriculture
+- has_secondary_use_agriculture (type: binary):
+flag variable that indicates if the building was used for agricultural purposes.
 0    81300
 1     5568
-Name: count, dtype: int64
 
-has_secondary_use_hotel
+- has_secondary_use_hotel (type: binary):
+flag variable that indicates if the building was used as a hotel
 0    83926
 1     2942
-Name: count, dtype: int64
 
-has_secondary_use_rental
+- has_secondary_use_rental (type: binary):
+flag variable that indicates if the building was used for rental purposes.
 0    86152
 1      716
-Name: count, dtype: int64
 
-has_secondary_use_institution
+- has_secondary_use_institution (type: binary):
+flag variable that indicates if the building was used as a location of any institution.
 0    86780
 1       88
-Name: count, dtype: int64
 
-has_secondary_use_school
+- has_secondary_use_school (type: binary):
+flag variable that indicates if the building was used as a school.
 0    86836
 1       32
-Name: count, dtype: int64
 
-has_secondary_use_industry
+- has_secondary_use_industry (type: binary):
+flag variable that indicates if the building was used for industrial purposes.
 0    86781
 1       87
-Name: count, dtype: int64
 
 has_secondary_use_health_post
 0    86859
 1        9
-Name: count, dtype: int64
 
 has_secondary_use_gov_office
 0    86858
 1       10
-Name: count, dtype: int64
 
 has_secondary_use_use_police
 0    86864
 1        4
-Name: count, dtype: int64
 
 has_secondary_use_other
 0    86442
 1      426
-Name: count, dtype: int64
 
 
 
