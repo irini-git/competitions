@@ -2,19 +2,76 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import altair as alt
-import numpy as np
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 # Constants
 FILENAME_TEST_VALUES = '../data/Richters_Predictor_Modeling_Earthquake_Damage_-_Test_Values.csv'
 FILENAME_TRAIN_VALUES = '../data/Richters_Predictor_Modeling_Earthquake_Damage_-_Train_Labels.csv'
 FILENAME_TRAIN_LABELS = '../data/Richters_Predictor_Modeling_Earthquake_Damage_-_Train_Values.csv'
-
+CUTOFF_COLUMNS_DROP = 0.001
 
 class EarthquakeData:
     def __init__(self):
         self.df_train_labels, self.df_train_values, self.df_test_values, self.df_train = self.load_data()
         # self.plot_data()
-        self.define_cutoff_value()
+        self.df_train_cleaned = self.clean_binary_features()
+        self.explore_data()
+
+
+    def explore_data(self):
+
+        def calculate_proportions(c):
+                temp = self.df_train_cleaned[c].value_counts()
+                temp = temp.to_frame().reset_index()
+
+                # Add a column with feature name
+                temp['feature'] = temp.columns[0]
+
+                # Rename columns
+                temp.rename(columns={c: 'value'}, inplace=True)
+
+                return temp
+
+        # Prepare data
+        columns_explore = ['geo_level_1_id', 'geo_level_2_id', 'geo_level_3_id']
+        df = pd.DataFrame(None, columns=['value', 'count', 'feature'])
+
+        for c in columns_explore:
+            temp = calculate_proportions(c)
+            df = pd.concat([temp, df])
+
+        level3 = 'geo_level_3_id'
+        level2 = 'geo_level_2_id'
+        level1 = 'geo_level_1_id'
+
+        # Support scatter plot for geo_level_3_id
+        chart_3 = alt.Chart(df.query('feature==@level3')).mark_circle(size=60).encode(
+            x='value',
+            y='count',
+            color='feature',
+            # tooltip=['Name', 'Origin', 'Horsepower', 'Miles_per_Gallon']
+        ).interactive()
+
+        # Support scatter plot for geo_level_2_id
+        chart_2 = alt.Chart(df.query('feature==@level2')).mark_circle(size=60).encode(
+            x='value',
+            y='count',
+            color='feature',
+            # tooltip=['Name', 'Origin', 'Horsepower', 'Miles_per_Gallon']
+        ).interactive()
+
+        # Support scatter plot for geo_level_1_id
+        chart_1 = alt.Chart(df.query('feature==@level1')).mark_circle(size=60).encode(
+            x='value',
+            y='count',
+            color='feature',
+            # tooltip=['Name', 'Origin', 'Horsepower', 'Miles_per_Gallon']
+        ).interactive()
+
+        chart = chart_1 | chart_2 | chart_3
+
+        chart.save(f'../fig/Explore_altair_numeric_geo_level.png')
 
     def load_data(self):
         """
@@ -30,29 +87,16 @@ class EarthquakeData:
 
         return df_train_labels, df_train_values, df_test_values, df_train
 
-    def define_cutoff_value(self):
+
+    def clean_binary_features(self):
         """
-        Explore data : features to drop
+        Define features to drop
         :return:
         """
 
-        # Explore columns, shape
-        print('-' * 10)
-        for df in [self.df_train]:
-            # for c in df.columns:
-            # print(df[c].value_counts())
-            print(f'Dataframe shape : {df.shape}')
-            print(f'Null values in database : {df.isnull().sum().sum()}')
-            print(df.info())
-            # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-            #     print(df.describe(include='all'))
-
-        # Value counts in %
-        print(self.df_train_labels.columns)
-
         columns_explore = [
        'land_surface_condition', 'foundation_type', 'roof_type',
-       'ground_floor_type', 'other_floor_type', 'position',
+       'ground_floor_type', 'other_floor_type', 'position', 'legal_ownership_status',
        'has_superstructure_adobe_mud',
        'has_superstructure_mud_mortar_stone', 'has_superstructure_stone_flag',
        'has_superstructure_cement_mortar_stone',
@@ -60,15 +104,42 @@ class EarthquakeData:
        'has_superstructure_cement_mortar_brick', 'has_superstructure_timber',
        'has_superstructure_bamboo', 'has_superstructure_rc_non_engineered',
        'has_superstructure_rc_engineered', 'has_superstructure_other',
-       'legal_ownership_status', 'has_secondary_use',
+       'has_secondary_use',
        'has_secondary_use_agriculture', 'has_secondary_use_hotel',
        'has_secondary_use_rental', 'has_secondary_use_institution',
        'has_secondary_use_school', 'has_secondary_use_industry',
        'has_secondary_use_health_post', 'has_secondary_use_gov_office',
        'has_secondary_use_use_police', 'has_secondary_use_other']
 
+        def calculate_proportions(c):
+                temp = self.df_train_labels[c].value_counts(normalize=True)
+                temp = temp.to_frame().reset_index()
+
+                # Add a column with feature name
+                temp['feature'] = temp.columns[0]
+
+                # Rename columns
+                temp.rename(columns={c: 'value'}, inplace=True)
+
+                return temp
+
+        # Prepare data
+        df = pd.DataFrame(None, columns=['value', 'proportion', 'feature'])
         for c in columns_explore:
-            print(self.df_train_labels[c].value_counts(normalize=True))
+            temp = calculate_proportions(c)
+            df = pd.concat([temp, df])
+
+        df = df.sort_values(by='proportion', ascending=True)
+        columns_to_drop = df.query('proportion<@CUTOFF_COLUMNS_DROP')['feature'].values
+        values_to_drop = df.query('proportion<@CUTOFF_COLUMNS_DROP')['value'].values
+        features_drop_dict = {k: v for k, v in zip(columns_to_drop, values_to_drop)}
+
+        # Drop values less than cut-off in specific columns
+        df_train_cleaned = pd.DataFrame()
+        for k,v in features_drop_dict.items():
+            df_train_cleaned = self.df_train[(self.df_train[k] != v)]
+
+        return df_train_cleaned
 
     def plot_data(self):
         """
