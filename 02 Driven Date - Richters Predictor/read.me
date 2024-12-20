@@ -1,7 +1,14 @@
+Problem summary
+Based on aspects of building location and construction,
+your goal is to predict the level of damage to buildings caused by
+the 2015 Gorkha earthquake in Nepal.
 
+Data
 
-Labels
+1. Labels
 There are both categorical and numeric features.
+
+1.1 Below is short description and a quick summary of values.
 
 - geo_level_1_id, geo_level_2_id, geo_level_3_id (type: int):
 geographic region in which building exists,
@@ -200,6 +207,13 @@ flag variable that indicates if the building was secondarily used for other purp
 0    86442
 1      426
 
+1.2 Features to drop
+There are no Null values, but...
+some features have 'non-used' values, and a highly disbalanced.
+For example, has_secondary_use_use_police can be Yes and No, and
+almost all values are No (86k) and not Yes (426 entries).
+
+We will define a cut-off value of 0.01% if ok to drop the entry.
 
 
 References

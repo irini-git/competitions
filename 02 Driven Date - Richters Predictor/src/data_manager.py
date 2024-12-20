@@ -13,7 +13,8 @@ FILENAME_TRAIN_LABELS = '../data/Richters_Predictor_Modeling_Earthquake_Damage_-
 class EarthquakeData:
     def __init__(self):
         self.df_train_labels, self.df_train_values, self.df_test_values, self.df_train = self.load_data()
-        self.explore_data()
+        # self.plot_data()
+        self.define_cutoff_value()
 
     def load_data(self):
         """
@@ -29,21 +30,50 @@ class EarthquakeData:
 
         return df_train_labels, df_train_values, df_test_values, df_train
 
-    def explore_data(self):
+    def define_cutoff_value(self):
         """
-        Explore data
+        Explore data : features to drop
+        :return:
         """
 
         # Explore columns, shape
-        print('-'*10)
+        print('-' * 10)
         for df in [self.df_train]:
             # for c in df.columns:
-                # print(df[c].value_counts())
+            # print(df[c].value_counts())
             print(f'Dataframe shape : {df.shape}')
             print(f'Null values in database : {df.isnull().sum().sum()}')
             print(df.info())
-            with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-                print(df.describe(include='all'))
+            # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+            #     print(df.describe(include='all'))
+
+        # Value counts in %
+        print(self.df_train_labels.columns)
+
+        columns_explore = [
+       'land_surface_condition', 'foundation_type', 'roof_type',
+       'ground_floor_type', 'other_floor_type', 'position',
+       'has_superstructure_adobe_mud',
+       'has_superstructure_mud_mortar_stone', 'has_superstructure_stone_flag',
+       'has_superstructure_cement_mortar_stone',
+       'has_superstructure_mud_mortar_brick',
+       'has_superstructure_cement_mortar_brick', 'has_superstructure_timber',
+       'has_superstructure_bamboo', 'has_superstructure_rc_non_engineered',
+       'has_superstructure_rc_engineered', 'has_superstructure_other',
+       'legal_ownership_status', 'has_secondary_use',
+       'has_secondary_use_agriculture', 'has_secondary_use_hotel',
+       'has_secondary_use_rental', 'has_secondary_use_institution',
+       'has_secondary_use_school', 'has_secondary_use_industry',
+       'has_secondary_use_health_post', 'has_secondary_use_gov_office',
+       'has_secondary_use_use_police', 'has_secondary_use_other']
+
+        for c in columns_explore:
+            print(self.df_train_labels[c].value_counts(normalize=True))
+
+    def plot_data(self):
+        """
+        Plot data
+        """
 
         def plot_seaborn_counts(feature_):
             # Set the palette to the "pastel" default palette:
@@ -70,21 +100,13 @@ class EarthquakeData:
 
             plt.savefig(f'../fig/Explore_count_{feature_}.png')
 
+        # Plot -------------
         # Plot counts for categorical features
-        #  land_surface_condition                  260601 non-null  object
-        #  foundation_type                         260601 non-null  object
-        #  roof_type                               260601 non-null  object
-        #  ground_floor_type                       260601 non-null  object
-        #  other_floor_type                        260601 non-null  object
-        #  position                                260601 non-null  object
-        #  plan_configuration                      260601 non-null  object
-        #  legal_ownership_status                  260601 non-null  object
         # for f in ['land_surface_condition', 'foundation_type', 'roof_type', 'plan_configuration',
         #          'ground_floor_type', 'other_floor_type', 'position', 'legal_ownership_status']:
 
             # Plot counts for obj variables
             # plot_seaborn_counts(feature_=f)
-            # pass
 
         def plot_altair_counts(binary_columns, title_):
 
@@ -123,6 +145,7 @@ class EarthquakeData:
 
             chart.save(f'../fig/Explore_altair_numeric_{title_.lower()}.png')
 
+        # Plot -------------
         # Has secondary columns
         features_has_secondary_use = ['has_secondary_use_other', 'has_secondary_use_use_police',
                           'has_secondary_use_gov_office', 'has_secondary_use_health_post',
@@ -133,6 +156,7 @@ class EarthquakeData:
         title_has_secondary_use = 'Has secondary use'
         plot_altair_counts(features_has_secondary_use, title_has_secondary_use)
 
+        # Plot -------------
         # Has superstructure
         features_has_superstructure = ['has_superstructure_other', 'has_superstructure_rc_engineered',
                                        'has_superstructure_rc_non_engineered',
