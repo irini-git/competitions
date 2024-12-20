@@ -20,7 +20,7 @@ class EarthquakeData:
         self.df_train_cleaned = self.clean_binary_features()
         # self.explore_geo_levels()
         # self.explore_other()
-        self.clean_numeric_features()
+        # self.clean_numeric_features()
 
     def clean_numeric_features(self):
         """
