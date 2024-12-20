@@ -14,9 +14,11 @@ There are both categorical and numeric features.
 geographic region in which building exists,
 from largest (level 1) to most specific sub-region (level 3).
 Possible values: level 1: 0-30, level 2: 0-1427, level 3: 0-12567.
+Was not able to identify any potential for improvement, will use as is.
 
 - count_floors_pre_eq (type: int):
 number of floors in the building before the earthquake.
+Was not able to identify any potential for improvement, will use as is.
 2    52406
 3    18554
 1    13264
@@ -28,12 +30,23 @@ number of floors in the building before the earthquake.
 
 - age (type: int):
 age of the building in years.
+There is a potential for dropping below values of 995 y.
+There are some buildings aged 995 years, and there is a gap in age do that
+the one before 995 is 200 years.
+It might introduce some bias.
+    value damage_grade  count feature
+106   995            3    389     age
+105   995            2    822     age
+104   995            1    179     age
+103   200            3     39     age
 
 - area_percentage (type: int):
 normalized area of the building footprint.
+Introduce 'larger than 30'
 
 - height_percentage (type: int):
 normalized height of the building footprint.
+Introduce 'larger than 15'
 
 - land_surface_condition (type: categorical):
 surface condition of the land where the building was built. Possible values: n, o, t.

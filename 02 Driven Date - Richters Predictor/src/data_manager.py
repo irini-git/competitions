@@ -4,41 +4,122 @@ import seaborn as sns
 import altair as alt
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
+import numpy as np
 
 # Constants
 FILENAME_TEST_VALUES = '../data/Richters_Predictor_Modeling_Earthquake_Damage_-_Test_Values.csv'
 FILENAME_TRAIN_VALUES = '../data/Richters_Predictor_Modeling_Earthquake_Damage_-_Train_Labels.csv'
 FILENAME_TRAIN_LABELS = '../data/Richters_Predictor_Modeling_Earthquake_Damage_-_Train_Values.csv'
 CUTOFF_COLUMNS_DROP = 0.001
+PALETTE = ["#FFDE91", "#FE7E03", "#9B1D1E"]
 
 class EarthquakeData:
     def __init__(self):
         self.df_train_labels, self.df_train_values, self.df_test_values, self.df_train = self.load_data()
         # self.plot_data()
         self.df_train_cleaned = self.clean_binary_features()
-        self.explore_data()
+        # self.explore_geo_levels()
+        # self.explore_other()
+        self.clean_numeric_features()
+
+    def clean_numeric_features(self):
+        """
+        There are two numeric features that we will clean
+
+        - area_percentage (type: int):
+        normalized area of the building footprint.
+        Introduce 'larger than 30'
+
+        - height_percentage (type: int):
+        normalized height of the building footprint.
+        Introduce 'larger than 15'
+        :return:
+        """
+
+        def create_cleaned_feature(row):
+            if row['area_percentage'] < 30:
+                return row['area_percentage']
+            else:
+                return 30
+
+        # def fab(row):
+        #   return row['A'] * row['B']
+        #
+        # df['newcolumn'] = df.apply(fab, axis=1)
+
+        # Create a new feature for area_percentage, hard code if larger or equal to 30
+        # list_area = [a if a < 30 else 30 for a in self.df_train_cleaned['area_percentage']]
+        # self.df_train_cleaned['area_cleaned'] = self.df_train_cleaned.apply(create_cleaned_feature, axis=1)
+        # print(self.df_train_cleaned['area_cleaned'])
+
+        # Create a new feature for height_percentage, hard code if larger or equal to 30
+        # list_area = [a if a < 15 else 15 for a in self.df_train_cleaned['height_percentage']]
+        # self.df_train_cleaned['height_cleaned'] = np.array(list_area)
+
+        # print(self.df_train_cleaned['height_cleaned'].value_counts())
 
 
-    def explore_data(self):
+    def explore_other(self):
+        """
+        Explore four other numeric features
+        :return: plots
+        """
+        columns_explore = ['count_floors_pre_eq', 'age', 'area_percentage', 'height_percentage']
+        df = pd.DataFrame(None, columns=['value', 'damage_grade', 'count', 'feature'])
 
-        def calculate_proportions(c):
-                temp = self.df_train_cleaned[c].value_counts()
-                temp = temp.to_frame().reset_index()
+        for c in columns_explore:
+            temp = self.create_support_df(c)
+            df = pd.concat([temp, df])
 
-                # Add a column with feature name
-                temp['feature'] = temp.columns[0]
+        feature1 = 'count_floors_pre_eq'
+        feature2 ='age'
+        feature3 = 'area_percentage'
+        feature4 = 'height_percentage'
 
-                # Rename columns
-                temp.rename(columns={c: 'value'}, inplace=True)
+        # Scatter plot for floor number
+        chart1 = alt.Chart(df.query('feature==@feature1'),
+                           title='Number of floors in the building before the earthquake').mark_circle(size=60).encode(
+            x=alt.X('value', title=''),
+            y=alt.Y('count', title=''),
+            color=alt.Color('damage_grade').scale(scheme='yelloworangebrown')
+        ).interactive()
 
-                return temp
+        chart2 = alt.Chart(df.query('feature==@feature2'),
+                           title='Age of the building in years').mark_circle(size=60).encode(
+            x=alt.X('value', title=''),
+            y=alt.Y('count', title=''),
+            color=alt.Color('damage_grade')
+        ).interactive()
+
+        chart3 = alt.Chart(df.query('feature==@feature3'),
+                           title='Normalized area of building').mark_circle(size=60).encode(
+            x=alt.X('value', title=''),
+            y=alt.Y('count', title=''),
+            color=alt.Color('damage_grade')
+        ).interactive()
+
+        chart4 = alt.Chart(df.query('feature==@feature4'),
+                           title='Normalized height of building').mark_circle(size=60).encode(
+            x=alt.X('value', title=''),
+            y=alt.Y('count', title=''),
+            color=alt.Color('damage_grade')
+        ).interactive()
+
+        upper = chart1 | chart2
+        lower = chart3 | chart4
+
+        chart = alt.vconcat(upper, lower)
+
+        chart.save(f'../fig/Explore_altair_numeric_count_floors_age_area_height.png')
+
+    def explore_geo_levels(self):
 
         # Prepare data
         columns_explore = ['geo_level_1_id', 'geo_level_2_id', 'geo_level_3_id']
-        df = pd.DataFrame(None, columns=['value', 'count', 'feature'])
+        df = pd.DataFrame(None, columns=['value', 'damage_grade', 'count', 'feature'])
 
         for c in columns_explore:
-            temp = calculate_proportions(c)
+            temp = self.create_support_df(c)
             df = pd.concat([temp, df])
 
         level3 = 'geo_level_3_id'
@@ -46,27 +127,25 @@ class EarthquakeData:
         level1 = 'geo_level_1_id'
 
         # Support scatter plot for geo_level_3_id
-        chart_3 = alt.Chart(df.query('feature==@level3')).mark_circle(size=60).encode(
-            x='value',
-            y='count',
-            color='feature',
-            # tooltip=['Name', 'Origin', 'Horsepower', 'Miles_per_Gallon']
+        chart_3 = alt.Chart(df.query('feature==@level3'), title='Geographic region 3').mark_circle(size=60).encode(
+            x=alt.X('value', title=''),
+            y=alt.Y('count', title=''),
+            # color=alt.Color('damage_grade', legend=None)
+            color = alt.Color('damage_grade').scale(scheme='yelloworangebrown')
         ).interactive()
 
         # Support scatter plot for geo_level_2_id
-        chart_2 = alt.Chart(df.query('feature==@level2')).mark_circle(size=60).encode(
-            x='value',
-            y='count',
-            color='feature',
-            # tooltip=['Name', 'Origin', 'Horsepower', 'Miles_per_Gallon']
+        chart_2 = alt.Chart(df.query('feature==@level2'), title='Geographic region 2').mark_circle(size=60).encode(
+            x=alt.X('value', title=''),
+            y=alt.Y('count', title=''),
+            color=alt.Color('damage_grade')
         ).interactive()
 
         # Support scatter plot for geo_level_1_id
-        chart_1 = alt.Chart(df.query('feature==@level1')).mark_circle(size=60).encode(
-            x='value',
-            y='count',
-            color='feature',
-            # tooltip=['Name', 'Origin', 'Horsepower', 'Miles_per_Gallon']
+        chart_1 = alt.Chart(df.query('feature==@level1'), title='Geographic region 1').mark_circle(size=60).encode(
+            x=alt.X('value', title=''),
+            y=alt.Y('count', title=''),
+            color=alt.Color('damage_grade')
         ).interactive()
 
         chart = chart_1 | chart_2 | chart_3
@@ -150,14 +229,11 @@ class EarthquakeData:
             # Set the palette to the "pastel" default palette:
             # sns.set_palette("pastel")
 
-            # plt.style.use("seaborn-v0_8-whitegrid")
-            palette = ["#FFDE91", "#FE7E03", "#9B1D1E"]
-
             plt.figure(figsize=(10,6))
             sns.countplot(data=self.df_train,
                           x = feature_,
                           hue='damage_grade',
-                          palette=sns.color_palette(palette, len(palette)))
+                          palette=sns.color_palette(PALETTE, len(PALETTE)))
 
 
             sns.set_theme(font_scale=1.4)
@@ -181,26 +257,11 @@ class EarthquakeData:
 
         def plot_altair_counts(binary_columns, title_):
 
-            def create_support_df(feature_):
-                """
-                Create support pivoted data for binary features
-                Used as input for plots
-                :return:
-                """
-
-                # print(self.df_train[['has_secondary_use_other', 'damage_grade']].head(10))
-                temp = self.df_train.groupby([feature_,  'damage_grade'],as_index=False)['building_id'].count()
-
-                # Add a column with feature name
-                temp['feature'] = temp.columns[0]
-
-                # Rename columns
-                return temp.rename({'building_id': 'count', feature_: 'value'}, axis='columns')
 
             # Prepare data
             df = pd.DataFrame(None, columns=['value','damage_grade','count', 'feature'])
             for c in binary_columns:
-                temp = create_support_df(c)
+                temp = self.create_support_df(c)
                 df = pd.concat([temp, df])
 
             # Plot
@@ -242,3 +303,18 @@ class EarthquakeData:
         title_has_superstructure = 'Has superstructure'
         plot_altair_counts(features_has_superstructure, title_has_superstructure)
 
+    def create_support_df(self, feature_):
+        """
+         Create support pivoted data for binary features
+        Used as input for plots
+        :return:
+        """
+
+        # print(self.df_train[['has_secondary_use_other', 'damage_grade']].head(10))
+        temp = self.df_train.groupby([feature_,  'damage_grade'],as_index=False)['building_id'].count()
+
+        # Add a column with feature name
+        temp['feature'] = temp.columns[0]
+
+        # Rename columns
+        return temp.rename({'building_id': 'count', feature_: 'value'}, axis='columns')
