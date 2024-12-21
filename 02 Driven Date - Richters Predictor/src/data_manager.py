@@ -46,14 +46,12 @@ class EarthquakeData:
         """
 
         # Define numeric and categorical features -------------
-        numeric_features_all = ['count_floors_pre_eq', 'geo_level_1_id',
+        numeric_features = ['count_floors_pre_eq', 'geo_level_1_id',
                             'area_pct_cleaned', 'height_pct_cleaned',
                             'has_superstructure_mud_mortar_stone',
                             'has_superstructure_timber',
                             'has_secondary_use', 'has_secondary_use_agriculture',
                             'has_secondary_use_hotel', 'plan_config_cleaned']
-
-        numeric_features = []
 
         categorical_features = ['land_surface_condition', 'foundation_type',
                                 'roof_type', 'ground_floor_type',
@@ -63,11 +61,9 @@ class EarthquakeData:
         # Define pipelines for numeric and categorical features -------------
         numeric_transformer = Pipeline(
             steps=[
-                ('encoder', OneHotEncoder(sparse_output=False,
-                                          dtype='int',
-                                          drop="if_binary",
+                ('encoder', OneHotEncoder(drop="if_binary",
                                           handle_unknown='ignore')),
-                ('scaler', StandardScaler())
+                ('scaler', StandardScaler(with_mean=False))
             ]
             )
 
@@ -99,7 +95,7 @@ class EarthquakeData:
         param_grid = {'model__n_estimators': [50, 100],
                       'model__min_samples_leaf': [1, 5]}
 
-        gs = GridSearchCV(main_pipe, param_grid, cv=5)
+        gs = GridSearchCV(main_pipe, param_grid, cv=2, verbose=4)
 
         # Define X and y
         # X : remove id and damage, and other columns out of scope
