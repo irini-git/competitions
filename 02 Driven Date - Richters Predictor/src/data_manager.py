@@ -82,15 +82,16 @@ class EarthquakeData:
             remainder='passthrough'
         )
 
-
         # Define classifier
-        classifier = KNeighborsClassifier()
+        classifier = KNeighborsClassifier(n_jobs=-1)
 
         # Make a pipeline
         main_pipe = Pipeline(
             steps=[
                 ("preprocessor", col_transformer),  # <-- this is the ColumnTransformer we created
                 ("model", classifier)])
+
+        print(main_pipe)
 
         # Define X and y
         # X : remove id and damage
@@ -106,14 +107,6 @@ class EarthquakeData:
                                             random_state=RANDOM_SEED
                                         )
 
-        # Train pipeline
-        main_pipe.fit(X_train, y_train)
-
-        # Make predictions with a pipeline
-        print("Predictions:", main_pipe.predict(X_test))
-
-        # Evaluate pipeline performance
-        print("Performance score:", main_pipe.score(X_test, y_test))
 
     def clean_numeric_features(self):
         """
