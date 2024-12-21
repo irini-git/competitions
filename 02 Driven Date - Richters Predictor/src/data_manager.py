@@ -21,11 +21,35 @@ PALETTE = ["#FFDE91", "#FE7E03", "#9B1D1E"]
 class EarthquakeData:
     def __init__(self):
         self.df_train_labels, self.df_train_values, self.df_test_values, self.df_train = self.load_data()
+        self.df_train_cleaned = self.df_train
         # self.plot_data()
-        self.df_train_cleaned = self.clean_binary_features()
+        # self.clean_features()
         # self.explore_geo_levels()
         # self.explore_other()
         self.clean_numeric_features()
+        self.create_model()
+
+    def create_model(self):
+        # categorical vs numeric features
+        print(self.df_train_cleaned.info())
+
+        # Define numeric and categorical features
+        numeric_features = ['geo_level_1_id', 'geo_level_2_id', 'geo_level_3_id',
+                            'count_floors_pre_eq', 'count_families', 'area_pct_cleaned', 'height_pct_cleaned']
+
+        categorical_features = ['land_surface_condition', 'foundation_type',
+                                'roof_type', 'ground_floor_type',
+                                'other_floor_type', 'position', 'plan_configuration',
+                                'legal_ownership_status']
+
+        numeric_features_binary = ['has_superstructure_adobe_mud', 'has_superstructure_mud_mortar_stone',
+                                   'has_superstructure_stone_flag', 'has_superstructure_cement_mortar_stone',
+                                   'has_superstructure_mud_mortar_brick', 'has_superstructure_cement_mortar_brick',
+                                   'has_superstructure_timber', 'has_superstructure_bamboo',
+                                   'has_superstructure_rc_non_engineered', 'has_superstructure_rc_engineered',
+                                   'has_superstructure_other', 'has_secondary_use', 'has_secondary_use_agriculture',
+                                   'has_secondary_use_hotel']
+
 
     def clean_numeric_features(self):
         """
@@ -49,7 +73,7 @@ class EarthquakeData:
         :return:
         """
 
-        # Replace age of building of 995 by the median of the column
+        # Replace age of building equal to 995 years by the median of the column
         median_age = int(np.median(self.df_train_cleaned['age']))
         self.df_train_cleaned['age'] = self.df_train_cleaned['age'].replace({995: median_age})
 
@@ -72,8 +96,20 @@ class EarthquakeData:
         # height_percentage
         self.df_train_cleaned['height_pct_cleaned'] = self.df_train_cleaned.apply(create_cleaned_height, axis=1)
 
-        # Drop initial area and height features
-        self.df_train_cleaned.drop(['area_percentage', 'height_percentage'], axis='columns', inplace=True)
+        # Drop initial area, height and age features
+        self.df_train_cleaned.drop(['area_percentage', 'height_percentage', 'age'], axis='columns', inplace=True)
+
+        # From exploration, some 'has secondary use'
+        # to be dropped -
+        # rational : almost all values are 0 (does not have secondary use)
+        # and similar distrbution btw damage grade
+
+        columns_to_drop_secondary_use = ['has_secondary_use_gov_office', 'has_secondary_use_health_post',
+                                         'has_secondary_use_industry', 'has_secondary_use_institution',
+                                         'has_secondary_use_other', 'has_secondary_use_rental',
+                                         'has_secondary_use_school', 'has_secondary_use_use_police']
+        self.df_train_cleaned.drop(columns_to_drop_secondary_use, axis='columns', inplace=True)
+
 
     def explore_other(self):
         """
@@ -184,7 +220,7 @@ class EarthquakeData:
         return df_train_labels, df_train_values, df_test_values, df_train
 
 
-    def clean_binary_features(self):
+    def clean_features(self):
         """
         Define features to drop
         :return:
@@ -235,7 +271,8 @@ class EarthquakeData:
         for k,v in features_drop_dict.items():
             df_train_cleaned = self.df_train[(self.df_train[k] != v)]
 
-        return df_train_cleaned
+
+        self.df_train_cleaned = df_train_cleaned
 
     def plot_data(self):
         """
