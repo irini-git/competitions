@@ -32,6 +32,7 @@ class EarthquakeData:
     def __init__(self):
         self.df_train_labels, self.df_train_values, self.df_test_values, self.df_train = self.load_data()
         self.df_train_cleaned = self.df_train
+        self.df_test_values_cleaned = self.df_test_values
         # self.plot_data()
         # self.clean_features()
         # self.explore_geo_levels()
@@ -50,8 +51,8 @@ class EarthquakeData:
                             'area_pct_cleaned', 'height_pct_cleaned',
                             'has_superstructure_mud_mortar_stone',
                             'has_superstructure_timber',
-                            'has_secondary_use', 'has_secondary_use_agriculture',
-                            'has_secondary_use_hotel', 'plan_config_cleaned']
+                            'has_secondary_use', 'plan_config_cleaned']
+        # 'has_secondary_use_agriculture', 'has_secondary_use_hotel'
 
         categorical_features = ['land_surface_condition', 'foundation_type',
                                 'roof_type', 'ground_floor_type',
@@ -84,7 +85,14 @@ class EarthquakeData:
         )
 
         # Define classifier
-        classifier = RandomForestClassifier(random_state=2018)
+        # 'model__min_samples_leaf': [5]
+        classifier = RandomForestClassifier(random_state=2018,
+                                            min_samples_leaf=5)
+
+
+        # RandomForestClassifier(random_state=2018)
+        # f1 0.6892056884382377
+        # f1 0.6877754392492936
 
         # Make a pipeline
         main_pipe = Pipeline(
@@ -92,8 +100,7 @@ class EarthquakeData:
                 ("preprocessor", col_transformer),  # <-- this is the ColumnTransformer we created
                 ("model", classifier)])
 
-        param_grid = {'model__n_estimators': [50, 100],
-                      'model__min_samples_leaf': [1, 5]}
+        param_grid = {'model__n_estimators': [50, 100]}
 
         gs = GridSearchCV(main_pipe, param_grid, cv=2, verbose=4)
 
@@ -103,6 +110,10 @@ class EarthquakeData:
         y = self.df_train_cleaned['damage_grade'].values
         X = self.df_train_cleaned[numeric_features + categorical_features].copy()
 
+        # Submissions
+        submission_id = self.df_test_values_cleaned['building_id'].values
+        test_values_subset = self.df_test_values_cleaned[numeric_features + categorical_features].copy()
+
         # Split data into train and test sets
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33,
                                             shuffle=True,
@@ -111,12 +122,16 @@ class EarthquakeData:
                                         )
         gs.fit(X_train, y_train)
         print(gs.best_params_)
-
         y_pred = gs.predict(X_test)
-
         print(f1_score(y_test, y_pred, average="micro"))
-        print(precision_score(y_test, y_pred, average="micro"))
-        print(recall_score(y_test, y_pred, average="micro"))
+        predictions = gs.predict(test_values_subset)
+
+        my_submission = pd.DataFrame(data=predictions,
+                                     columns=['building_id','damage_grade'],
+                                     index=submission_id)
+
+        my_submission.to_csv('../data/submission_001.csv')
+
 
     def clean_numeric_features(self):
         """
@@ -140,10 +155,6 @@ class EarthquakeData:
         :return:
         """
 
-        # Replace age of building equal to 995 years by the median of the column
-        median_age = int(np.median(self.df_train_cleaned['age']))
-        self.df_train_cleaned['age'] = self.df_train_cleaned['age'].replace({995: median_age})
-
         # Support functions for cleaned features
         def create_cleaned_area(row):
             if row['area_percentage'] < CUTOFF_AREA_PRCT:
@@ -164,29 +175,35 @@ class EarthquakeData:
             else:
                 return 0
 
-        # area_percentage
-        self.df_train_cleaned['area_pct_cleaned'] = self.df_train_cleaned.apply(create_cleaned_area, axis=1)
-
-        # height_percentage
-        self.df_train_cleaned['height_pct_cleaned'] = self.df_train_cleaned.apply(create_cleaned_height, axis=1)
-
-        # plan_configuration
-        self.df_train_cleaned['plan_config_cleaned'] = self.df_train_cleaned.apply(create_cleaned_plan, axis=1)
-
-        # Drop initial area, height and age features
-        self.df_train_cleaned.drop(['area_percentage', 'height_percentage', 'age', 'plan_configuration'], axis='columns', inplace=True)
-
         # From exploration, some 'has secondary use'
         # to be dropped -
         # rational : almost all values are 0 (does not have secondary use)
         # and similar distrbution btw damage grade
 
         columns_to_drop_secondary_use = ['has_secondary_use_gov_office', 'has_secondary_use_health_post',
-                                         'has_secondary_use_industry', 'has_secondary_use_institution',
-                                         'has_secondary_use_other', 'has_secondary_use_rental',
-                                         'has_secondary_use_school', 'has_secondary_use_use_police']
-        self.df_train_cleaned.drop(columns_to_drop_secondary_use, axis='columns', inplace=True)
+                                        'has_secondary_use_industry', 'has_secondary_use_institution',
+                                        'has_secondary_use_other', 'has_secondary_use_rental',
+                                        'has_secondary_use_school', 'has_secondary_use_use_police']
 
+        # Replace age of building equal to 995 years by the median of the column
+        for df in [self.df_train_cleaned, self.df_test_values_cleaned]:
+            median_age = int(np.median(df['age']))
+            df['age'] = df['age'].replace({995: median_age})
+
+            # area_percentage
+            df['area_pct_cleaned'] = df.apply(create_cleaned_area, axis=1)
+
+            # height_percentage
+            df['height_pct_cleaned'] = df.apply(create_cleaned_height, axis=1)
+
+            # plan_configuration
+            df['plan_config_cleaned'] = df.apply(create_cleaned_plan, axis=1)
+
+            # Drop initial area, height and age features
+            df.drop(['area_percentage', 'height_percentage', 'age', 'plan_configuration'], axis='columns', inplace=True)
+
+            # Drop some secondary use
+            df.drop(columns_to_drop_secondary_use, axis='columns', inplace=True)
 
     def explore_other(self):
         """
