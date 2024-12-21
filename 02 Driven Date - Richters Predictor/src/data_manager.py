@@ -2,8 +2,11 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import altair as alt
+import pandas as pd
 import warnings
-warnings.simplefilter(action='ignore', category=FutureWarning)
+from pandas.errors import SettingWithCopyWarning
+warnings.simplefilter(action="ignore", category=SettingWithCopyWarning)
+warnings.simplefilter(action="ignore", category=FutureWarning)
 import numpy as np
 
 # Constants
@@ -11,15 +14,17 @@ FILENAME_TEST_VALUES = '../data/Richters_Predictor_Modeling_Earthquake_Damage_-_
 FILENAME_TRAIN_VALUES = '../data/Richters_Predictor_Modeling_Earthquake_Damage_-_Train_Labels.csv'
 FILENAME_TRAIN_LABELS = '../data/Richters_Predictor_Modeling_Earthquake_Damage_-_Train_Values.csv'
 CUTOFF_COLUMNS_DROP = 0.001
+CUTOFF_AREA_PRCT = 35
+CUTOFF_HEIGHT_PRCT = 14
 PALETTE = ["#FFDE91", "#FE7E03", "#9B1D1E"]
 
 class EarthquakeData:
     def __init__(self):
         self.df_train_labels, self.df_train_values, self.df_test_values, self.df_train = self.load_data()
-        self.plot_data()
+        # self.plot_data()
         self.df_train_cleaned = self.clean_binary_features()
-        self.explore_geo_levels()
-        self.explore_other()
+        # self.explore_geo_levels()
+        # self.explore_other()
         self.clean_numeric_features()
 
     def clean_numeric_features(self):
@@ -28,36 +33,34 @@ class EarthquakeData:
 
         - area_percentage (type: int):
         normalized area of the building footprint.
-        Introduce 'larger than 30'
+        Introduce 'larger than CUTOFF_AREA_PRCT'
 
         - height_percentage (type: int):
         normalized height of the building footprint.
-        Introduce 'larger than 15'
+        Introduce 'larger than CUTOFF_HEIGHT_PRCT'
         :return:
         """
 
-        def create_cleaned_feature(row):
-            if row['area_percentage'] < 30:
+        def create_cleaned_area(row):
+            if row['area_percentage'] < CUTOFF_AREA_PRCT:
                 return row['area_percentage']
             else:
-                return 30
+                return CUTOFF_AREA_PRCT
 
-        # def fab(row):
-        #   return row['A'] * row['B']
-        #
-        # df['newcolumn'] = df.apply(fab, axis=1)
+        def create_cleaned_height(row):
+            if row['height_percentage'] < CUTOFF_HEIGHT_PRCT:
+                return row['height_percentage']
+            else:
+                return CUTOFF_HEIGHT_PRCT
 
-        # Create a new feature for area_percentage, hard code if larger or equal to 30
-        # list_area = [a if a < 30 else 30 for a in self.df_train_cleaned['area_percentage']]
-        # self.df_train_cleaned['area_cleaned'] = self.df_train_cleaned.apply(create_cleaned_feature, axis=1)
-        # print(self.df_train_cleaned['area_cleaned'])
+        # area_percentage
+        self.df_train_cleaned['area_pct_cleaned'] = self.df_train_cleaned.apply(create_cleaned_area, axis=1)
 
-        # Create a new feature for height_percentage, hard code if larger or equal to 30
-        # list_area = [a if a < 15 else 15 for a in self.df_train_cleaned['height_percentage']]
-        # self.df_train_cleaned['height_cleaned'] = np.array(list_area)
+        # height_percentage
+        self.df_train_cleaned['height_pct_cleaned'] = self.df_train_cleaned.apply(create_cleaned_height, axis=1)
 
-        # print(self.df_train_cleaned['height_cleaned'].value_counts())
-
+        # Drop initial area and height features
+        self.df_train_cleaned.drop(['area_percentage', 'height_percentage'], axis='columns', inplace=True)
 
     def explore_other(self):
         """
