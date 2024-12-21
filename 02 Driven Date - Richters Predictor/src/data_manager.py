@@ -1,4 +1,3 @@
-import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import altair as alt
@@ -8,6 +7,11 @@ from pandas.errors import SettingWithCopyWarning
 warnings.simplefilter(action="ignore", category=SettingWithCopyWarning)
 warnings.simplefilter(action="ignore", category=FutureWarning)
 import numpy as np
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.compose import ColumnTransformer
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import train_test_split
 
 # Constants
 FILENAME_TEST_VALUES = '../data/Richters_Predictor_Modeling_Earthquake_Damage_-_Test_Values.csv'
@@ -17,6 +21,8 @@ CUTOFF_COLUMNS_DROP = 0.001
 CUTOFF_AREA_PRCT = 35
 CUTOFF_HEIGHT_PRCT = 14
 PALETTE = ["#FFDE91", "#FE7E03", "#9B1D1E"]
+# Set a random seed for reproducibility
+RANDOM_SEED = 6
 
 class EarthquakeData:
     def __init__(self):
@@ -30,26 +36,84 @@ class EarthquakeData:
         self.create_model()
 
     def create_model(self):
-        # categorical vs numeric features
-        print(self.df_train_cleaned.info())
+        """
+        Classifier for the problem
+        :return:
+        """
 
-        # Define numeric and categorical features
+        # Define numeric and categorical features -------------
         numeric_features = ['geo_level_1_id', 'geo_level_2_id', 'geo_level_3_id',
-                            'count_floors_pre_eq', 'count_families', 'area_pct_cleaned', 'height_pct_cleaned']
+                            'count_floors_pre_eq', 'count_families',
+                            'area_pct_cleaned', 'height_pct_cleaned',
+                            'has_superstructure_adobe_mud', 'has_superstructure_mud_mortar_stone',
+                            'has_superstructure_stone_flag', 'has_superstructure_cement_mortar_stone',
+                            'has_superstructure_mud_mortar_brick', 'has_superstructure_cement_mortar_brick',
+                            'has_superstructure_timber', 'has_superstructure_bamboo',
+                            'has_superstructure_rc_non_engineered', 'has_superstructure_rc_engineered',
+                            'has_superstructure_other', 'has_secondary_use', 'has_secondary_use_agriculture',
+                            'has_secondary_use_hotel']
 
         categorical_features = ['land_surface_condition', 'foundation_type',
                                 'roof_type', 'ground_floor_type',
                                 'other_floor_type', 'position', 'plan_configuration',
                                 'legal_ownership_status']
 
-        numeric_features_binary = ['has_superstructure_adobe_mud', 'has_superstructure_mud_mortar_stone',
-                                   'has_superstructure_stone_flag', 'has_superstructure_cement_mortar_stone',
-                                   'has_superstructure_mud_mortar_brick', 'has_superstructure_cement_mortar_brick',
-                                   'has_superstructure_timber', 'has_superstructure_bamboo',
-                                   'has_superstructure_rc_non_engineered', 'has_superstructure_rc_engineered',
-                                   'has_superstructure_other', 'has_secondary_use', 'has_secondary_use_agriculture',
-                                   'has_secondary_use_hotel']
+        # Define pipelines for numeric and categorical features -------------
+        numeric_transformer = Pipeline(
+            steps=[
+                ('encoder', OneHotEncoder(sparse_output=False, dtype='int', drop="if_binary")),
+                ('scaler', StandardScaler())
+            ]
+            )
 
+        categorical_transformer = Pipeline(
+            steps=[
+                ('encoder', OneHotEncoder(handle_unknown='ignore'))
+                ]
+            )
+
+        # Make our ColumnTransformer. (preprocessor)
+        # Set remainder="passthrough" to keep the columns in our feature table which do not need any preprocessing.
+        col_transformer = ColumnTransformer(
+            transformers=[
+                ("numeric", numeric_transformer, numeric_features),
+                ("categorical", categorical_transformer, categorical_features)
+            ],
+            remainder='passthrough'
+        )
+
+
+        # Define classifier
+        classifier = KNeighborsClassifier()
+
+        # Make a pipeline
+        main_pipe = Pipeline(
+            steps=[
+                ("preprocessor", col_transformer),  # <-- this is the ColumnTransformer we created
+                ("model", classifier)])
+
+        # Define X and y
+        # X : remove id and damage
+        # y : only contain damage
+        y = self.df_train_cleaned['damage_grade'].values
+        X  = self.df_train_cleaned.drop(['building_id', 'damage_grade'], axis=1)
+
+
+        # Split data into train and test sets
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33,
+                                            shuffle=True,
+                                            stratify=y,
+                                            random_state=RANDOM_SEED
+                                        )
+
+        # Train pipeline
+        main_pipe.fit(X_train, y_train)
+
+        # Make predictions with a pipeline
+        print("Predictions:", main_pipe.predict(X_test))
+
+        # Evaluate pipeline performance
+        print("Performance score:", main_pipe.score(X_test, y_test))
 
     def clean_numeric_features(self):
         """
