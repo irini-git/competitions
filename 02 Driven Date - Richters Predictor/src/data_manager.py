@@ -38,9 +38,22 @@ class EarthquakeData:
         - height_percentage (type: int):
         normalized height of the building footprint.
         Introduce 'larger than CUTOFF_HEIGHT_PRCT'
+
+        - age of building n years :
+        there are rows where value is 995,
+        replace with median
+            value damage_grade  count feature
+           995            3    389     age
+           995            2    822     age
+           995            1    179     age
         :return:
         """
 
+        # Replace age of building of 995 by the median of the column
+        median_age = int(np.median(self.df_train_cleaned['age']))
+        self.df_train_cleaned['age'] = self.df_train_cleaned['age'].replace({995: median_age})
+
+        # Support functions for cleaned features
         def create_cleaned_area(row):
             if row['area_percentage'] < CUTOFF_AREA_PRCT:
                 return row['area_percentage']
