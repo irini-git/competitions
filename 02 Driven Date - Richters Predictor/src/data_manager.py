@@ -3,6 +3,7 @@ import seaborn as sns
 import altair as alt
 import pandas as pd
 import warnings
+
 from pandas.errors import SettingWithCopyWarning
 warnings.simplefilter(action="ignore", category=SettingWithCopyWarning)
 warnings.simplefilter(action="ignore", category=FutureWarning)
@@ -10,8 +11,11 @@ import numpy as np
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.compose import ColumnTransformer
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split, GridSearchCV
+
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, classification_report, confusion_matrix
+
 
 # Constants
 FILENAME_TEST_VALUES = '../data/Richters_Predictor_Modeling_Earthquake_Damage_-_Test_Values.csv'
@@ -42,26 +46,27 @@ class EarthquakeData:
         """
 
         # Define numeric and categorical features -------------
-        numeric_features = ['geo_level_1_id', 'geo_level_2_id', 'geo_level_3_id',
-                            'count_floors_pre_eq', 'count_families',
+        numeric_features_all = ['count_floors_pre_eq', 'geo_level_1_id',
                             'area_pct_cleaned', 'height_pct_cleaned',
-                            'has_superstructure_adobe_mud', 'has_superstructure_mud_mortar_stone',
-                            'has_superstructure_stone_flag', 'has_superstructure_cement_mortar_stone',
-                            'has_superstructure_mud_mortar_brick', 'has_superstructure_cement_mortar_brick',
-                            'has_superstructure_timber', 'has_superstructure_bamboo',
-                            'has_superstructure_rc_non_engineered', 'has_superstructure_rc_engineered',
-                            'has_superstructure_other', 'has_secondary_use', 'has_secondary_use_agriculture',
-                            'has_secondary_use_hotel']
+                            'has_superstructure_mud_mortar_stone',
+                            'has_superstructure_timber',
+                            'has_secondary_use', 'has_secondary_use_agriculture',
+                            'has_secondary_use_hotel', 'plan_config_cleaned']
+
+        numeric_features = []
 
         categorical_features = ['land_surface_condition', 'foundation_type',
                                 'roof_type', 'ground_floor_type',
-                                'other_floor_type', 'position', 'plan_configuration',
+                                'other_floor_type', 'position',
                                 'legal_ownership_status']
 
         # Define pipelines for numeric and categorical features -------------
         numeric_transformer = Pipeline(
             steps=[
-                ('encoder', OneHotEncoder(sparse_output=False, dtype='int', drop="if_binary")),
+                ('encoder', OneHotEncoder(sparse_output=False,
+                                          dtype='int',
+                                          drop="if_binary",
+                                          handle_unknown='ignore')),
                 ('scaler', StandardScaler())
             ]
             )
@@ -83,7 +88,7 @@ class EarthquakeData:
         )
 
         # Define classifier
-        classifier = KNeighborsClassifier(n_jobs=-1)
+        classifier = RandomForestClassifier(random_state=2018)
 
         # Make a pipeline
         main_pipe = Pipeline(
@@ -91,14 +96,16 @@ class EarthquakeData:
                 ("preprocessor", col_transformer),  # <-- this is the ColumnTransformer we created
                 ("model", classifier)])
 
-        print(main_pipe)
+        param_grid = {'model__n_estimators': [50, 100],
+                      'model__min_samples_leaf': [1, 5]}
+
+        gs = GridSearchCV(main_pipe, param_grid, cv=5)
 
         # Define X and y
-        # X : remove id and damage
+        # X : remove id and damage, and other columns out of scope
         # y : only contain damage
         y = self.df_train_cleaned['damage_grade'].values
-        X  = self.df_train_cleaned.drop(['building_id', 'damage_grade'], axis=1)
-
+        X = self.df_train_cleaned[numeric_features + categorical_features].copy()
 
         # Split data into train and test sets
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33,
@@ -106,7 +113,14 @@ class EarthquakeData:
                                             stratify=y,
                                             random_state=RANDOM_SEED
                                         )
+        gs.fit(X_train, y_train)
+        print(gs.best_params_)
 
+        y_pred = gs.predict(X_test)
+
+        print(f1_score(y_test, y_pred, average="micro"))
+        print(precision_score(y_test, y_pred, average="micro"))
+        print(recall_score(y_test, y_pred, average="micro"))
 
     def clean_numeric_features(self):
         """
@@ -147,14 +161,24 @@ class EarthquakeData:
             else:
                 return CUTOFF_HEIGHT_PRCT
 
+        # Plan configuration to binary: if d or not
+        def create_cleaned_plan(row):
+            if row['plan_configuration'] == 'd':
+                return 1
+            else:
+                return 0
+
         # area_percentage
         self.df_train_cleaned['area_pct_cleaned'] = self.df_train_cleaned.apply(create_cleaned_area, axis=1)
 
         # height_percentage
         self.df_train_cleaned['height_pct_cleaned'] = self.df_train_cleaned.apply(create_cleaned_height, axis=1)
 
+        # plan_configuration
+        self.df_train_cleaned['plan_config_cleaned'] = self.df_train_cleaned.apply(create_cleaned_plan, axis=1)
+
         # Drop initial area, height and age features
-        self.df_train_cleaned.drop(['area_percentage', 'height_percentage', 'age'], axis='columns', inplace=True)
+        self.df_train_cleaned.drop(['area_percentage', 'height_percentage', 'age', 'plan_configuration'], axis='columns', inplace=True)
 
         # From exploration, some 'has secondary use'
         # to be dropped -
