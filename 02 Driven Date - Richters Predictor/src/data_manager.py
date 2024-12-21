@@ -38,7 +38,7 @@ class EarthquakeData:
         # self.explore_geo_levels()
         # self.explore_other()
         self.clean_numeric_features()
-        self.create_model()
+        # self.create_model()
 
     def create_model(self):
         """
@@ -86,13 +86,15 @@ class EarthquakeData:
 
         # Define classifier
         # 'model__min_samples_leaf': [5]
-        classifier = RandomForestClassifier(random_state=2018,
-                                            min_samples_leaf=5)
+        classifier = RandomForestClassifier(random_state=2018)
 
 
         # RandomForestClassifier(random_state=2018)
         # f1 0.6892056884382377
         # f1 0.6877754392492936
+        # F1 0.6877754392492936
+        # F1 0.6882987011476878
+        # F1 0.6879498598820917
 
         # Make a pipeline
         main_pipe = Pipeline(
@@ -100,7 +102,8 @@ class EarthquakeData:
                 ("preprocessor", col_transformer),  # <-- this is the ColumnTransformer we created
                 ("model", classifier)])
 
-        param_grid = {'model__n_estimators': [50, 100]}
+        param_grid = {'model__n_estimators': [200, 300],
+                      'model__min_samples_leaf' : [5]}
 
         gs = GridSearchCV(main_pipe, param_grid, cv=2, verbose=4)
 
@@ -126,11 +129,23 @@ class EarthquakeData:
         print(f1_score(y_test, y_pred, average="micro"))
         predictions = gs.predict(test_values_subset)
 
-        my_submission = pd.DataFrame(data=predictions,
-                                     columns=['building_id','damage_grade'],
-                                     index=submission_id)
+        # Pickle target data
+        np.save('../data/predictions.npy', predictions)
 
-        my_submission.to_csv('../data/submission_001.csv')
+
+    def create_sumbission(self):
+
+        predictions = np.load('../data/predictions.npy')
+        submission_id = self.df_test_values_cleaned['building_id'].values
+
+        print(type(predictions))
+        print(type(submission_id))
+
+        my_submission = pd.DataFrame(
+                {'building_id': submission_id[:], 'damage_grade': predictions[:]})
+        print(my_submission.head(2))
+        my_submission.to_csv('../data/mysubmission_RandomForestClassifiercsv_001.csv', index=False)
+
 
 
     def clean_numeric_features(self):

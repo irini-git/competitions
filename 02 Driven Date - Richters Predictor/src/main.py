@@ -8,4 +8,7 @@ earthquake_data = EarthquakeData()
 # earthquake_data.explore_geo_levels()
 # earthquake_data.explore_other()
 
+# earthquake_data.create_model()
+earthquake_data.create_sumbission()
+
 # End --------------
