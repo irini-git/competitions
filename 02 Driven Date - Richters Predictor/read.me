@@ -226,8 +226,8 @@ some features have 'non-used' values, and a highly disbalanced.
 For example, has_secondary_use_use_police can be Yes and No, and
 almost all values are No (86k) and not Yes (426 entries).
 
-We will define a cut-off value of 0.01% if ok to drop the entry.
-
+We will define a cut-off value for binary features of 0.01% if ok to drop the entry.
+In the code, it is the parameter CUTOFF_COLUMNS_DROP = 0.001
 
 References
 DrivenData. (2019). Richter's Predictor: Modeling Earthquake Damage.

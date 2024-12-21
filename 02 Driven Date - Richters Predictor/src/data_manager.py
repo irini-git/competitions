@@ -16,11 +16,11 @@ PALETTE = ["#FFDE91", "#FE7E03", "#9B1D1E"]
 class EarthquakeData:
     def __init__(self):
         self.df_train_labels, self.df_train_values, self.df_test_values, self.df_train = self.load_data()
-        # self.plot_data()
+        self.plot_data()
         self.df_train_cleaned = self.clean_binary_features()
-        # self.explore_geo_levels()
-        # self.explore_other()
-        # self.clean_numeric_features()
+        self.explore_geo_levels()
+        self.explore_other()
+        self.clean_numeric_features()
 
     def clean_numeric_features(self):
         """
@@ -67,8 +67,9 @@ class EarthquakeData:
         columns_explore = ['count_floors_pre_eq', 'age', 'area_percentage', 'height_percentage']
         df = pd.DataFrame(None, columns=['value', 'damage_grade', 'count', 'feature'])
 
+        # create_support_df(self, df, feature_)
         for c in columns_explore:
-            temp = self.create_support_df(c)
+            temp = self.create_support_df(self.df_train_cleaned, c)
             df = pd.concat([temp, df])
 
         feature1 = 'count_floors_pre_eq'
@@ -119,7 +120,7 @@ class EarthquakeData:
         df = pd.DataFrame(None, columns=['value', 'damage_grade', 'count', 'feature'])
 
         for c in columns_explore:
-            temp = self.create_support_df(c)
+            temp = self.create_support_df(self.df_train, c)
             df = pd.concat([temp, df])
 
         level3 = 'geo_level_3_id'
@@ -261,7 +262,7 @@ class EarthquakeData:
             # Prepare data
             df = pd.DataFrame(None, columns=['value','damage_grade','count', 'feature'])
             for c in binary_columns:
-                temp = self.create_support_df(c)
+                temp = self.create_support_df(self.df_train, c)
                 df = pd.concat([temp, df])
 
             # Plot
@@ -303,7 +304,7 @@ class EarthquakeData:
         title_has_superstructure = 'Has superstructure'
         plot_altair_counts(features_has_superstructure, title_has_superstructure)
 
-    def create_support_df(self, feature_):
+    def create_support_df(self, df, feature_):
         """
          Create support pivoted data for binary features
         Used as input for plots
@@ -311,7 +312,7 @@ class EarthquakeData:
         """
 
         # print(self.df_train[['has_secondary_use_other', 'damage_grade']].head(10))
-        temp = self.df_train.groupby([feature_,  'damage_grade'],as_index=False)['building_id'].count()
+        temp = df.groupby([feature_,  'damage_grade'],as_index=False)['building_id'].count()
 
         # Add a column with feature name
         temp['feature'] = temp.columns[0]
