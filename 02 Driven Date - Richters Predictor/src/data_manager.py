@@ -47,12 +47,15 @@ class EarthquakeData:
         """
 
         # Define numeric and categorical features -------------
-        numeric_features = ['count_floors_pre_eq', 'geo_level_1_id',
-                            'area_pct_cleaned', 'height_pct_cleaned',
+        # count_floors_pre_eq return error
+        # 'geo_level_2_id', 'geo_level_3_id'
+        numeric_features_binary = ['n_floors_cleaned',
                             'has_superstructure_mud_mortar_stone',
                             'has_superstructure_timber',
                             'has_secondary_use', 'plan_config_cleaned']
-        # 'has_secondary_use_agriculture', 'has_secondary_use_hotel'
+
+        numeric_features = ['geo_level_1_id', 'geo_level_2_id', 'geo_level_3_id',
+                            'area_pct_cleaned', 'height_pct_cleaned']
 
         categorical_features = ['land_surface_condition', 'foundation_type',
                                 'roof_type', 'ground_floor_type',
@@ -62,15 +65,13 @@ class EarthquakeData:
         # Define pipelines for numeric and categorical features -------------
         numeric_transformer = Pipeline(
             steps=[
-                ('encoder', OneHotEncoder(drop="if_binary",
-                                          handle_unknown='ignore')),
                 ('scaler', StandardScaler(with_mean=False))
-            ]
+                ]
             )
 
-        categorical_transformer = Pipeline(
+        ohe_transformer = Pipeline(
             steps=[
-                ('encoder', OneHotEncoder(handle_unknown='ignore'))
+                ('encoder', OneHotEncoder(drop="if_binary", handle_unknown='ignore')),
                 ]
             )
 
@@ -79,22 +80,22 @@ class EarthquakeData:
         col_transformer = ColumnTransformer(
             transformers=[
                 ("numeric", numeric_transformer, numeric_features),
-                ("categorical", categorical_transformer, categorical_features)
+                ("numeric_binary", ohe_transformer, numeric_features_binary),
+                ("ohe", ohe_transformer, categorical_features)
             ],
             remainder='passthrough'
         )
 
         # Define classifier
         # 'model__min_samples_leaf': [5]
-        classifier = RandomForestClassifier(random_state=2018)
-
+        classifier = RandomForestClassifier(random_state=2018,
+                                            min_samples_leaf=5,
+                                            n_estimators=10,
+                                            verbose=4)
 
         # RandomForestClassifier(random_state=2018)
         # f1 0.6892056884382377
-        # f1 0.6877754392492936
-        # F1 0.6877754392492936
-        # F1 0.6882987011476878
-        # F1 0.6879498598820917
+        # f1 0.7 min_samples_leaf 5  n_estimators 300
 
         # Make a pipeline
         main_pipe = Pipeline(
@@ -103,7 +104,7 @@ class EarthquakeData:
                 ("model", classifier)])
 
         param_grid = {'model__n_estimators': [200, 300],
-                      'model__min_samples_leaf' : [5]}
+                      'model__min_samples_leaf' : [5, 10]}
 
         gs = GridSearchCV(main_pipe, param_grid, cv=2, verbose=4)
 
@@ -111,11 +112,10 @@ class EarthquakeData:
         # X : remove id and damage, and other columns out of scope
         # y : only contain damage
         y = self.df_train_cleaned['damage_grade'].values
-        X = self.df_train_cleaned[numeric_features + categorical_features].copy()
+        X = self.df_train_cleaned[numeric_features + numeric_features_binary + categorical_features].copy()
 
         # Submissions
-        submission_id = self.df_test_values_cleaned['building_id'].values
-        test_values_subset = self.df_test_values_cleaned[numeric_features + categorical_features].copy()
+        test_values_subset = self.df_test_values_cleaned[numeric_features + numeric_features_binary + categorical_features].copy()
 
         # Split data into train and test sets
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33,
@@ -123,8 +123,13 @@ class EarthquakeData:
                                             stratify=y,
                                             random_state=RANDOM_SEED
                                         )
+        # main_pipe.fit(X_train, y_train)
+        # y_pred = main_pipe.predict(X_test)
+        # print(f1_score(y_test, y_pred, average="micro"))
+
         gs.fit(X_train, y_train)
         print(gs.best_params_)
+
         y_pred = gs.predict(X_test)
         print(f1_score(y_test, y_pred, average="micro"))
         predictions = gs.predict(test_values_subset)
@@ -160,7 +165,11 @@ class EarthquakeData:
         normalized height of the building footprint.
         Introduce 'larger than CUTOFF_HEIGHT_PRCT'
 
+        - count_floors_pre_eq : transform to binary
+        less than 4 or larger than four
+
         - age of building n years :
+        not performed ---------
         there are rows where value is 995,
         replace with median
             value damage_grade  count feature
@@ -176,6 +185,12 @@ class EarthquakeData:
                 return row['area_percentage']
             else:
                 return CUTOFF_AREA_PRCT
+
+        def create_cleaned_floor(row):
+            if row['count_floors_pre_eq'] < 4: # 0.5689135920185119
+                return 1
+            else:
+                return 0
 
         def create_cleaned_height(row):
             if row['height_percentage'] < CUTOFF_HEIGHT_PRCT:
@@ -202,8 +217,11 @@ class EarthquakeData:
 
         # Replace age of building equal to 995 years by the median of the column
         for df in [self.df_train_cleaned, self.df_test_values_cleaned]:
-            median_age = int(np.median(df['age']))
-            df['age'] = df['age'].replace({995: median_age})
+            #median_age = int(np.median(df['age']))
+            # df['age'] = df['age'].replace({995: median_age})
+
+            # floor
+            df['n_floors_cleaned'] = df.apply(create_cleaned_floor, axis=1)
 
             # area_percentage
             df['area_pct_cleaned'] = df.apply(create_cleaned_area, axis=1)
