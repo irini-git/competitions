@@ -1,4 +1,4 @@
-from unicodedata import category
+# from unicodedata import category
 
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -17,7 +17,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split, GridSearchCV
 
-from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, classification_report, confusion_matrix
+from sklearn.metrics import f1_score
 
 # Constants
 FILENAME_TEST_VALUES = '../data/Richters_Predictor_Modeling_Earthquake_Damage_-_Test_Values.csv'
@@ -27,8 +27,7 @@ CUTOFF_COLUMNS_DROP = 0.001
 CUTOFF_AREA_PRCT = 35
 CUTOFF_HEIGHT_PRCT = 14
 PALETTE = ["#FFDE91", "#FE7E03", "#9B1D1E"]
-# Set a random seed for reproducibility
-RANDOM_SEED = 6
+RANDOM_SEED = 6 # Set a random seed for reproducibility
 
 class EarthquakeData:
     def __init__(self):
@@ -36,10 +35,9 @@ class EarthquakeData:
         self.df_train_cleaned = self.df_train
         self.df_test_values_cleaned = self.df_test_values
         # self.plot_data()
-        # self.clean_features()
         # self.explore_geo_levels()
         # self.explore_other()
-        self.clean_numeric_features()
+        self.clean_features()
         self.create_model()
         self.explore_feature_importance()
 
@@ -54,28 +52,30 @@ class EarthquakeData:
 
         # Plot the feature importances of the forest
         sorted_idx = np.argsort(feature_importances)
-        fig = plt.figure(figsize=(12, 6))
+        fig = plt.figure(figsize=(12,4))
         plt.barh(range(len(sorted_idx)), feature_importances[sorted_idx], align='center')
         plt.yticks(range(len(sorted_idx)), feature_names[sorted_idx])
+        plt.tight_layout()
         plt.title('Feature Importance')
-        plt.savefig('../fig/Feature_importance014.png')
+        plt.savefig('../fig/Feature_importance016.png')
 
     def create_model(self):
         """
         Classifier for the problem
-        :return:
+        :return: creates model and predictions
         """
 
         # Define numeric and categorical features -------------
         numeric_features_binary = ['has_superstructure_mud_mortar_stone',
-                            'has_superstructure_timber',
-                            'ground_floor_type_f',
-                            'land_surface_condition_t', 'foundation_type_cleaned',
+                            'has_superstructure_timber', 'ground_floor_type_f',
+                            'foundation_type_cleaned',
                             'land_roof_type_x']
 
         numeric_features = ['geo_level_1_id', 'geo_level_2_id', 'geo_level_3_id',
                             'area_pct_cleaned', 'height_pct_cleaned']
 
+        # Initially, there were some categorical features
+        # They were transformed to binary or removed
         categorical_features = []
 
         # Define pipelines for numeric and categorical features -------------
@@ -91,7 +91,7 @@ class EarthquakeData:
                 ]
             )
 
-        # Make our ColumnTransformer. (preprocessor)
+        # Make our ColumnTransformer
         # Set remainder="passthrough" to keep the columns in our feature table which do not need any preprocessing.
         col_transformer = ColumnTransformer(
             transformers=[
@@ -103,10 +103,10 @@ class EarthquakeData:
         )
 
         # Define classifier
-        # 'model__min_samples_leaf': [5]
         classifier = RandomForestClassifier(random_state=2018,
+                                            # n_estimators=300,
                                             min_samples_leaf=5,
-                                            n_estimators=10,
+                                            min_samples_split=2,
                                             verbose=4)
 
         # RandomForestClassifier(random_state=2018)
@@ -123,6 +123,12 @@ class EarthquakeData:
         # f1 0.7206014023418877 -- removed other_floor_type
         # f1 0.72368283352132 -- added land_roof_type_x
         # f1 0.7249502901196525 -- removed secondary use
+        # f1 0.7261014662961197 -- removed 'land_surface_condition_t'
+        # f1 0.7258223932836428 -- removed 'has_superstructure_timber' <-- did not work
+        # --------------------- parameter tuning
+        # f1 0.7261014662961197
+        # f1 0.7261014662961197
+        # f1 0.7255084361446064
 
         # Make a pipeline
         main_pipe = Pipeline(
@@ -130,14 +136,15 @@ class EarthquakeData:
                 ("preprocessor", col_transformer),  # <-- this is the ColumnTransformer we created
                 ("model", classifier)])
 
-        param_grid = {'model__n_estimators': [300],
-                      'model__min_samples_leaf' : [5]}
+        param_grid = {
+                     'model__n_estimators': [200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000]
+                      }
 
         gs = GridSearchCV(main_pipe, param_grid, cv=2, verbose=4)
 
         # Define X and y
-        # X : remove id and damage, and other columns out of scope
-        # y : only contain damage
+        # X : contain columns in scope
+        # y : contain damage
         y = self.df_train_cleaned['damage_grade'].values
         X = self.df_train_cleaned[numeric_features + numeric_features_binary + categorical_features].copy()
 
@@ -154,7 +161,11 @@ class EarthquakeData:
         gs.fit(X_train, y_train)
 
         y_pred = gs.predict(X_test)
+        # For this task, we use f1 micro
         print(f1_score(y_test, y_pred, average="micro"))
+        print(gs.best_params_)
+        
+        # Make predictions
         predictions = gs.predict(test_values_subset)
 
         # Save data
@@ -164,7 +175,7 @@ class EarthquakeData:
         feature_importances = gs.best_estimator_._final_estimator.feature_importances_
         np.save('../data/feature_importances.npy', feature_importances)
 
-        # get the features names array that passed on feature selection object
+        # Get the feature names array and save to file
         feature_names = gs.best_estimator_[:-1].get_feature_names_out()
         with open('../data/feature_names.pkl', 'wb') as fp:
             pickle.dump(list(feature_names), fp)
@@ -173,25 +184,24 @@ class EarthquakeData:
         # Uncomment if you want to plot correlation
         # corrMatrix = X_train[numeric_features_binary + numeric_features].corr()
         # sns.heatmap(corrMatrix, annot=True)
-        # # plt.show()
-        # # plt.figure(figsize=(15, 8))
+        # plt.show()
+        # plt.figure(figsize=(15, 8))
         # plt.savefig('../fig/Correlation.png')
 
-    def create_sumbission(self):
+    def create_submission(self):
 
+        # Load data from files
         predictions = np.load('../data/predictions.npy')
         submission_id = self.df_test_values_cleaned['building_id'].values
 
-        print(type(predictions))
-        print(type(submission_id))
-
         my_submission = pd.DataFrame(
                 {'building_id': submission_id[:], 'damage_grade': predictions[:]})
-        print(my_submission.head(2))
-        my_submission.to_csv('../data/mysubmission_RandomForestClassifiercsv_001.csv', index=False)
+        
+        # Create submission
+        my_submission.to_csv('../data/mysubmission_RandomForestClassifiercsv_003.csv', index=False)
 
 
-    def clean_numeric_features(self):
+    def clean_features(self):
         """
         1. Before modelling :
 
@@ -216,11 +226,9 @@ class EarthquakeData:
            995            1    179     age
 
         2. After modeling, based on feature importance
-
-
-        :return:
+        all that are not in the list
+        :return: transformed features
         """
-
 
         # Support functions for cleaned features
         def create_cleaned_area(row):
@@ -303,38 +311,43 @@ class EarthquakeData:
             # df['age'] = df['age'].replace({995: median_age})
 
             # Roof type:  keep x or not
+            # Used
             df['land_roof_type_x'] = df.apply(create_cleaned_roof_type, axis=1)
 
             # Land surface condition :  keep s and t
-            df['land_surface_condition_t'] = df.apply(create_cleaned_land_surface, axis=1)
+            # Not used based on feature importance
+            # df['land_surface_condition_t'] = df.apply(create_cleaned_land_surface, axis=1)
 
             # foundation_type :  keep s and t
+            # Used
             df['foundation_type_cleaned'] = df.apply(create_cleaned_foundation_type, axis=1)
 
             # position :  keep s and t
-            df['position_cleaned'] = df.apply(create_cleaned_position, axis=1)
+            # Not used based on feature importance
+            # df['position_cleaned'] = df.apply(create_cleaned_position, axis=1)
 
             # legal_ownership_status_v
-            df['legal_ownership_status_v'] = df.apply(create_cleaned_legal_ownership_status, axis=1)
+            # Not used based on feature importance
+            # df['legal_ownership_status_v'] = df.apply(create_cleaned_legal_ownership_status, axis=1)
 
             # ground_floor_type f
             df['ground_floor_type_f'] = df.apply(create_cleaned_ground_floor, axis=1)
 
             # floor
-            df['n_floors_cleaned'] = df.apply(create_cleaned_floor, axis=1)
+            # Not used based on feature importance
+            # df['n_floors_cleaned'] = df.apply(create_cleaned_floor, axis=1)
 
             # area_percentage
+            # Used
             df['area_pct_cleaned'] = df.apply(create_cleaned_area, axis=1)
 
             # height_percentage
+            # Used
             df['height_pct_cleaned'] = df.apply(create_cleaned_height, axis=1)
 
             # plan_configuration
-            df['plan_config_cleaned'] = df.apply(create_cleaned_plan, axis=1)
-
-            # Drop initial area, height and age features
-            # No need to drop here, will use [] to define a subset
-            # df.drop(['area_percentage', 'height_percentage', 'age', 'plan_configuration'], axis='columns', inplace=True)
+            # Not used based on feature importance
+            # df['plan_config_cleaned'] = df.apply(create_cleaned_plan, axis=1)
 
 
     def explore_other(self):
@@ -444,61 +457,7 @@ class EarthquakeData:
         df_train = df_train_labels.merge(df_train_values)
 
         return df_train_labels, df_train_values, df_test_values, df_train
-
-
-    def clean_features(self):
-        """
-        Define features to drop
-        :return:
-        """
-
-        columns_explore = [
-       'land_surface_condition', 'foundation_type', 'roof_type',
-       'ground_floor_type', 'other_floor_type', 'position', 'legal_ownership_status',
-       'has_superstructure_adobe_mud',
-       'has_superstructure_mud_mortar_stone', 'has_superstructure_stone_flag',
-       'has_superstructure_cement_mortar_stone',
-       'has_superstructure_mud_mortar_brick',
-       'has_superstructure_cement_mortar_brick', 'has_superstructure_timber',
-       'has_superstructure_bamboo', 'has_superstructure_rc_non_engineered',
-       'has_superstructure_rc_engineered', 'has_superstructure_other',
-       'has_secondary_use',
-       'has_secondary_use_agriculture', 'has_secondary_use_hotel',
-       'has_secondary_use_rental', 'has_secondary_use_institution',
-       'has_secondary_use_school', 'has_secondary_use_industry',
-       'has_secondary_use_health_post', 'has_secondary_use_gov_office',
-       'has_secondary_use_use_police', 'has_secondary_use_other']
-
-        def calculate_proportions(c):
-                temp = self.df_train_labels[c].value_counts(normalize=True)
-                temp = temp.to_frame().reset_index()
-
-                # Add a column with feature name
-                temp['feature'] = temp.columns[0]
-
-                # Rename columns
-                temp.rename(columns={c: 'value'}, inplace=True)
-
-                return temp
-
-        # Prepare data
-        df = pd.DataFrame(None, columns=['value', 'proportion', 'feature'])
-        for c in columns_explore:
-            temp = calculate_proportions(c)
-            df = pd.concat([temp, df])
-
-        df = df.sort_values(by='proportion', ascending=True)
-        columns_to_drop = df.query('proportion<@CUTOFF_COLUMNS_DROP')['feature'].values
-        values_to_drop = df.query('proportion<@CUTOFF_COLUMNS_DROP')['value'].values
-        features_drop_dict = {k: v for k, v in zip(columns_to_drop, values_to_drop)}
-
-        # Drop values less than cut-off in specific columns
-        df_train_cleaned = pd.DataFrame()
-        for k,v in features_drop_dict.items():
-            df_train_cleaned = self.df_train[(self.df_train[k] != v)]
-
-
-        self.df_train_cleaned = df_train_cleaned
+   
 
     def plot_data(self):
         """
@@ -506,8 +465,6 @@ class EarthquakeData:
         """
 
         def plot_seaborn_counts(feature_):
-            # Set the palette to the "pastel" default palette:
-            # sns.set_palette("pastel")
 
             plt.figure(figsize=(10,6))
             sns.countplot(data=self.df_train,
@@ -515,28 +472,16 @@ class EarthquakeData:
                           hue='damage_grade',
                           palette=sns.color_palette(PALETTE, len(PALETTE)))
 
-
             sns.set_theme(font_scale=1.4)
 
             plt.title(f'Damage vs {feature_}')
             plt.xlabel(f'{feature_}')
             plt.ylabel('')
 
-            # plt.rcParams['axes.spines.top'] = False
-            # plt.rcParams['axes.spines.right'] = False
-
             plt.savefig(f'../fig/Explore_count_{feature_}.png')
 
-        # Plot -------------
-        # Plot counts for categorical features
-        # for f in ['land_surface_condition', 'foundation_type', 'roof_type', 'plan_configuration',
-        #          'ground_floor_type', 'other_floor_type', 'position', 'legal_ownership_status']:
-
-            # Plot counts for obj variables
-            # plot_seaborn_counts(feature_=f)
 
         def plot_altair_counts(binary_columns, title_):
-
 
             # Prepare data
             df = pd.DataFrame(None, columns=['value','damage_grade','count', 'feature'])
