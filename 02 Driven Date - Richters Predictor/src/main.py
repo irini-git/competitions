@@ -10,6 +10,6 @@ earthquake_data = EarthquakeData()
 
 # Create model and submission
 # earthquake_data.create_model()
-# earthquake_data.create_submission()
+earthquake_data.create_submission()
 
 # End --------------

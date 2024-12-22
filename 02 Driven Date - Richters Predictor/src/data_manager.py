@@ -104,8 +104,8 @@ class EarthquakeData:
 
         # Define classifier
         classifier = RandomForestClassifier(random_state=2018,
-                                            # n_estimators=300,
-                                            min_samples_leaf=5,
+                                            n_estimators=1400,
+                                            # min_samples_leaf=5,
                                             min_samples_split=2,
                                             verbose=4)
 
@@ -129,6 +129,8 @@ class EarthquakeData:
         # f1 0.7261014662961197
         # f1 0.7261014662961197
         # f1 0.7255084361446064
+        # f1 0.7261828625914255 model__n_estimators': 1400
+        # f1 0.7261828625914255
 
         # Make a pipeline
         main_pipe = Pipeline(
@@ -137,7 +139,7 @@ class EarthquakeData:
                 ("model", classifier)])
 
         param_grid = {
-                     'model__n_estimators': [200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000]
+                    'model__min_samples_leaf': [5,10]
                       }
 
         gs = GridSearchCV(main_pipe, param_grid, cv=2, verbose=4)
