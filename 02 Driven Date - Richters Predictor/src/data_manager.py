@@ -15,7 +15,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split, GridSearchCV
 
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, classification_report, confusion_matrix
-
+import time
 
 # Constants
 FILENAME_TEST_VALUES = '../data/Richters_Predictor_Modeling_Earthquake_Damage_-_Test_Values.csv'
@@ -38,7 +38,12 @@ class EarthquakeData:
         # self.explore_geo_levels()
         # self.explore_other()
         self.clean_numeric_features()
-        # self.create_model()
+        self.create_model()
+        # self.explore_feature_importance()
+
+    def explore_feature_importance(self):
+        feature_importances = np.load('../data/feature_importances.npy')
+        print(feature_importances)
 
     def create_model(self):
         """
@@ -103,8 +108,8 @@ class EarthquakeData:
                 ("preprocessor", col_transformer),  # <-- this is the ColumnTransformer we created
                 ("model", classifier)])
 
-        param_grid = {'model__n_estimators': [200, 300],
-                      'model__min_samples_leaf' : [5, 10]}
+        param_grid = {'model__n_estimators': [5],
+                      'model__min_samples_leaf' : [1]}
 
         gs = GridSearchCV(main_pipe, param_grid, cv=2, verbose=4)
 
@@ -134,8 +139,13 @@ class EarthquakeData:
         print(f1_score(y_test, y_pred, average="micro"))
         predictions = gs.predict(test_values_subset)
 
-        # Pickle target data
+        # Save data
         np.save('../data/predictions.npy', predictions)
+
+        # Feature exploration
+        feature_importances = gs.best_estimator_._final_estimator.feature_importances_
+        np.save('../data/feature_importances.npy', feature_importances)
+        X_train.to_pickle('../data/X_train.pkl')
 
 
     def create_sumbission(self):
