@@ -3,6 +3,7 @@ import seaborn as sns
 import altair as alt
 import pandas as pd
 import warnings
+import pickle
 
 from pandas.errors import SettingWithCopyWarning
 warnings.simplefilter(action="ignore", category=SettingWithCopyWarning)
@@ -15,7 +16,6 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split, GridSearchCV
 
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, classification_report, confusion_matrix
-import time
 
 # Constants
 FILENAME_TEST_VALUES = '../data/Richters_Predictor_Modeling_Earthquake_Damage_-_Test_Values.csv'
@@ -38,12 +38,25 @@ class EarthquakeData:
         # self.explore_geo_levels()
         # self.explore_other()
         self.clean_numeric_features()
-        self.create_model()
-        # self.explore_feature_importance()
+        # self.create_model()
+        self.explore_feature_importance()
 
     def explore_feature_importance(self):
-        feature_importances = np.load('../data/feature_importances.npy')
-        print(feature_importances)
+        # Plot feature importance
+        feature_importances = np.load('../data/feature_importances.npy', allow_pickle=False)
+
+        with open('../data/feature_names.pkl', 'rb') as fp:
+            feature_names = pickle.load(fp)
+
+        feature_names = np.array(feature_names)
+
+        # Plot the feature importances of the forest
+        sorted_idx = np.argsort(feature_importances)
+        fig = plt.figure(figsize=(12, 6))
+        plt.barh(range(len(sorted_idx)), feature_importances[sorted_idx], align='center')
+        plt.yticks(range(len(sorted_idx)), feature_names[sorted_idx])
+        plt.title('Feature Importance')
+        plt.savefig('../fig/Feature_importance.png')
 
     def create_model(self):
         """
@@ -108,7 +121,7 @@ class EarthquakeData:
                 ("preprocessor", col_transformer),  # <-- this is the ColumnTransformer we created
                 ("model", classifier)])
 
-        param_grid = {'model__n_estimators': [5],
+        param_grid = {'model__n_estimators': [2],
                       'model__min_samples_leaf' : [1]}
 
         gs = GridSearchCV(main_pipe, param_grid, cv=2, verbose=4)
@@ -145,7 +158,14 @@ class EarthquakeData:
         # Feature exploration
         feature_importances = gs.best_estimator_._final_estimator.feature_importances_
         np.save('../data/feature_importances.npy', feature_importances)
-        X_train.to_pickle('../data/X_train.pkl')
+
+        # get the features names array that passed on feature selection object
+        feature_names = gs.best_estimator_[:-1].get_feature_names_out()
+        print(feature_importances)
+        # np.save('../data/feature_names.npy', feature_names)
+
+        with open('../data/feature_names.pkl', 'wb') as fp:
+            pickle.dump(list(feature_names), fp)
 
 
     def create_sumbission(self):
