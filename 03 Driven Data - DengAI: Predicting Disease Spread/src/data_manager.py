@@ -1,0 +1,83 @@
+import pandas as pd
+import time
+import datetime
+import logging
+
+# Constants
+TEST_DATA_FEATURES = '../data/DengAI_Predicting_Disease_Spread_-_Test_Data_Features.csv'
+TRAINING_DATA_FEATURES = '../data/DengAI_Predicting_Disease_Spread_-_Training_Data_Features.csv'
+TRAINING_DATA_LABELS = '../data/DengAI_Predicting_Disease_Spread_-_Training_Data_Labels.csv'
+
+# Timestamp for a log file
+ts = time.time()
+ts_ = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d_%Hh%M')
+# FILENAME_LOGGING = f'../data/logging_{ts_}.log'
+FILENAME_LOGGING = f'../data/log.log'
+
+# Parameters for logging
+logging.basicConfig(level=logging.INFO, filename=FILENAME_LOGGING, filemode="w",
+                    format="%(asctime)s - %(levelname)s - %(message)s")
+
+class DengueData:
+    def __init__(self):
+        self.train_data, self.test_data_features = self.load_data()
+
+
+    def load_data(self):
+        """
+        Load data for the challenge
+        :return: raw unprocessed dataframes with train and test data
+        """
+        # Load data from csv files
+        train_data_features = pd.read_csv(TRAINING_DATA_FEATURES)
+        train_data_labels = pd.read_csv(TRAINING_DATA_LABELS)
+        test_data_features = pd.read_csv(TEST_DATA_FEATURES)
+
+        # Merge features and labels for exploration
+        train_data = pd.merge(
+            left=train_data_features,
+            right=train_data_labels,
+            how='inner',
+            on=['city',  'year',  'weekofyear']
+        )
+
+        # Visual exploration of the first two rows
+        logging.info(f"Train data labels\n {train_data_labels.head(2)}\n")
+        logging.info(f"Train data features\n {train_data_features.head(2)}\n")
+        logging.info(f"Train data combined\n {train_data.head(2)}\n")
+
+        return train_data, test_data_features
+
+    def explore_data(self):
+        """
+        Data exploration, search for patterns and insights.
+        :return: ideas for feature engineering
+        """
+
+        with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+            print(self.train_data.head(2))
+            print(self.train_data.info())
+            for c in self.train_data.columns:
+                print(self.train_data[c].value_counts().head(2))
+
+        def plot_scatter_cites():
+            import altair as alt
+            from vega_datasets import data
+
+            source = data.cars()
+            with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+                print(source.head(2))
+
+            chart = alt.Chart(source).transform_calculate(
+                url='https://www.google.com/search?q=' + alt.datum.Name
+            ).mark_point().encode(
+                x='Horsepower:Q', # counts
+                y='Miles_per_Gallon:Q', # N cases
+                color='Origin:N', # city
+                href='url:N',
+                tooltip=['Name:N', 'url:N']
+            )
+
+            chart.save('../fig/explore_cites.png')
+
+        plot_scatter_cites()
