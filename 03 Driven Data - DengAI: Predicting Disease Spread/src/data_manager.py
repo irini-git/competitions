@@ -61,23 +61,20 @@ class DengueData:
                 print(self.train_data[c].value_counts().head(2))
 
         def plot_scatter_cites():
+
             import altair as alt
             from vega_datasets import data
 
-            source = data.cars()
+            source = data.stocks()
             with pd.option_context('display.max_rows', None, 'display.max_columns', None):
                 print(source.head(2))
 
-            chart = alt.Chart(source).transform_calculate(
-                url='https://www.google.com/search?q=' + alt.datum.Name
-            ).mark_point().encode(
-                x='Horsepower:Q', # counts
-                y='Miles_per_Gallon:Q', # N cases
-                color='Origin:N', # city
-                href='url:N',
-                tooltip=['Name:N', 'url:N']
+            chart = alt.Chart(self.train_data).mark_line(point=True).encode(
+                x='weekofyear',
+                y='total_cases:Q',
+                color='city:N'
             )
 
-            chart.save('../fig/explore_cites.png')
+            chart.save('../fig/explore_001.png')
 
         plot_scatter_cites()
