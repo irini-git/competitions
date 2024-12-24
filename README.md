@@ -13,5 +13,11 @@ Can you predict the level of damage to buildings caused by the 2015 Gorkha earth
 Best score: 0.7260, Current rank: #1442 (out of 7,391)<br>
 [Details](https://www.drivendata.org/competitions/57/nepal-earthquake/page/134/)
 
+## 03 - Driven Data
+Using environmental data collected by U.S. Federal Government agencies, can you predict the number of dengue fever cases reported each week in San Juan, Puerto Rico and Iquitos, Peru? <br>
+In progress <br>
+[Details](https://www.drivendata.org/competitions/44/dengai-predicting-disease-spread/)
+
+
 
 
