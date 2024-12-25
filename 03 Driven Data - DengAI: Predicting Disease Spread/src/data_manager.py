@@ -134,6 +134,8 @@ class DengueData:
 
             # Color grey
             hex_grey_color = '#767676'
+            # Ascent color
+            ascent_hex_color = '#ff4d00'
 
             features = [c for c in self.train_data if term in c]
 
@@ -146,7 +148,7 @@ class DengueData:
                 old_feature_sj = df.query('city=="sj"')[feature].copy()
                 df['new_feature_sj'] = df.query('city=="sj"')[feature].replace(0, np.nan)
 
-                sns.lineplot(x=df['date'], y=old_feature_sj, ax=ax[i, 0], color='darkorange', label='original')
+                sns.lineplot(x=df['date'], y=old_feature_sj, ax=ax[i, 0], color=ascent_hex_color, label='original')
                 sns.lineplot(x=df['date'], y=df['new_feature_sj'].fillna(np.inf), ax=ax[i, 0], color=hex_grey_color,
                               label='modified')
                 ax[i, 0].set_title('San Juan', fontsize=14)
@@ -158,7 +160,7 @@ class DengueData:
                 old_feature_iq = df.query('city=="iq"')[feature].copy()
                 df['new_feature_iq'] = df.query('city=="iq"')[feature].replace(0, np.nan)
 
-                sns.lineplot(x=df['date'], y=old_feature_iq, ax=ax[i, 1], color='darkorange', label='original')
+                sns.lineplot(x=df['date'], y=old_feature_iq, ax=ax[i, 1], color=ascent_hex_color, label='original')
                 sns.lineplot(x=df['date'], y=df['new_feature_iq'].fillna(np.inf), ax=ax[i, 1], color=hex_grey_color,
                               label='modified')
                 ax[i, 1].set_title('Iquitos', fontsize=14)
