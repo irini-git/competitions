@@ -3,6 +3,8 @@ import time
 import datetime
 import logging
 import altair as alt
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 # Constants
 TEST_DATA_FEATURES = '../data/DengAI_Predicting_Disease_Spread_-_Test_Data_Features.csv'
@@ -53,6 +55,7 @@ class DengueData:
                                    "station_precip_mm": "Total precipitation station station",
                                    "station_min_temp_c": "Minimum temperature station",
                                    "station_max_temp_c": "Maximum temperature station",
+                                   "station_avg_temp_c": "Average temperature station",
                                    "precipitation_amt_mm": "Total precipitation satellite",
                                    "reanalysis_sat_precip_amt_mm" : "Total precipitation mm NCEP",
                                    "reanalysis_dew_point_temp_k": "Mean dew point temperature NCEP",
@@ -66,15 +69,36 @@ class DengueData:
                                    "ndvi_se":"Pixel southeast of city centroid",
                                    "ndvi_sw":"Pixel southwest of city centroid",
                                    "ndvi_ne":"Pixel northeast of city centroid",
-                                   "ndvi_nw":"Pixel northwest of city centroid"
+                                   "ndvi_nw":"Pixel northwest of city centroid",
+                                   "reanalysis_tdtr_k": "Diurnal temperature range forecast"
                                    },
                           inplace=True)
 
         print(train_data.columns)
 
-
         return train_data, test_data_features
 
+    def clean_data(self):
+        # Parse date column to datetime format
+        self.train_data['date'] = pd.to_datetime(self.train_data['week_start_date'], format='%Y-%m-%d')
+
+        with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+
+            print(self.train_data['week_start_date'].head(3))
+            print(self.train_data['date'].head(3))
+
+        print(self.train_data['date'].head(2))
+        print(self.train_data['date'].tail(2))
+
+        # # Visualization
+        # f, ax = plt.subplots(nrows=5, ncols=1, figsize=(15, 25))
+        #
+        # for i, column in enumerate(df.drop('date', axis=1).columns):
+        #     sns.lineplot(x=df['date'], y=df[column].fillna(method='ffill'), ax=ax[i], color='dodgerblue')
+        #     ax[i].set_title('Feature: {}'.format(column), fontsize=14)
+        #     ax[i].set_ylabel(ylabel=column, fontsize=14)
+        #
+        #     ax[i].set_xlim([date(2009, 1, 1), date(2020, 6, 30)])
 
     def explore_data(self):
         """
@@ -98,4 +122,4 @@ class DengueData:
 
             chart.save('../fig/explore_002.png')
 
-        plot_scatter_cites()
+        # plot_scatter_cites()
