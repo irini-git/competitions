@@ -130,43 +130,47 @@ class DengueData:
             f.savefig(f'../fig/Explore_raw_{term}.png')
         # ----------------
 
-        def plot_with_missing(df):
+        def plot_with_missing(df, figure_name, term):
+
             # Color grey
             hex_grey_color = '#767676'
 
+            features = [c for c in self.train_data if term in c]
+
             # Plot raw features with red missing values
-            feature = 'Mean air temperature forecast'
-            f, ax = plt.subplots(nrows=1, ncols=2, figsize=(24, 5))
+            f, ax = plt.subplots(nrows=len(features), ncols=2, figsize=(22, 4*len(features)))
 
-            # San Juan
-            old_feature_sj = df.query('city=="sj"')[feature].copy()
-            df['new_feature_sj'] = df.query('city=="sj"')[feature].replace(0, np.nan)
+            for i, feature in enumerate(features):
 
-            sns.lineplot(x=df['date'], y=old_feature_sj, ax=ax[0], color='darkorange', label='original')
-            sns.lineplot(x=df['date'], y=df['new_feature_sj'].fillna(np.inf), ax=ax[0], color=hex_grey_color,
-                          label='modified')
-            ax[0].set_title('San Juan', fontsize=14)
-            ax[0].set_xlabel('')
-            ax[0].set_xlim([datetime.date(1990, 4, 30),
-                            datetime.date(2010, 6, 25)])
+                # San Juan
+                old_feature_sj = df.query('city=="sj"')[feature].copy()
+                df['new_feature_sj'] = df.query('city=="sj"')[feature].replace(0, np.nan)
 
-            # Iquitos
-            old_feature_iq = df.query('city=="iq"')[feature].copy()
-            df['new_feature_iq'] = df.query('city=="iq"')[feature].replace(0, np.nan)
+                sns.lineplot(x=df['date'], y=old_feature_sj, ax=ax[i, 0], color='darkorange', label='original')
+                sns.lineplot(x=df['date'], y=df['new_feature_sj'].fillna(np.inf), ax=ax[i, 0], color=hex_grey_color,
+                              label='modified')
+                ax[i, 0].set_title('San Juan', fontsize=14)
+                ax[i, 0].set_xlabel('')
+                ax[i, 0].set_xlim([datetime.date(1990, 4, 30),
+                                datetime.date(2010, 6, 25)])
 
-            sns.lineplot(x=df['date'], y=old_feature_iq, ax=ax[1], color='darkorange', label='original')
-            sns.lineplot(x=df['date'], y=df['new_feature_iq'].fillna(np.inf), ax=ax[1], color=hex_grey_color,
-                          label='modified')
-            ax[1].set_title('Iquitos', fontsize=14)
-            ax[1].set_xlabel('')
-            ax[1].set_xlim([datetime.date(1990, 4, 30),
-                            datetime.date(2010, 6, 25)])
+                # Iquitos
+                old_feature_iq = df.query('city=="iq"')[feature].copy()
+                df['new_feature_iq'] = df.query('city=="iq"')[feature].replace(0, np.nan)
 
-            f.savefig(f'../fig/Explore_with_missing_{feature}.png')
+                sns.lineplot(x=df['date'], y=old_feature_iq, ax=ax[i, 1], color='darkorange', label='original')
+                sns.lineplot(x=df['date'], y=df['new_feature_iq'].fillna(np.inf), ax=ax[i, 1], color=hex_grey_color,
+                              label='modified')
+                ax[i, 1].set_title('Iquitos', fontsize=14)
+                ax[i, 1].set_xlabel('')
+                ax[i, 1].set_xlim([datetime.date(1990, 4, 30),
+                                datetime.date(2010, 6, 25)])
 
+            f.savefig(f'../fig/Explore_with_missing_{figure_name}.png')
 
-
-        plot_with_missing(self.train_data)
+        features = ['Mean air temperature forecast', 'Diurnal temperature range forecast']
+        for term in ['centroid', 'forecast', 'station', 'NCEP']:
+            plot_with_missing(self.train_data, figure_name=term, term=term)
 
         # print(self.train_data.query('city=="sj"')['total_cases'])
 
