@@ -5,6 +5,7 @@ import logging
 import altair as alt
 import seaborn as sns
 import matplotlib.pyplot as plt
+import numpy as np
 
 # Constants
 TEST_DATA_FEATURES = '../data/DengAI_Predicting_Disease_Spread_-_Test_Data_Features.csv'
@@ -49,14 +50,13 @@ class DengueData:
         logging.info(f"Train data features\n {train_data_features.head(2)}\n")
         logging.info(f"Train data combined\n {train_data.head(2)}\n")
 
-        # Simplify column names
-
+        # Column names in plain English
         train_data.rename(columns={"station_diur_temp_rng_c": "Diurnal temperature range station",
                                    "station_precip_mm": "Total precipitation station station",
                                    "station_min_temp_c": "Minimum temperature station",
                                    "station_max_temp_c": "Maximum temperature station",
                                    "station_avg_temp_c": "Average temperature station",
-                                   "precipitation_amt_mm": "Total precipitation satellite",
+                                   "precipitation_amt_mm": "Total precipitation station satellite",
                                    "reanalysis_sat_precip_amt_mm" : "Total precipitation mm NCEP",
                                    "reanalysis_dew_point_temp_k": "Mean dew point temperature NCEP",
                                    "reanalysis_air_temp_k": "Mean air temperature forecast",
@@ -79,11 +79,26 @@ class DengueData:
         return train_data, test_data_features
 
     def clean_data(self):
+
+        # Explore data
+        with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+            print(self.train_data.head(2))
+            print(self.train_data.info())
+            # for c in self.train_data.columns:
+            #     print(self.train_data[c].value_counts().head(2))
+
         # Parse date column to datetime format
         self.train_data['date'] = pd.to_datetime(self.train_data['week_start_date'], format='%Y-%m-%d')
 
-        with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-            print(self.train_data['week_start_date'].head(3))
+        # Print to screen
+        # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+        #     print(self.train_data['week_start_date'].head(3))
+
+        # Check if chronological order
+        self.train_data = self.train_data.sort_values(by='date')
+        print(f"Is monotonic increasing : {self.train_data['date'].is_monotonic_increasing}")
+
+
 
         # Visualization
 
@@ -96,8 +111,9 @@ class DengueData:
         # ----------------
         def plot_raw_features(term):
             columns_to_visualize = [c for c in self.train_data if term in c]
+            # print(columns_to_visualize)
 
-            f, ax = plt.subplots(nrows=5, ncols=1, figsize=(15, 25))
+            f, ax = plt.subplots(nrows=len(columns_to_visualize), ncols=1, figsize=(15, 5*len(columns_to_visualize)))
 
             for i, column in enumerate(columns_to_visualize):
                 sns.lineplot(x=self.train_data['date'],
@@ -111,33 +127,51 @@ class DengueData:
                 ax[i].set_xlim([datetime.date(1990, 4, 30),
                                 datetime.date(2010, 6, 25)])
 
-            f.savefig(f'../fig/Explore_{term}.png')
+            f.savefig(f'../fig/Explore_raw_{term}.png')
         # ----------------
 
-        # error for NCEP
-        for term in ['station', 'centroid', 'satellite', 'forecast']:
-            plot_raw_features(term = term)
+        def plot_with_missing(df):
+            # Color grey
+            hex_grey_color = '#767676'
 
-    def explore_data(self):
-        """
-        Data exploration, search for patterns and insights.
-        :return: ideas for feature engineering
-        """
+            # Plot raw features with red missing values
+            feature = 'Mean air temperature forecast'
+            f, ax = plt.subplots(nrows=1, ncols=2, figsize=(24, 5))
 
-        with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-            print(self.train_data.head(2))
-            print(self.train_data.info())
-            for c in self.train_data.columns:
-                print(self.train_data[c].value_counts().head(2))
+            # San Juan
+            old_feature_sj = df.query('city=="sj"')[feature].copy()
+            df['new_feature_sj'] = df.query('city=="sj"')[feature].replace(0, np.nan)
 
-        def plot_scatter_cites():
+            sns.lineplot(x=df['date'], y=old_feature_sj, ax=ax[0], color='darkorange', label='original')
+            sns.lineplot(x=df['date'], y=df['new_feature_sj'].fillna(np.inf), ax=ax[0], color=hex_grey_color,
+                          label='modified')
+            ax[0].set_title('San Juan', fontsize=14)
+            ax[0].set_xlabel('')
+            ax[0].set_xlim([datetime.date(1990, 4, 30),
+                            datetime.date(2010, 6, 25)])
 
-            chart = alt.Chart(self.train_data).mark_line(point=True).encode(
-                x='year:N',
-                y='total_cases:Q',
-                color='city:N'
-            )
+            # Iquitos
+            old_feature_iq = df.query('city=="iq"')[feature].copy()
+            df['new_feature_iq'] = df.query('city=="iq"')[feature].replace(0, np.nan)
 
-            chart.save('../fig/explore_002.png')
+            sns.lineplot(x=df['date'], y=old_feature_iq, ax=ax[1], color='darkorange', label='original')
+            sns.lineplot(x=df['date'], y=df['new_feature_iq'].fillna(np.inf), ax=ax[1], color=hex_grey_color,
+                          label='modified')
+            ax[1].set_title('Iquitos', fontsize=14)
+            ax[1].set_xlabel('')
+            ax[1].set_xlim([datetime.date(1990, 4, 30),
+                            datetime.date(2010, 6, 25)])
 
-        # plot_scatter_cites()
+            f.savefig(f'../fig/Explore_with_missing_{feature}.png')
+
+
+
+        plot_with_missing(self.train_data)
+
+        # print(self.train_data.query('city=="sj"')['total_cases'])
+
+        # Plot raw features as is (only ffil)
+        # for term in ['centroid', 'forecast', 'station', 'NCEP']:
+        #     plot_raw_features(term = term)
+
+
