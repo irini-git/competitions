@@ -54,11 +54,20 @@ class DengueData:
                                    "station_min_temp_c": "Minimum temperature station",
                                    "station_max_temp_c": "Maximum temperature station",
                                    "precipitation_amt_mm": "Total precipitation satellite",
-                                   "reanalysis_sat_precip_amt_mm" : "Total precipitation forecast",
-                                   "reanalysis_dew_point_temp_k": "Mean dew point temperature forecast",
+                                   "reanalysis_sat_precip_amt_mm" : "Total precipitation mm NCEP",
+                                   "reanalysis_dew_point_temp_k": "Mean dew point temperature NCEP",
                                    "reanalysis_air_temp_k": "Mean air temperature forecast",
-                                   "reanalysis_relative_humidity_percent": "Mean relative humidity forecast",
-                                   "reanalysis_specific_humidity_g_per_kg":"Mean specific humidity forecast"},
+                                   "reanalysis_relative_humidity_percent": "Mean relative humidity NCEP",
+                                   "reanalysis_specific_humidity_g_per_kg":"Mean specific humidity NCEP",
+                                   "reanalysis_precip_amt_kg_per_m2":"Total precipitation kg_per_m2 NCEP",
+                                   "reanalysis_max_air_temp_k": "Maximum air temperature NCEP",
+                                   "reanalysis_min_air_temp_k":"Minimum air temperature NCEP",
+                                   "reanalysis_avg_temp_k":"Average air temperature NCEP",
+                                   "ndvi_se":"Pixel southeast of city centroid",
+                                   "ndvi_sw":"Pixel southwest of city centroid",
+                                   "ndvi_ne":"Pixel northeast of city centroid",
+                                   "ndvi_nw":"Pixel northwest of city centroid"
+                                   },
                           inplace=True)
 
         print(train_data.columns)
