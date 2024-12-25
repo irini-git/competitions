@@ -83,22 +83,40 @@ class DengueData:
         self.train_data['date'] = pd.to_datetime(self.train_data['week_start_date'], format='%Y-%m-%d')
 
         with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-
             print(self.train_data['week_start_date'].head(3))
-            print(self.train_data['date'].head(3))
 
-        print(self.train_data['date'].head(2))
-        print(self.train_data['date'].tail(2))
+        # Visualization
 
-        # # Visualization
-        # f, ax = plt.subplots(nrows=5, ncols=1, figsize=(15, 25))
-        #
-        # for i, column in enumerate(df.drop('date', axis=1).columns):
-        #     sns.lineplot(x=df['date'], y=df[column].fillna(method='ffill'), ax=ax[i], color='dodgerblue')
-        #     ax[i].set_title('Feature: {}'.format(column), fontsize=14)
-        #     ax[i].set_ylabel(ylabel=column, fontsize=14)
-        #
-        #     ax[i].set_xlim([date(2009, 1, 1), date(2020, 6, 30)])
+        # ----------------
+        # Create an array with the colors you want to use
+        colors = ["#b3b7bd", "#1457ba"]
+        # Set your custom color palette
+        sns.set_palette(sns.color_palette(colors))
+
+        # ----------------
+        def plot_raw_features(term):
+            columns_to_visualize = [c for c in self.train_data if term in c]
+
+            f, ax = plt.subplots(nrows=5, ncols=1, figsize=(15, 25))
+
+            for i, column in enumerate(columns_to_visualize):
+                sns.lineplot(x=self.train_data['date'],
+                             y=self.train_data[column].ffill(),
+                             ax=ax[i],
+                             hue=self.train_data['city'])
+                ax[i].set_title(f'{column}')
+                ax[i].set_xlabel('')
+                ax[i].set_ylabel('')
+
+                ax[i].set_xlim([datetime.date(1990, 4, 30),
+                                datetime.date(2010, 6, 25)])
+
+            f.savefig(f'../fig/Explore_{term}.png')
+        # ----------------
+
+        # error for NCEP
+        for term in ['station', 'centroid', 'satellite', 'forecast']:
+            plot_raw_features(term = term)
 
     def explore_data(self):
         """
