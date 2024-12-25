@@ -2,6 +2,7 @@ import pandas as pd
 import time
 import datetime
 import logging
+import altair as alt
 
 # Constants
 TEST_DATA_FEATURES = '../data/DengAI_Predicting_Disease_Spread_-_Test_Data_Features.csv'
@@ -62,19 +63,12 @@ class DengueData:
 
         def plot_scatter_cites():
 
-            import altair as alt
-            from vega_datasets import data
-
-            source = data.stocks()
-            with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-                print(source.head(2))
-
             chart = alt.Chart(self.train_data).mark_line(point=True).encode(
-                x='weekofyear',
+                x='year:N',
                 y='total_cases:Q',
                 color='city:N'
             )
 
-            chart.save('../fig/explore_001.png')
+            chart.save('../fig/explore_002.png')
 
         plot_scatter_cites()
