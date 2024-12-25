@@ -47,7 +47,25 @@ class DengueData:
         logging.info(f"Train data features\n {train_data_features.head(2)}\n")
         logging.info(f"Train data combined\n {train_data.head(2)}\n")
 
+        # Simplify column names
+
+        train_data.rename(columns={"station_diur_temp_rng_c": "Diurnal temperature range station",
+                                   "station_precip_mm": "Total precipitation station station",
+                                   "station_min_temp_c": "Minimum temperature station",
+                                   "station_max_temp_c": "Maximum temperature station",
+                                   "precipitation_amt_mm": "Total precipitation satellite",
+                                   "reanalysis_sat_precip_amt_mm" : "Total precipitation forecast",
+                                   "reanalysis_dew_point_temp_k": "Mean dew point temperature forecast",
+                                   "reanalysis_air_temp_k": "Mean air temperature forecast",
+                                   "reanalysis_relative_humidity_percent": "Mean relative humidity forecast",
+                                   "reanalysis_specific_humidity_g_per_kg":"Mean specific humidity forecast"},
+                          inplace=True)
+
+        print(train_data.columns)
+
+
         return train_data, test_data_features
+
 
     def explore_data(self):
         """
