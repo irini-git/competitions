@@ -114,6 +114,11 @@ class DengueData:
 
         # ----------------
         def plot_raw_features(term):
+            """
+            Support function to plot raw features as is
+            :param term: parameter family, for example "station"
+            :return: figures as png
+            """
             columns_to_visualize = [c for c in self.train_data if term in c]
             # print(columns_to_visualize)
 
@@ -132,61 +137,16 @@ class DengueData:
                                 datetime.date(2010, 6, 25)])
 
             f.savefig(f'../fig/Explore_raw_{term}.png')
+
         # ----------------
 
-        def plot_with_missing(df, figure_name, term):
-
-            # Color grey
-            hex_grey_color = '#767676'
-            # Ascent color
-            ascent_hex_color = '#ff4d00'
-
-            features = [c for c in self.train_data if term in c]
-
-            # Plot raw features with red missing values
-            f, ax = plt.subplots(nrows=len(features), ncols=2, figsize=(22, 4*len(features)))
-
-            for i, feature in enumerate(features):
-
-                # San Juan
-                old_feature_sj = df.query('city=="sj"')[feature].copy()
-                df['new_feature_sj'] = df.query('city=="sj"')[feature]
-
-                # Plot two lineplots if any nans
-                sns.lineplot(x=df['date'], y=old_feature_sj, ax=ax[i, 0], color=ascent_hex_color, label='original')
-                sns.lineplot(x=df['date'], y=df['new_feature_sj'].fillna(np.inf), ax=ax[i, 0], color=hex_grey_color,
-                              label='modified')
-
-                ax[i, 0].set_title('San Juan', fontsize=14)
-                ax[i, 0].set_xlabel('')
-                ax[i, 0].set_xlim([datetime.date(1990, 4, 30),
-                                datetime.date(2010, 6, 25)])
-
-                # Iquitos
-                old_feature_iq = df.query('city=="iq"')[feature].copy()
-                df['new_feature_iq'] = df.query('city=="iq"')[feature]
-
-                sns.lineplot(x=df['date'], y=old_feature_iq, ax=ax[i, 1], color=ascent_hex_color, label='original')
-                sns.lineplot(x=df['date'], y=df['new_feature_iq'].fillna(np.inf), ax=ax[i, 1], color=hex_grey_color,
-                              label='modified')
-                ax[i, 1].set_title('Iquitos', fontsize=14)
-                ax[i, 1].set_xlabel('')
-                ax[i, 1].set_xlim([datetime.date(1990, 4, 30),
-                                datetime.date(2010, 6, 25)])
-
-            f.savefig(f'../fig/Explore_with_missing_{figure_name}.png')
-
-        # features = ['Mean air temperature forecast', 'Diurnal temperature range forecast']
-        # for term in ['centroid', 'forecast', 'station', 'NCEP']:
-        #     plot_with_missing(self.train_data, figure_name=term, term=term)
-
-        # print(self.train_data.query('city=="sj"')['total_cases'])
-
-        # Plot raw features as is (only ffil)
-        # for term in ['centroid', 'forecast', 'station', 'NCEP']:
-        #     plot_raw_features(term = term)
-
         def plot_charts_with_nans(df):
+            """
+            Support function to plot features as is (with missing values)
+            and when replaced using different methods
+            :param df: feature to explore
+            :return: Chart as png
+            """
 
             def support_plot_fillna(df, method, city):
 
@@ -233,41 +193,52 @@ class DengueData:
 
             # Feature to plot
             for feature, city in list(itertools.product(['Pixel northeast of city centroid',
-                                #'Pixel northwest of city centroid',
-                                #'Pixel southeast of city centroid',
-                                #'Pixel southwest of city centroid',
-                                #'Total precipitation station satellite',
-                                #'Mean air temperature forecast',
-                                #'Average air temperature NCEP',
-                                #'Mean dew point temperature NCEP',
-                                # 'Maximum air temperature NCEP',
-                                # 'Total precipitation kg_per_m2 NCEP',
-                                # 'Total precipitation mm NCEP',
-                                # 'Mean specific humidity NCEP',
-                                # 'Diurnal temperature range forecast',
-                                # 'Average temperature station',
-                                # 'Diurnal temperature range station',
-                                # 'Maximum temperature station',
-                                # 'Minimum temperature station',
+                                'Pixel northwest of city centroid',
+                                'Pixel southeast of city centroid',
+                                'Pixel southwest of city centroid',
+                                'Total precipitation station satellite',
+                                'Mean air temperature forecast',
+                                'Average air temperature NCEP',
+                                'Mean dew point temperature NCEP',
+                                'Maximum air temperature NCEP',
+                                'Total precipitation kg_per_m2 NCEP',
+                                'Total precipitation mm NCEP',
+                                'Mean specific humidity NCEP',
+                                'Diurnal temperature range forecast',
+                                'Average temperature station',
+                                'Diurnal temperature range station',
+                                'Maximum temperature station',
+                                'Minimum temperature station',
                                 'Total precipitation station station'
-                                #'Mean relative humidity NCEP'
+                                'Mean relative humidity NCEP'
                                 ],
                             ['iq', 'sj'])):
 
+                # Create charts for different methods
                 chart_left1 = support_plot_fillna(df, method='ffill', city=city)
                 chart_right1 = support_plot_fillna(df, method='interpolate_cubic',city=city)
 
                 chart_left2 = support_plot_fillna(df, method='interpolate_linear',city=city)
                 chart_right2 = support_plot_fillna(df, method='to_zero',city=city)
 
+                # Upper and bottom charts (to better visualization)
                 chart1 = chart_left1 | chart_right1
                 chart2 = chart_left2 | chart_right2
 
+                # Combine all charts together
                 chart = alt.vconcat(chart1, chart2).configure_title(
                     anchor='start'
                 )
 
+                # Save chart as png
                 chart.save(f'../fig/{feature}_{city}.png')
 
-        plot_charts_with_nans(self.train_data)
+        # Explore features as is ---------------------------------
+        # features = ['Mean air temperature forecast', 'Diurnal temperature range forecast']
+        # for term in ['centroid', 'forecast', 'station', 'NCEP']:
+        #     plot_with_missing(self.train_data, figure_name=term, term=term)
+
+        # Explore missing values city-wise -----------------------
+        # and choose the method how to deal with nans
+        # plot_charts_with_nans(self.train_data)
 
