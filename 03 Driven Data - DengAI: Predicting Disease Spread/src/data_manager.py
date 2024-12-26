@@ -7,6 +7,9 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
 import itertools
+from statsmodels.tsa.seasonal import seasonal_decompose
+
+from networkx.algorithms.traversal import dfs_tree
 
 # Constants
 TEST_DATA_FEATURES = '../data/DengAI_Predicting_Disease_Spread_-_Test_Data_Features.csv'
@@ -242,14 +245,72 @@ class DengueData:
         # and choose the method how to deal with nans
         # plot_charts_with_nans(self.train_data)
 
+        # View df columns
+        # previpitation
+        with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+             print(self.train_data.info())
+
         # Handle missing values (ffill) --------------------------------
         not_columns = ['city', 'year', 'weekofyear', 'week_start_date','total_cases', 'date']
         features_ffill = list(set(self.train_data.columns) - set(not_columns))
-        print(features_ffill)
 
         for f in features_ffill:
             self.train_data[f] = self.train_data.groupby('city')[f].ffill()
 
-        with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-            # print(self.train_data.head(2))
-            print(self.train_data.info())
+        # Time features - engineering ---------------
+        self.train_data['year'] = pd.DatetimeIndex(self.train_data['date']).year
+        self.train_data['month'] = pd.DatetimeIndex(self.train_data['date']).month
+        self.train_data['day'] = pd.DatetimeIndex(self.train_data['date']).day
+        self.train_data['day_of_year'] = pd.DatetimeIndex(self.train_data['date']).dayofyear
+        self.train_data['quarter'] = pd.DatetimeIndex(self.train_data['date']).quarter
+        self.train_data['season'] = self.train_data['month'] % 12 // 3 + 1
+
+        # Encode cyclical features - months, days
+
+        def encode_cyclical_features(df, col, max_val):
+            df[col + '_sin'] = np.sin(2 * np.pi * df[col] / max_val)
+            df[col + '_cos'] = np.cos(2 * np.pi * df[col] / max_val)
+            return df
+
+        for feature, max_val in zip(['month', 'day'], [12, 31]):
+            self.train_data = encode_cyclical_features(self.train_data, col=feature, max_val=max_val)
+
+        columns_time = ['date', 'year', 'month', 'day', 'weekofyear', 'day_of_year',
+                        'quarter', 'season', 'day_sin', 'day_cos', 'month_sin', 'month_cos']
+
+        # View df columns
+        # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+        #     print(self.train_data[columns_time].head(2))
+        #     print(self.train_data.info())
+
+
+        # ----------
+
+        def plot_correlation(df):
+
+            # Correlation
+            # Uncomment if you want to plot correlation
+
+            fig, ax = plt.subplots(figsize=(15,10))
+
+            corrMatrix = df[features_ffill].corr().abs()
+            sns_plot = sns.heatmap(corrMatrix,
+                                   annot=True,
+                                   cmap="Greys",
+                                   linewidths=0.5, linecolor='white',
+                                   ax=ax, cbar=False)
+            fig.savefig('../fig/Correlation.png', bbox_inches='tight')
+
+            fig = sns_plot.get_figure()
+
+            # keep one of two : 'Total precipitation station satellite' or 'Mean specific humidity NCEP'
+            # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+            #    print(df.head(2))
+            #    print(df.info())
+                # print(df[(df.values > 0.9)])
+                # for c in self.train_data.columns:
+                #     print(self.train_data[c].value_counts().head(2))
+
+        plot_correlation(self.train_data)
+
+        # find features with correlation greater than 0.95
