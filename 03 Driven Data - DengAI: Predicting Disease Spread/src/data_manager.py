@@ -315,6 +315,6 @@ class DengueData:
 
         with pd.option_context('display.max_rows', None, 'display.max_columns', None):
             for column in corrMatrix:
-                values_test = [ind for v, ind in zip(corrMatrix[column].values, corrMatrix[column].index) if v>0.95]
+                values_test = [ind for v, ind in zip(corrMatrix[column].values, corrMatrix[column].index) if v>0.9]
                 if column != ''.join(values_test):
                     print(f'{column} : {values_test}')
