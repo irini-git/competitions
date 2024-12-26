@@ -39,7 +39,8 @@ NOAA's GHCN daily climate data weather station measurements
 
 A measure of the amount and vigor of vegetation on the land surface
 
-How to deal with missing values (based on visualisations):
+How to deal with missing values (best option based on visualisations):
+
  - Pixel northeast of city centroid / IQ : ffill
  - Pixel northeast of city centroid / SJ : ffill
  - Pixel northwest of city centroid / IQ : ffill
@@ -60,20 +61,20 @@ How to deal with missing values (based on visualisations):
  - Maximum air temperature NCEP / SJ : ffill
  - Total precipitation kg_per_m2 NCEP / IQ : ffill
  - Total precipitation kg_per_m2 NCEP / SJ : ffill
- - Mean relative humidity NCEP / IQ : linear
- - Mean relative humidity NCEP / SJ : linear
+ - Mean relative humidity NCEP / IQ : ffill
+ - Mean relative humidity NCEP / SJ : ffill
  - Total precipitation mm NCEP / IQ : ffill
  - Total precipitation mm NCEP / SJ : ffill
  - Mean specific humidity NCEP / IQ : ffill
  - Mean specific humidity NCEP / SJ : ffill
- - Diurnal temperature range forecast / IQ : cubic
- - Diurnal temperature range forecast / SJ : cubic
+ - Diurnal temperature range forecast / IQ : ffill
+ - Diurnal temperature range forecast / SJ : ffill
  - Average temperature station / IQ : ffill
  - Average temperature station / SJ : ffill
  - Diurnal temperature range station / IQ : ffill
  - Diurnal temperature range station / SJ : ffill
- - Maximum temperature station / IQ : linear
- - Maximum temperature station  / SJ : linear
+ - Maximum temperature station / IQ : ffill
+ - Maximum temperature station  / SJ : ffill
  - Minimum temperature station / IQ : ffill
  - Minimum temperature station / SJ : ffill
  - Total precipitation station station / IQ : ffill

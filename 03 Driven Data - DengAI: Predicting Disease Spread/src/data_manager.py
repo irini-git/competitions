@@ -104,12 +104,12 @@ class DengueData:
         print(f"Is monotonic increasing : {self.train_data['date'].is_monotonic_increasing}")
 
 
-        # Visualization
+        # Suppot Visualization (how to deal with missing values)
 
         # ----------------
         # Create an array with the colors you want to use
         colors = ["#b3b7bd", "#1457ba"]
-        # Set your custom color palette
+        # Set custom color palette
         sns.set_palette(sns.color_palette(colors))
 
         # ----------------
@@ -209,7 +209,7 @@ class DengueData:
                                 'Diurnal temperature range station',
                                 'Maximum temperature station',
                                 'Minimum temperature station',
-                                'Total precipitation station station'
+                                'Total precipitation station station',
                                 'Mean relative humidity NCEP'
                                 ],
                             ['iq', 'sj'])):
@@ -242,3 +242,14 @@ class DengueData:
         # and choose the method how to deal with nans
         # plot_charts_with_nans(self.train_data)
 
+        # Handle missing values (ffill) --------------------------------
+        not_columns = ['city', 'year', 'weekofyear', 'week_start_date','total_cases', 'date']
+        features_ffill = list(set(self.train_data.columns) - set(not_columns))
+        print(features_ffill)
+
+        for f in features_ffill:
+            self.train_data[f] = self.train_data.groupby('city')[f].ffill()
+
+        with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+            # print(self.train_data.head(2))
+            print(self.train_data.info())
