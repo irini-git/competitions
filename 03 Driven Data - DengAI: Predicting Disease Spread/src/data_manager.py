@@ -185,41 +185,86 @@ class DengueData:
         # for term in ['centroid', 'forecast', 'station', 'NCEP']:
         #     plot_raw_features(term = term)
 
-        test_ne_centroid = self.train_data['Pixel northeast of city centroid'].copy()
-        print(self.train_data[test_ne_centroid.isnull()]['date'].values)
-
-
         def plot_charts_with_nans(df):
 
+            def support_plot_fillna(df, method):
+
+                if method=='ffill':
+                    df[f'feature_{method}'] = df[feature].ffill()
+                elif method=='by_mean':
+                    df[f'feature_{method}'] = df[feature].fillna(df[feature].mean())
+                elif method=='interpolate_linear':
+                    df[f'feature_{method}'] = df[feature].interpolate(method='linear')
+                elif method=='interpolate_cubic':
+                    df[f'feature_{method}'] = df[feature].interpolate(method='cubic')
+                elif method=='to_zero':
+                    df[f'feature_{method}'] = df[feature].replace(np.nan, 0)
+
+                # df['feature_ffill'] = df[feature].ffill()
+                # df['feature_bfill'] = df[feature].bfill()
+
+                line_with_nans = alt.Chart(df).mark_line().encode(
+                    x=alt.X('date:T'),
+                    y=alt.Y(f'{feature}:Q'),
+                    color=alt.value(COLORHEX_GREY)
+                ).transform_filter(
+                    "datum.city !== 'iq'"
+                )
+
+                line_cleaned = alt.Chart(df).mark_line().encode(
+                    x=alt.X('date:T'),
+                    y=alt.Y(f'feature_{method}:Q'),
+                    color=alt.value(COLORHEX_ASCENT)
+                ).transform_filter(
+                    "datum.city !== 'iq'"
+                )
+
+                chart = (line_cleaned + line_with_nans).encode(
+                    x=alt.X().title(""),
+                    y=alt.Y().title(f"Fill NA : {method}")
+                ).properties(
+                    width=800,
+                    title = {
+                        "text": ["San Juan"],
+                        "subtitle": [f"{feature}"]
+                    }
+                )
+
+                return chart
+
+            # Feature to plot
             feature = 'Pixel northeast of city centroid'
-            df['feature_ffil'] = df[feature].ffill()
+            # Method to use
+            # df['feature_ffil'] = df[feature].ffill()
+            # df['feature_bfil'] = df[feature].bfill()
 
-            line_with_nans = alt.Chart(df).mark_line().encode(
-                x=alt.X('date:T'),
-                y=alt.Y(f'{feature}:Q'),
-                color=alt.value(COLORHEX_GREY)
-            ).transform_filter(
-                "datum.city !== 'iq'"
-            )
+            chart_left1 = support_plot_fillna(df, method='ffill')
+            chart_right1 = support_plot_fillna(df, method='interpolate_cubic')
 
-            line_cleaned = alt.Chart(df).mark_line().encode(
-                x=alt.X('date:T'),
-                y=alt.Y(f'feature_ffil:Q'),
-                color=alt.value(COLORHEX_ASCENT)
-            ).transform_filter(
-                "datum.city !== 'iq'"
-            )
+            chart_left2 = support_plot_fillna(df, method='interpolate_linear')
+            chart_right2 = support_plot_fillna(df, method='to_zero')
 
-            chart_ffil = (line_cleaned + line_with_nans).encode(
-                x=alt.X().title(""),
-                y=alt.Y().title("Fill NA by last valid")
-            ).properties(
-                width=800,
-                title=f'San Juan : {feature}'
-            )
+            chart1 = chart_left1 | chart_right1
+            chart2 = chart_left2 | chart_right2
 
-            chart = chart_ffil
+            chart = alt.vconcat(chart1, chart2).configure_title(
+                    anchor='start'
+                )
 
-            chart.save('../fig/lines.png')
+            chart.save(f'../fig/{feature}.png')
 
         plot_charts_with_nans(self.train_data)
+
+        def plot_locate_missing_values(df):
+            f, ax = plt.subplots(nrows=1, ncols=1, figsize=(16, 5))
+
+            sns.heatmap(df.T.isna(), cmap='Blues')
+            ax.set_title('Missing Values')
+
+            # for tick in ax.yaxis.get_major_ticks():
+            #     tick.label.set_fontsize(14)
+
+            f.savefig('../fig/heatmap_missing.png')
+
+        # plot_locate_missing_values(self.train_data)
+
