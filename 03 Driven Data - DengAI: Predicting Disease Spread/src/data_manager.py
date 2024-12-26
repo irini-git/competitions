@@ -6,6 +6,7 @@ import altair as alt
 import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
+import itertools
 
 # Constants
 TEST_DATA_FEATURES = '../data/DengAI_Predicting_Disease_Spread_-_Test_Data_Features.csv'
@@ -187,28 +188,26 @@ class DengueData:
 
         def plot_charts_with_nans(df):
 
-            def support_plot_fillna(df, method):
+            def support_plot_fillna(df, method, city):
 
                 if method=='ffill':
-                    df[f'feature_{method}'] = df[feature].ffill()
+                    df[f'feature_{method}'] = df.query('city==@city')[feature].ffill()
                 elif method=='by_mean':
-                    df[f'feature_{method}'] = df[feature].fillna(df[feature].mean())
+                    df[f'feature_{method}'] = df.query('city==@city')[feature].fillna(df[feature].mean())
                 elif method=='interpolate_linear':
-                    df[f'feature_{method}'] = df[feature].interpolate(method='linear')
+                    df[f'feature_{method}'] = df.query('city==@city')[feature].interpolate(method='linear')
                 elif method=='interpolate_cubic':
-                    df[f'feature_{method}'] = df[feature].interpolate(method='cubic')
+                    df[f'feature_{method}'] = df.query('city==@city')[feature].interpolate(method='cubic')
                 elif method=='to_zero':
-                    df[f'feature_{method}'] = df[feature].replace(np.nan, 0)
+                    df[f'feature_{method}'] = df.query('city==@city')[feature].replace(np.nan, 0)
 
-                # df['feature_ffill'] = df[feature].ffill()
-                # df['feature_bfill'] = df[feature].bfill()
-
+                # Plots
                 line_with_nans = alt.Chart(df).mark_line().encode(
                     x=alt.X('date:T'),
                     y=alt.Y(f'{feature}:Q'),
                     color=alt.value(COLORHEX_GREY)
                 ).transform_filter(
-                    "datum.city !== 'iq'"
+                    f"datum.city == '{city}'"
                 )
 
                 line_cleaned = alt.Chart(df).mark_line().encode(
@@ -216,7 +215,7 @@ class DengueData:
                     y=alt.Y(f'feature_{method}:Q'),
                     color=alt.value(COLORHEX_ASCENT)
                 ).transform_filter(
-                    "datum.city !== 'iq'"
+                    f"datum.city == '{city}'"
                 )
 
                 chart = (line_cleaned + line_with_nans).encode(
@@ -225,7 +224,7 @@ class DengueData:
                 ).properties(
                     width=800,
                     title = {
-                        "text": ["San Juan"],
+                        "text": [f"{city}"],
                         "subtitle": [f"{feature}"]
                     }
                 )
@@ -233,38 +232,42 @@ class DengueData:
                 return chart
 
             # Feature to plot
-            feature = 'Pixel northeast of city centroid'
-            # Method to use
-            # df['feature_ffil'] = df[feature].ffill()
-            # df['feature_bfil'] = df[feature].bfill()
+            for feature, city in list(itertools.product(['Pixel northeast of city centroid',
+                                #'Pixel northwest of city centroid',
+                                #'Pixel southeast of city centroid',
+                                #'Pixel southwest of city centroid',
+                                #'Total precipitation station satellite',
+                                #'Mean air temperature forecast',
+                                #'Average air temperature NCEP',
+                                #'Mean dew point temperature NCEP',
+                                # 'Maximum air temperature NCEP',
+                                # 'Total precipitation kg_per_m2 NCEP',
+                                # 'Total precipitation mm NCEP',
+                                # 'Mean specific humidity NCEP',
+                                # 'Diurnal temperature range forecast',
+                                # 'Average temperature station',
+                                # 'Diurnal temperature range station',
+                                # 'Maximum temperature station',
+                                # 'Minimum temperature station',
+                                'Total precipitation station station'
+                                #'Mean relative humidity NCEP'
+                                ],
+                            ['iq', 'sj'])):
 
-            chart_left1 = support_plot_fillna(df, method='ffill')
-            chart_right1 = support_plot_fillna(df, method='interpolate_cubic')
+                chart_left1 = support_plot_fillna(df, method='ffill', city=city)
+                chart_right1 = support_plot_fillna(df, method='interpolate_cubic',city=city)
 
-            chart_left2 = support_plot_fillna(df, method='interpolate_linear')
-            chart_right2 = support_plot_fillna(df, method='to_zero')
+                chart_left2 = support_plot_fillna(df, method='interpolate_linear',city=city)
+                chart_right2 = support_plot_fillna(df, method='to_zero',city=city)
 
-            chart1 = chart_left1 | chart_right1
-            chart2 = chart_left2 | chart_right2
+                chart1 = chart_left1 | chart_right1
+                chart2 = chart_left2 | chart_right2
 
-            chart = alt.vconcat(chart1, chart2).configure_title(
+                chart = alt.vconcat(chart1, chart2).configure_title(
                     anchor='start'
                 )
 
-            chart.save(f'../fig/{feature}.png')
+                chart.save(f'../fig/{feature}_{city}.png')
 
         plot_charts_with_nans(self.train_data)
-
-        def plot_locate_missing_values(df):
-            f, ax = plt.subplots(nrows=1, ncols=1, figsize=(16, 5))
-
-            sns.heatmap(df.T.isna(), cmap='Blues')
-            ax.set_title('Missing Values')
-
-            # for tick in ax.yaxis.get_major_ticks():
-            #     tick.label.set_fontsize(14)
-
-            f.savefig('../fig/heatmap_missing.png')
-
-        # plot_locate_missing_values(self.train_data)
 

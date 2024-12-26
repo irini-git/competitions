@@ -35,12 +35,50 @@ NOAA's GHCN daily climate data weather station measurements
     station_avg_temp_c – Average temperature
     station_precip_mm – Total precipitation
     station_diur_temp_rng_c – Diurnal temperature range
+    ...
 
 A measure of the amount and vigor of vegetation on the land surface
 
-Nan values:
-- Pixel northeast of city centroid : interpolate_cubic
-- Pixel northwest of city centroid : ?
+How to deal with missing values (based on visualisations):
+ - Pixel northeast of city centroid / IQ : ffill
+ - Pixel northeast of city centroid / SJ : ffill
+ - Pixel northwest of city centroid / IQ : ffill
+ - Pixel northwest of city centroid / SJ : ffill
+ - Pixel southeast of city centroid / IQ : ffill
+ - Pixel southeast of city centroid / SJ : ffill
+ - Pixel southwest of city centroid / IQ : ffill
+ - Pixel southwest of city centroid / SJ : ffill
+ - Total precipitation station satellite / IQ : ffill
+ - Total precipitation station satellite / SJ : ffill
+ - Mean air temperature forecast / IQ : ffill
+ - Mean air temperature forecast / SJ : ffill
+ - Average air temperature NCEP / IQ : ffill
+ - Average air temperature NCEP / SJ : ffill
+ - Mean dew point temperature NCEP / IQ : ffill
+ - Mean dew point temperature NCEP / SJ : ffill
+ - Maximum air temperature NCEP / IQ : ffill
+ - Maximum air temperature NCEP / SJ : ffill
+ - Total precipitation kg_per_m2 NCEP / IQ : ffill
+ - Total precipitation kg_per_m2 NCEP / SJ : ffill
+ - Mean relative humidity NCEP / IQ : linear
+ - Mean relative humidity NCEP / SJ : linear
+ - Total precipitation mm NCEP / IQ : ffill
+ - Total precipitation mm NCEP / SJ : ffill
+ - Mean specific humidity NCEP / IQ : ffill
+ - Mean specific humidity NCEP / SJ : ffill
+ - Diurnal temperature range forecast / IQ : cubic
+ - Diurnal temperature range forecast / SJ : cubic
+ - Average temperature station / IQ : ffill
+ - Average temperature station / SJ : ffill
+ - Diurnal temperature range station / IQ : ffill
+ - Diurnal temperature range station / SJ : ffill
+ - Maximum temperature station / IQ : linear
+ - Maximum temperature station  / SJ : linear
+ - Minimum temperature station / IQ : ffill
+ - Minimum temperature station / SJ : ffill
+ - Total precipitation station station / IQ : ffill
+ - Total precipitation station station / SJ : ffill
+
 
 References
 DrivenData. (2016). DengAI: Predicting Disease Spread.
