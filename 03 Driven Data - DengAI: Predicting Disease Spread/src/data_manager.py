@@ -12,6 +12,10 @@ TEST_DATA_FEATURES = '../data/DengAI_Predicting_Disease_Spread_-_Test_Data_Featu
 TRAINING_DATA_FEATURES = '../data/DengAI_Predicting_Disease_Spread_-_Training_Data_Features.csv'
 TRAINING_DATA_LABELS = '../data/DengAI_Predicting_Disease_Spread_-_Training_Data_Labels.csv'
 
+COLORHEX_GREY = '#767676'
+COLORHEX_ASCENT = '#ff4d00'
+
+
 # Timestamp for a log file
 ts = time.time()
 ts_ = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d_%Hh%M')
@@ -184,9 +188,38 @@ class DengueData:
         test_ne_centroid = self.train_data['Pixel northeast of city centroid'].copy()
         print(self.train_data[test_ne_centroid.isnull()]['date'].values)
 
-        def plot_charts_with_nans(df):
-            pass
 
-            # line.save('../fig/lines.png')
+        def plot_charts_with_nans(df):
+
+            feature = 'Pixel northeast of city centroid'
+            df['feature_ffil'] = df[feature].ffill()
+
+            line_with_nans = alt.Chart(df).mark_line().encode(
+                x=alt.X('date:T'),
+                y=alt.Y(f'{feature}:Q'),
+                color=alt.value(COLORHEX_GREY)
+            ).transform_filter(
+                "datum.city !== 'iq'"
+            )
+
+            line_cleaned = alt.Chart(df).mark_line().encode(
+                x=alt.X('date:T'),
+                y=alt.Y(f'feature_ffil:Q'),
+                color=alt.value(COLORHEX_ASCENT)
+            ).transform_filter(
+                "datum.city !== 'iq'"
+            )
+
+            chart_ffil = (line_cleaned + line_with_nans).encode(
+                x=alt.X().title(""),
+                y=alt.Y().title("Fill NA by last valid")
+            ).properties(
+                width=800,
+                title=f'San Juan : {feature}'
+            )
+
+            chart = chart_ffil
+
+            chart.save('../fig/lines.png')
 
         plot_charts_with_nans(self.train_data)
