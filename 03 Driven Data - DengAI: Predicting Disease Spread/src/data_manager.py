@@ -99,7 +99,6 @@ class DengueData:
         print(f"Is monotonic increasing : {self.train_data['date'].is_monotonic_increasing}")
 
 
-
         # Visualization
 
         # ----------------
@@ -146,11 +145,13 @@ class DengueData:
 
                 # San Juan
                 old_feature_sj = df.query('city=="sj"')[feature].copy()
-                df['new_feature_sj'] = df.query('city=="sj"')[feature].replace(0, np.nan)
+                df['new_feature_sj'] = df.query('city=="sj"')[feature]
 
+                # Plot two lineplots if any nans
                 sns.lineplot(x=df['date'], y=old_feature_sj, ax=ax[i, 0], color=ascent_hex_color, label='original')
                 sns.lineplot(x=df['date'], y=df['new_feature_sj'].fillna(np.inf), ax=ax[i, 0], color=hex_grey_color,
                               label='modified')
+
                 ax[i, 0].set_title('San Juan', fontsize=14)
                 ax[i, 0].set_xlabel('')
                 ax[i, 0].set_xlim([datetime.date(1990, 4, 30),
@@ -158,7 +159,7 @@ class DengueData:
 
                 # Iquitos
                 old_feature_iq = df.query('city=="iq"')[feature].copy()
-                df['new_feature_iq'] = df.query('city=="iq"')[feature].replace(0, np.nan)
+                df['new_feature_iq'] = df.query('city=="iq"')[feature]
 
                 sns.lineplot(x=df['date'], y=old_feature_iq, ax=ax[i, 1], color=ascent_hex_color, label='original')
                 sns.lineplot(x=df['date'], y=df['new_feature_iq'].fillna(np.inf), ax=ax[i, 1], color=hex_grey_color,
@@ -170,9 +171,9 @@ class DengueData:
 
             f.savefig(f'../fig/Explore_with_missing_{figure_name}.png')
 
-        features = ['Mean air temperature forecast', 'Diurnal temperature range forecast']
-        for term in ['centroid', 'forecast', 'station', 'NCEP']:
-            plot_with_missing(self.train_data, figure_name=term, term=term)
+        # features = ['Mean air temperature forecast', 'Diurnal temperature range forecast']
+        # for term in ['centroid', 'forecast', 'station', 'NCEP']:
+        #     plot_with_missing(self.train_data, figure_name=term, term=term)
 
         # print(self.train_data.query('city=="sj"')['total_cases'])
 
@@ -180,4 +181,12 @@ class DengueData:
         # for term in ['centroid', 'forecast', 'station', 'NCEP']:
         #     plot_raw_features(term = term)
 
+        test_ne_centroid = self.train_data['Pixel northeast of city centroid'].copy()
+        print(self.train_data[test_ne_centroid.isnull()]['date'].values)
 
+        def plot_charts_with_nans(df):
+            pass
+
+            # line.save('../fig/lines.png')
+
+        plot_charts_with_nans(self.train_data)
