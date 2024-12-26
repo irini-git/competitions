@@ -303,14 +303,18 @@ class DengueData:
 
             fig = sns_plot.get_figure()
 
-            # keep one of two : 'Total precipitation station satellite' or 'Mean specific humidity NCEP'
-            # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-            #    print(df.head(2))
-            #    print(df.info())
-                # print(df[(df.values > 0.9)])
-                # for c in self.train_data.columns:
-                #     print(self.train_data[c].value_counts().head(2))
+            print(corrMatrix.columns)
+            print(corrMatrix.head(2))
 
-        plot_correlation(self.train_data)
+            return corrMatrix
 
-        # find features with correlation greater than 0.95
+        corrMatrix = plot_correlation(self.train_data)
+
+        # Correlation --------------------------------
+        print('Hghly correlated features', '-'*20)
+
+        with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+            for column in corrMatrix:
+                values_test = [ind for v, ind in zip(corrMatrix[column].values, corrMatrix[column].index) if v>0.95]
+                if column != ''.join(values_test):
+                    print(f'{column} : {values_test}')
