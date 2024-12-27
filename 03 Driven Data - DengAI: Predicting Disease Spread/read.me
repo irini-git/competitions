@@ -90,11 +90,13 @@ For the model, we will not use highly correlated features :
 - Mean dew point temperature NCEP
 
 Any time series distribution has 3 core components:
+- Seasonality - does the data have a clear cyclical/periodic pattern?
+- Trend - does the data represent a general upward or downward slope?
+- Noise - what are the outliers or missing values that are not consistent with the rest of the data?
 
-Seasonality - does the data have a clear cyclical/periodic pattern?
-Trend - does the data represent a general upward or downward slope?
-Noise - what are the outliers or missing values that are not consistent with the rest of the data?
-Deconstructing a time series into these components is called decomposition, and we will explore each one in detail.
+Time series can be either univariate or multivariate (current task):
+- Univariate time series only has a single time-dependent variable.
+- Multivariate time series have a multiple time-dependent variable.
 
 References and Inspirations
 DrivenData. (2016). DengAI: Predicting Disease Spread.

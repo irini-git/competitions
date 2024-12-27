@@ -427,7 +427,6 @@ class DengueData:
 
             fig.savefig(f'../fig/resampled_{term}_{location}.png')
 
-
         def perform_seasonal_decomposition(feature, location):
 
             # City name is plain English for the title
