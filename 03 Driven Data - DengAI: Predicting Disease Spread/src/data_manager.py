@@ -314,18 +314,45 @@ class DengueData:
                 color=alt.Color("city",
                                 scale=alt.Scale(domain=domain, range=range_),
                                 legend=None),
-            ).properties(
-                width=800,
-                height=300,
-                title={
-                    "text": [f"Dengue cases {self.train_data.year.min()} - {self.train_data.year.max()}"],
-                    "subtitle": ["in San Juan (grey) and Iquitos (orange)"]
-                }
-            ).configure_title(
+                ).properties(
+                    width=800,
+                    height=300,
+                    title={
+                        "text": [f"Dengue cases {self.train_data.year.min()} - {self.train_data.year.max()}"],
+                        "subtitle": ["in San Juan (grey) and Iquitos (orange)"]
+                    }
+                ).configure_title(
                     anchor='start'
                 )
 
             chart.save('../fig/city_vs_label.png')
+
+        def plot_calendar_heatmap(location):
+        # Heatmap per city
+
+            df = self.train_data.query('city==@location').copy()
+            up_value = round(df.groupby(by=["year", "month"])['total_cases'].sum().max(),-1)
+
+            if location == 'iq':
+                city_ = 'Iquitos, Peru'
+            else:
+                city_ = 'San Juan, Puerto Rico'
+
+            chart = alt.Chart(df, title=f'Calendar view for dengue cases in {city_}').mark_rect().encode(
+                x=alt.X('year:O', title=''),
+                y=alt.Y('month:O', title='month'),
+                color=alt.Color(
+                    'total_cases:Q',
+                    scale=alt.Scale(scheme='reds',
+                    domain=(0, up_value/12))),
+                tooltip=[
+                    alt.Tooltip('year:O', title='Year'),
+                    alt.Tooltip('month:O', title='Month'),
+                    alt.Tooltip('count(total_cases):Q', title='total_cases')
+                ]).properties(width=600, height=300)
+
+
+            chart.save(f'../fig/cities_heatmap_{location}.png')
 
         def plot_pixel_vs_label(df):
             features = ['Pixel northeast of city centroid',
@@ -334,9 +361,9 @@ class DengueData:
                         'Pixel southwest of city centroid']
             print(features)
 
-        # plot_city_vs_label(self.train_data)
-        plot_pixel_vs_label(self.train_data)
-
+        plot_city_vs_label(self.train_data)
+        plot_calendar_heatmap(location='iq')
+        plot_calendar_heatmap(location='sj')
 
 
 
