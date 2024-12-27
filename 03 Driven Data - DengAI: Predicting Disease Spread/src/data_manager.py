@@ -31,7 +31,7 @@ logging.basicConfig(level=logging.INFO, filename=FILENAME_LOGGING, filemode="w",
 class DengueData:
     def __init__(self):
         self.train_data, self.test_data_features = self.load_data()
-        # self.train_data_cleaned = self.feature_engineering(self.train_data)
+        self.train_data_cleaned = self.feature_engineering(self.train_data)
         # self.test_data_cleaned = self.feature_engineering(self.test_data_features)
 
 
@@ -464,7 +464,6 @@ class DengueData:
 
         plot_correlation(self.train_data, components=True)
 
-
         def perform_seasonal_decomposition(feature, location):
 
             # City name is plain English for the title
@@ -608,13 +607,10 @@ class DengueData:
 
         # week_start_date - not use
         # 'Mean dew point temperature NCEP' - not use, because of high correlation
-        # Mean dew point temperature NCEP - not use, because of high correlation
-        feature_ = 'Minimum air temperature NCEP'
-        print(df[feature_].value_counts().head(3))
-        print(df[feature_].head(3))
+
 
         numeric_features_binary = ['is_sj']
-        numeric_features = ['year', 'weekofyear',
+        numeric_raw_features = ['year', 'weekofyear',
                             'Pixel northeast of city centroid', 'Pixel northwest of city centroid',
                             'Pixel southeast of city centroid', 'Pixel southwest of city centroid',
                             'Mean air temperature forecast', 'Average air temperature NCEP',
@@ -622,6 +618,16 @@ class DengueData:
                             'Total precipitation kg_per_m2 NCEP', 'Mean relative humidity NCEP',
                             'Total precipitation mm NCEP', 'Mean specific humidity NCEP',
                             'Diurnal temperature range forecast']
+
+        # Features for components
+        columns_components = ['Total precipitation mm NCEP trend',
+                            'Total precipitation mm NCEP seasonal',
+                            'Mean dew point temperature NCEP seasonal',
+                            'Minimum air temperature NCEP seasonal',
+                            'Average air temperature NCEP seasonal',
+                            'Mean specific humidity NCEP trend',
+                            'Pixel northwest of city centroid trend',
+                            'Diurnal temperature range station trend']
 
 
         return df
