@@ -436,6 +436,7 @@ class DengueData:
             Create support columns responsible for feature decomposition
             :param feature: column in df
             :return: updated train data with trends and seasonal components
+            # Replace train by df
             """
 
             # Filter for location
