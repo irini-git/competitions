@@ -229,13 +229,6 @@ class DengueData:
                 # Save chart as png
                 chart.save(f'../fig/{feature}_{city}.png')
 
-        # Explore features as is ---------------------------------
-        for term in ['centroid', 'forecast', 'station', 'NCEP']:
-              plot_raw_features(term)
-
-        # Explore missing values city-wise -----------------------
-        # and choose the method how to deal with nans
-        plot_charts_with_nans(self.train_data)
 
         # ----------
         def plot_correlation(df):
@@ -267,8 +260,20 @@ class DengueData:
 
             return corrMatrix
 
+        # Actual exploration, uncomment to generate charts
+
+        # Explore features as is ---------------------------------
+        # for term in ['centroid', 'forecast', 'station', 'NCEP']:
+        #       plot_raw_features(term)
+
+        # Explore missing values city-wise -----------------------
+        # and choose the method how to deal with nans
+        # plot_charts_with_nans(self.train_data)
+
         # Uncomment to plot correlation Matrix
-        plot_correlation(self.train_data)
+        # plot_correlation(self.train_data)
+
+
 
 
     def feature_engineering(self, df):
@@ -315,7 +320,35 @@ class DengueData:
         # Preview --------------------------------
         with pd.option_context('display.max_rows', None, 'display.max_columns', None):
             print(df.info())
-            print(df.columns)
+            # print(df.columns)
+
+        # Features with high correlation, to be removed
+        # 'Total precipitation station satellite', 'Mean dew point temperature NCEP'
+
+        # Features
+        # 'city' - to be replaced by 'is_sj' : transform to numeric is_sj 1 (sj) or 0 (iq)
+        df['is_sj'] = df['city'].apply(lambda x: 1 if x == 'sj' else 0)
+
+        # year - use as is
+        # weekofyear - use as is
+        # Pixel northeast  - use as is
+
+        # week_start_date - not use
+        # 'Mean dew point temperature NCEP' - not use, because of high correlation
+        # Mean dew point temperature NCEP - not use, because of high correlation
+        feature_ = 'Minimum air temperature NCEP'
+        print(df[feature_].value_counts().head(3))
+        print(df[feature_].head(3))
+
+        numeric_features_binary = ['is_sj']
+        numeric_features = ['year', 'weekofyear',
+                            'Pixel northeast of city centroid', 'Pixel northwest of city centroid',
+                            'Pixel southeast of city centroid', 'Pixel southwest of city centroid',
+                            'Mean air temperature forecast', 'Average air temperature NCEP',
+                            'Maximum air temperature NCEP', 'Minimum air temperature NCEP',
+                            'Total precipitation kg_per_m2 NCEP', 'Mean relative humidity NCEP',
+                            'Total precipitation mm NCEP', 'Mean specific humidity NCEP',
+                            'Diurnal temperature range forecast']
 
 
         return df
