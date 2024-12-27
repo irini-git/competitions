@@ -7,9 +7,6 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
 import itertools
-from statsmodels.tsa.seasonal import seasonal_decompose
-
-from networkx.algorithms.traversal import dfs_tree
 
 # Constants
 TEST_DATA_FEATURES = '../data/DengAI_Predicting_Disease_Spread_-_Test_Data_Features.csv'
@@ -33,7 +30,7 @@ logging.basicConfig(level=logging.INFO, filename=FILENAME_LOGGING, filemode="w",
 class DengueData:
     def __init__(self):
         self.train_data, self.test_data_features = self.load_data()
-        self.train_data_cleaned = self.feature_engineering(self.train_data)
+        # self.train_data_cleaned = self.feature_engineering(self.train_data)
         # self.test_data_cleaned = self.feature_engineering(self.test_data_features)
 
 
@@ -84,14 +81,15 @@ class DengueData:
                                    },
                           inplace=True)
 
+
         return train_data, test_data_features
 
     def explore_data(self):
 
         # Explore data
-        with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-            print(self.train_data.head(2))
-            print(self.train_data.info())
+        # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+            # print(self.train_data.head(2))
+            # print(self.train_data.info())
 
         # Parse date column to datetime format
         self.train_data['date'] = pd.to_datetime(self.train_data['week_start_date'], format='%Y-%m-%d')
@@ -273,6 +271,73 @@ class DengueData:
         # Uncomment to plot correlation Matrix
         # plot_correlation(self.train_data)
 
+        # ---------------------
+        # Explore features vs label
+        # Handle missing values (ffill) --------------------------------
+        not_columns = ['city', 'year', 'weekofyear', 'week_start_date', 'total_cases', 'date']
+        features_ffill = list(set(self.train_data.columns) - set(not_columns))
+
+        for f in features_ffill:
+            self.train_data[f] = self.train_data.groupby('city')[f].ffill()
+
+        # Time features - engineering ------------------------------
+        self.train_data['year'] = pd.DatetimeIndex(self.train_data['date']).year
+        self.train_data['month'] = pd.DatetimeIndex(self.train_data['date']).month
+        self.train_data['day'] = pd.DatetimeIndex(self.train_data['date']).day
+        self.train_data['day_of_year'] = pd.DatetimeIndex(self.train_data['date']).dayofyear
+        self.train_data['quarter'] = pd.DatetimeIndex(self.train_data['date']).quarter
+        self.train_data['season'] = self.train_data['month'] % 12 // 3 + 1
+
+        # Encode cyclical features - months, days
+        def encode_cyclical_features(df_, col, max_val_):
+            df_[col + '_sin'] = np.sin(2 * np.pi * df_[col] / max_val_)
+            df_[col + '_cos'] = np.cos(2 * np.pi * df_[col] / max_val_)
+            return df_
+
+        for feature, max_val in zip(['month', 'day', 'quarter', 'season'], [12, 31, 4, 4]):
+            self.train_data = encode_cyclical_features(self.train_data, col=feature, max_val_=max_val)
+
+        # Preview --------------------------------
+        with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+            print(self.train_data.info())
+
+        def plot_city_vs_label(df):
+
+            # COLORHEX_GREY = '#767676'
+            # COLORHEX_ASCENT = '#ff4d00'
+            range_ = ['#767676', '#ff4d00']
+            domain = ['sj', 'iq']
+
+            chart = alt.Chart(df).mark_bar(opacity=0.7).encode(
+                x=alt.X('date', title=''),
+                y=alt.Y('total_cases:Q', title='Total cases').stack(None),
+                color=alt.Color("city",
+                                scale=alt.Scale(domain=domain, range=range_),
+                                legend=None),
+            ).properties(
+                width=800,
+                height=300,
+                title={
+                    "text": [f"Dengue cases {self.train_data.year.min()} - {self.train_data.year.max()}"],
+                    "subtitle": ["in San Juan (grey) and Iquitos (orange)"]
+                }
+            ).configure_title(
+                    anchor='start'
+                )
+
+            chart.save('../fig/city_vs_label.png')
+
+        def plot_pixel_vs_label(df):
+            features = ['Pixel northeast of city centroid',
+                        'Pixel northwest of city centroid',
+                        'Pixel southeast of city centroid',
+                        'Pixel southwest of city centroid']
+            print(features)
+
+        # plot_city_vs_label(self.train_data)
+        plot_pixel_vs_label(self.train_data)
+
+
 
 
 
@@ -312,14 +377,14 @@ class DengueData:
         def encode_cyclical_features(df_, col, max_val_):
             df_[col + '_sin'] = np.sin(2 * np.pi * df_[col] / max_val_)
             df_[col + '_cos'] = np.cos(2 * np.pi * df_[col] / max_val_)
-            return df
+            return df_
 
         for feature, max_val in zip(['month', 'day', 'quarter', 'season'], [12, 31, 4, 4]):
             df = encode_cyclical_features(df, col=feature, max_val_=max_val)
 
         # Preview --------------------------------
-        with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-            print(df.info())
+        # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+            # print(df.info())
             # print(df.columns)
 
         # Features with high correlation, to be removed
