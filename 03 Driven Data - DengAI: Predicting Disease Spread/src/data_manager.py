@@ -34,6 +34,7 @@ class DengueData:
     def __init__(self):
         self.train_data, self.test_data_features = self.load_data()
         self.train_data_cleaned = self.feature_engineering(self.train_data)
+        # self.test_data_cleaned = self.feature_engineering(self.test_data_features)
 
 
     def load_data(self):
@@ -83,8 +84,6 @@ class DengueData:
                                    },
                           inplace=True)
 
-        print(train_data.columns)
-
         return train_data, test_data_features
 
     def explore_data(self):
@@ -97,14 +96,9 @@ class DengueData:
         # Parse date column to datetime format
         self.train_data['date'] = pd.to_datetime(self.train_data['week_start_date'], format='%Y-%m-%d')
 
-        # Print to screen
-        # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-        #     print(self.train_data['week_start_date'].head(3))
-
         # Check if chronological order
         self.train_data = self.train_data.sort_values(by='date')
         print(f"Is monotonic increasing : {self.train_data['date'].is_monotonic_increasing}")
-
 
         # Suppot Visualization (how to deal with missing values)
 
@@ -236,70 +230,31 @@ class DengueData:
                 chart.save(f'../fig/{feature}_{city}.png')
 
         # Explore features as is ---------------------------------
-        # features = ['Mean air temperature forecast', 'Diurnal temperature range forecast']
-        # for term in ['centroid', 'forecast', 'station', 'NCEP']:
-        #     plot_with_missing(self.train_data, figure_name=term, term=term)
+        for term in ['centroid', 'forecast', 'station', 'NCEP']:
+              plot_raw_features(term)
 
         # Explore missing values city-wise -----------------------
         # and choose the method how to deal with nans
-        # plot_charts_with_nans(self.train_data)
-
-        # View df columns
-        # previpitation
-        with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-             print(self.train_data.info())
-
-        # Handle missing values (ffill) --------------------------------
-        not_columns = ['city', 'year', 'weekofyear', 'week_start_date','total_cases', 'date']
-        features_ffill = list(set(self.train_data.columns) - set(not_columns))
-
-        for f in features_ffill:
-            self.train_data[f] = self.train_data.groupby('city')[f].ffill()
-
-        # Time features - engineering ---------------
-        self.train_data['year'] = pd.DatetimeIndex(self.train_data['date']).year
-        self.train_data['month'] = pd.DatetimeIndex(self.train_data['date']).month
-        self.train_data['day'] = pd.DatetimeIndex(self.train_data['date']).day
-        self.train_data['day_of_year'] = pd.DatetimeIndex(self.train_data['date']).dayofyear
-        self.train_data['quarter'] = pd.DatetimeIndex(self.train_data['date']).quarter
-        self.train_data['season'] = self.train_data['month'] % 12 // 3 + 1
-
-        # Encode cyclical features - months, days
-
-        def encode_cyclical_features(df, col, max_val):
-            df[col + '_sin'] = np.sin(2 * np.pi * df[col] / max_val)
-            df[col + '_cos'] = np.cos(2 * np.pi * df[col] / max_val)
-            return df
-
-        for feature, max_val in zip(['month', 'day', 'quarter', 'season'], [12, 31, 4, 4]):
-            self.train_data = encode_cyclical_features(self.train_data, col=feature, max_val=max_val)
-
-        # View df columns
-        # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-            # print(self.train_data[columns_time].head(2))
-            # print(self.train_data.info())
-            # for c in columns_time:
-            #    print(self.train_data[c].value_counts())
-
+        plot_charts_with_nans(self.train_data)
 
         # ----------
-
         def plot_correlation(df):
 
             # Correlation
             # Uncomment if you want to plot correlation
 
+            not_columns = ['city', 'year', 'weekofyear', 'week_start_date', 'total_cases', 'date']
+            features_ffill = list(set(df.columns) - set(not_columns))
+
             fig, ax = plt.subplots(figsize=(15,10))
 
             corrMatrix = df[features_ffill].corr().abs()
-            sns_plot = sns.heatmap(corrMatrix,
-                                   annot=True,
-                                   cmap="Greys",
-                                   linewidths=0.5, linecolor='white',
-                                   ax=ax, cbar=False)
+            sns.heatmap(corrMatrix,
+                        annot=True,
+                        cmap="Greys",
+                        linewidths=0.5, linecolor='white',
+                        ax=ax, cbar=False)
             fig.savefig('../fig/Correlation.png', bbox_inches='tight')
-
-            fig = sns_plot.get_figure()
 
             print('Highly correlated features', '-' * 20)
 
@@ -319,16 +274,49 @@ class DengueData:
     def feature_engineering(self, df):
         """
         Function responsible for feature engineering for train and test data
+        - parse date column to datetime format
+        - ensure chronological order
+        - handle missing values (ffill)
+        - time features : add new, encode cyclical
         :return:
         """
+
+        # Parse date column to datetime format ---------------
+        df['date'] = pd.to_datetime(df['week_start_date'], format='%Y-%m-%d')
+
+        # Ensure chronological order ---------------
+        df = df.sort_values(by='date')
+        print(f"Is monotonic increasing : {df['date'].is_monotonic_increasing}")
+
+        # Handle missing values (ffill) --------------------------------
+        not_columns = ['city', 'year', 'weekofyear', 'week_start_date','total_cases', 'date']
+        features_ffill = list(set(df.columns) - set(not_columns))
+
+        for f in features_ffill:
+            df[f] = df.groupby('city')[f].ffill()
+
+        # Time features - engineering ------------------------------
+        df['year'] = pd.DatetimeIndex(df['date']).year
+        df['month'] = pd.DatetimeIndex(df['date']).month
+        df['day'] = pd.DatetimeIndex(df['date']).day
+        df['day_of_year'] = pd.DatetimeIndex(df['date']).dayofyear
+        df['quarter'] = pd.DatetimeIndex(df['date']).quarter
+        df['season'] = df['month'] % 12 // 3 + 1
+
+        # Encode cyclical features - months, days
+        def encode_cyclical_features(df_, col, max_val_):
+            df_[col + '_sin'] = np.sin(2 * np.pi * df_[col] / max_val_)
+            df_[col + '_cos'] = np.cos(2 * np.pi * df_[col] / max_val_)
+            return df
+
+        for feature, max_val in zip(['month', 'day', 'quarter', 'season'], [12, 31, 4, 4]):
+            df = encode_cyclical_features(df, col=feature, max_val_=max_val)
+
+        # Preview --------------------------------
         with pd.option_context('display.max_rows', None, 'display.max_columns', None):
             print(df.info())
             print(df.columns)
 
-        numeric_features = ['city',	'year',	'weekofyear']
-
-        # Parse date column to datetime format
-        df['date'] = pd.to_datetime(df['week_start_date'], format='%Y-%m-%d')
 
         return df
 
