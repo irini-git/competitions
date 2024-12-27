@@ -229,23 +229,27 @@ class DengueData:
                 chart.save(f'../fig/{feature}_{city}.png')
 
         # ----------
-        def plot_correlation(df):
+        def plot_correlation(df, components=False):
 
             # Correlation
             # Uncomment if you want to plot correlation
 
-            not_columns = ['city', 'year', 'weekofyear', 'week_start_date', 'total_cases', 'date']
-            features_ffill = list(set(df.columns) - set(not_columns))
+            if components:
+                columns_to_plot = [c for c in self.train_data if any(['seasonal' in c, 'trend' in c])]
+            else:
+                not_columns = ['city', 'year', 'weekofyear', 'week_start_date', 'total_cases', 'date']
+                columns_to_plot = list(set(df.columns) - set(not_columns))
 
             fig, ax = plt.subplots(figsize=(15,10))
 
-            corrMatrix = df[features_ffill].corr().abs()
+            corrMatrix = df[columns_to_plot].corr().abs()
             sns.heatmap(corrMatrix,
                         annot=True,
                         cmap="Greys",
                         linewidths=0.5, linecolor='white',
                         ax=ax, cbar=False)
-            fig.savefig('../fig/Correlation.png', bbox_inches='tight')
+            fig.savefig(f'../fig/Correlation_components_{components}.png', bbox_inches='tight')
+            plt.close()
 
             print('Highly correlated features', '-' * 20)
 
@@ -269,7 +273,7 @@ class DengueData:
         # plot_charts_with_nans(self.train_data)
 
         # Uncomment to plot correlation Matrix
-        # plot_correlation(self.train_data)
+        # plot_correlation(self.train_data, components=False)
 
         # ---------------------
         # Explore features vs label
@@ -300,7 +304,7 @@ class DengueData:
         # Preview --------------------------------
         with pd.option_context('display.max_rows', None, 'display.max_columns', None):
             print(self.train_data.info())
-            print(self.train_data['date'].head(6))
+        #    print(self.train_data['date'].head(6))
 
         def plot_city_vs_label(df):
 
@@ -427,6 +431,40 @@ class DengueData:
 
             fig.savefig(f'../fig/resampled_{term}_{location}.png')
 
+        def create_decompositions(feature):
+            """
+            Create support columns responsible for feature decomposition
+            :param feature: column in df
+            :return: updated train data with trends and seasonal components
+            """
+
+            # Filter for location
+            df_iq = self.train_data.query('city=="iq"').copy()
+            df_sj = self.train_data.query('city=="sj"').copy()
+
+            # Decomposition
+            res_iq = seasonal_decompose(df_iq[feature], model='additive', extrapolate_trend='freq', period=52)
+            res_sj = seasonal_decompose(df_sj[feature], model='additive', extrapolate_trend='freq', period=52)
+
+            # Combine in one column based on index
+            trend = res_sj.trend.combine_first(res_iq.trend)
+            seasonal = res_sj.seasonal.combine_first(res_iq.seasonal)
+
+            # Add trend and seasonal columns
+            self.train_data = pd.concat([self.train_data, trend, seasonal], axis=1)
+
+            # Rename columns
+            self.train_data.rename(columns={'trend': f'{feature} trend',
+                                            'seasonal' : f'{feature} seasonal'}
+                                            , inplace=True)
+
+
+        for feature in features_ffill:
+            create_decompositions(feature=feature)
+
+        plot_correlation(self.train_data, components=True)
+
+
         def perform_seasonal_decomposition(feature, location):
 
             # City name is plain English for the title
@@ -507,7 +545,8 @@ class DengueData:
 
             # plot_feature_vs_label(feature=feature, location=city)
             # resample(feature=feature, location=city)
-            perform_seasonal_decomposition(feature=feature, location=city)
+            # perform_seasonal_decomposition(feature=feature, location=city)
+            pass
 
 
     def feature_engineering(self, df):
