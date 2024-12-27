@@ -7,6 +7,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
 import itertools
+from statsmodels.tsa.seasonal import seasonal_decompose
 
 # Constants
 TEST_DATA_FEATURES = '../data/DengAI_Predicting_Disease_Spread_-_Test_Data_Features.csv'
@@ -227,7 +228,6 @@ class DengueData:
                 # Save chart as png
                 chart.save(f'../fig/{feature}_{city}.png')
 
-
         # ----------
         def plot_correlation(df):
 
@@ -300,6 +300,7 @@ class DengueData:
         # Preview --------------------------------
         with pd.option_context('display.max_rows', None, 'display.max_columns', None):
             print(self.train_data.info())
+            print(self.train_data['date'].head(6))
 
         def plot_city_vs_label(df):
 
@@ -391,7 +392,6 @@ class DengueData:
                 anchor='start'
             )
 
-
             chart.save(f'../fig/{feature}_{location}.png')
 
 
@@ -406,11 +406,11 @@ class DengueData:
             # Features to plot
             columns_to_visualize = [c for c in self.train_data if term in c]
 
-            # Filter for location scale
+            # Filter for location
             df = self.train_data.query('city==@location').copy()
 
             fig, ax = plt.subplots(ncols=2, nrows=len(columns_to_visualize), sharex=True, figsize=(14, 8))
-            fig.suptitle(f'{city_} : original (left) and weekly (right)')
+            fig.suptitle(f'{city_} : original (left) and monthly (right)')
 
             # ---------------
             for idx, feature in enumerate(columns_to_visualize):
@@ -420,21 +420,68 @@ class DengueData:
                 ax[idx, 0].bar(df['date'], df[feature], width=5, color=COLORHEX_GREY)
                 ax[idx, 0].set_ylabel(f'{new_text_annotation}', fontsize=8, rotation='horizontal', ha='right')
 
-                resampled_df = df[['date', feature]].resample('7D', on='date').sum().reset_index(drop=False)
+                resampled_df = df[['date', feature]].resample('ME', on='date').sum().reset_index(drop=False)
                 ax[idx, 1].bar(resampled_df['date'], resampled_df[feature], width=10, color=COLORHEX_GREY)
 
             # ---------------
 
             fig.savefig(f'../fig/resampled_{term}_{location}.png')
 
+
+        def perform_seasonal_decomposition(feature, location):
+
+            # City name is plain English for the title
+            if location == 'iq':
+                city_ = 'Iquitos, Peru'
+            else:
+                city_ = 'San Juan, Puerto Rico'
+
+            # Filter for location
+            df = self.train_data.query('city==@location').copy()
+            df = df.set_index('date')
+
+            # Decomposition
+            res = seasonal_decompose(df[feature], model='additive',
+                                     extrapolate_trend='freq', period=52)
+
+            x_min = df.index.values[0]
+            x_max = df.index.values[-1]
+
+            fig, ax = plt.subplots(ncols=1, nrows=4, sharex=True, figsize=(16, 8))
+            plt.xlim(x_min, x_max)
+
+            ax[0].set_title(f'Decomposition of {feature} in {city_}', fontsize=14)
+
+            res.observed.plot(ax=ax[0], legend=False, color=COLORHEX_GREY)
+            ax[0].set_ylabel('Observed', fontsize=12)
+
+            res.trend.plot(ax=ax[1], legend=False, color=COLORHEX_GREY)
+            ax[1].set_ylabel('Trend', fontsize=12)
+
+            res.seasonal.plot(ax=ax[2], legend=False, color=COLORHEX_GREY)
+            ax[2].set_ylabel('Seasonal', fontsize=12)
+
+            res.resid.plot(ax=ax[3], legend=False, color=COLORHEX_GREY)
+            ax[3].set_ylabel('Residual', fontsize=12)
+            ax[3].tick_params(axis='x', rotation=0)
+            ax[3].set_xlabel('')
+
+            # Save chart to file
+            fig.savefig(f'../fig/decomposition_{feature}_{location}.png')
+
+            # Close figure
+            plt.close()
+
+
         for term, city in list(itertools.product(['centroid', 'forecast', 'station', 'NCEP'],
                     ['iq', 'sj'])):
-            resample(term=term, location=city)
+            # Resample to monthly
+            # resample(term=term, location=city)
+            pass
+
         # plot_city_vs_label(self.train_data)
         # plot_calendar_heatmap(location='iq')
         # plot_calendar_heatmap(location='sj')
-
-        # Downsample to the week of year
 
         # Feature to plot
         for feature, city in list(itertools.product(['Pixel northeast of city centroid',
@@ -461,7 +508,7 @@ class DengueData:
 
             # plot_feature_vs_label(feature=feature, location=city)
             # resample(feature=feature, location=city)
-            pass
+            perform_seasonal_decomposition(feature=feature, location=city)
 
 
     def feature_engineering(self, df):
