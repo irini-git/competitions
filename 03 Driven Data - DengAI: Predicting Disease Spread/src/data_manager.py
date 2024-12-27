@@ -330,9 +330,11 @@ class DengueData:
         def plot_calendar_heatmap(location):
         # Heatmap per city
 
+            # Up value for the scale
             df = self.train_data.query('city==@location').copy()
             up_value = round(df.groupby(by=["year", "month"])['total_cases'].sum().max(),-1)
 
+            # City name is plain English for the title
             if location == 'iq':
                 city_ = 'Iquitos, Peru'
             else:
@@ -340,7 +342,7 @@ class DengueData:
 
             chart = alt.Chart(df, title=f'Calendar view for dengue cases in {city_}').mark_rect().encode(
                 x=alt.X('year:O', title=''),
-                y=alt.Y('month:O', title='month'),
+                y=alt.Y('month(date):O', title=''),
                 color=alt.Color(
                     'total_cases:Q',
                     scale=alt.Scale(scheme='reds',
@@ -354,16 +356,54 @@ class DengueData:
 
             chart.save(f'../fig/cities_heatmap_{location}.png')
 
-        def plot_pixel_vs_label(df):
+        def plot_pixel_vs_label(location):
             features = ['Pixel northeast of city centroid',
                         'Pixel northwest of city centroid',
                         'Pixel southeast of city centroid',
                         'Pixel southwest of city centroid']
-            print(features)
 
-        plot_city_vs_label(self.train_data)
-        plot_calendar_heatmap(location='iq')
-        plot_calendar_heatmap(location='sj')
+            # Up value for the scale
+            df = self.train_data.query('city==@location').copy()
+
+            # City name is plain English for the title
+            if location == 'iq':
+                city_ = 'Iquitos, Peru'
+            else:
+                city_ = 'San Juan, Puerto Rico'
+
+            base2 = alt.Chart(df).encode(
+                alt.X('date:T', axis=alt.Axis(title=None))
+            )
+
+            line3 = base2.mark_line(stroke=COLORHEX_GREY, interpolate='monotone').encode(
+                alt.Y('total_cases',
+                      axis=alt.Axis(
+                          title='Dengue cases',
+                          titleColor=COLORHEX_GREY))
+            )
+
+            line2 = base2.mark_line(stroke='#5276A7', interpolate='monotone').encode(
+                alt.Y('Pixel northeast of city centroid',
+                      axis=alt.Axis(title='Pixel northeast of city centroid', titleColor='#5276A7'))
+            )
+
+            chart = alt.layer(line2, line3).resolve_scale(
+                y='independent'
+            ).properties(width=700, height=300,
+                         title={"text": [f"Dengue cases and Pixel northeast of city centroid in {city_}"]}
+            ).configure_title(
+                anchor='start'
+            )
+
+
+            chart.save(f'../fig/pixel_{location}.png')
+
+        plot_pixel_vs_label(location='iq')
+        plot_pixel_vs_label(location='sj')
+
+        # plot_city_vs_label(self.train_data)
+        # plot_calendar_heatmap(location='iq')
+        # plot_calendar_heatmap(location='sj')
 
 
 
