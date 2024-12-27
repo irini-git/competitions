@@ -81,6 +81,14 @@ How to deal with missing values (best option based on visualisations):
  - Total precipitation station station / SJ : ffill
 
 
+Highly correlated features (>0.95):
+Total precipitation mm NCEP : 'Total precipitation station satellite'
+Mean specific humidity NCEP : 'Mean dew point temperature NCEP'
+
+For the model, we will not use highly correlated features :
+- Total precipitation station satellite
+- Mean dew point temperature NCEP
+
 References
 DrivenData. (2016). DengAI: Predicting Disease Spread.
 Retrieved [December 24, 2024] from https://www.drivendata.org/competitions/44/dengai-predicting-disease-spread/

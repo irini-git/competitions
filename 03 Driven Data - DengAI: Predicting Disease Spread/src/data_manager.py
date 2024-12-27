@@ -33,6 +33,7 @@ logging.basicConfig(level=logging.INFO, filename=FILENAME_LOGGING, filemode="w",
 class DengueData:
     def __init__(self):
         self.train_data, self.test_data_features = self.load_data()
+        self.train_data_cleaned = self.feature_engineering(self.train_data)
 
 
     def load_data(self):
@@ -86,14 +87,12 @@ class DengueData:
 
         return train_data, test_data_features
 
-    def clean_data(self):
+    def explore_data(self):
 
         # Explore data
         with pd.option_context('display.max_rows', None, 'display.max_columns', None):
             print(self.train_data.head(2))
             print(self.train_data.info())
-            # for c in self.train_data.columns:
-            #     print(self.train_data[c].value_counts().head(2))
 
         # Parse date column to datetime format
         self.train_data['date'] = pd.to_datetime(self.train_data['week_start_date'], format='%Y-%m-%d')
@@ -272,16 +271,15 @@ class DengueData:
             df[col + '_cos'] = np.cos(2 * np.pi * df[col] / max_val)
             return df
 
-        for feature, max_val in zip(['month', 'day'], [12, 31]):
+        for feature, max_val in zip(['month', 'day', 'quarter', 'season'], [12, 31, 4, 4]):
             self.train_data = encode_cyclical_features(self.train_data, col=feature, max_val=max_val)
-
-        columns_time = ['date', 'year', 'month', 'day', 'weekofyear', 'day_of_year',
-                        'quarter', 'season', 'day_sin', 'day_cos', 'month_sin', 'month_cos']
 
         # View df columns
         # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-        #     print(self.train_data[columns_time].head(2))
-        #     print(self.train_data.info())
+            # print(self.train_data[columns_time].head(2))
+            # print(self.train_data.info())
+            # for c in columns_time:
+            #    print(self.train_data[c].value_counts())
 
 
         # ----------
@@ -303,18 +301,35 @@ class DengueData:
 
             fig = sns_plot.get_figure()
 
-            print(corrMatrix.columns)
-            print(corrMatrix.head(2))
+            print('Highly correlated features', '-' * 20)
+
+            with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+                for column in corrMatrix:
+                    values_test = [ind for v, ind in zip(corrMatrix[column].values, corrMatrix[column].index) if
+                                   v > 0.95]
+                    if column != ''.join(values_test):
+                        print(f'{column} : {values_test}')
 
             return corrMatrix
 
-        corrMatrix = plot_correlation(self.train_data)
+        # Uncomment to plot correlation Matrix
+        plot_correlation(self.train_data)
 
-        # Correlation --------------------------------
-        print('Hghly correlated features', '-'*20)
 
+    def feature_engineering(self, df):
+        """
+        Function responsible for feature engineering for train and test data
+        :return:
+        """
         with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-            for column in corrMatrix:
-                values_test = [ind for v, ind in zip(corrMatrix[column].values, corrMatrix[column].index) if v>0.9]
-                if column != ''.join(values_test):
-                    print(f'{column} : {values_test}')
+            print(df.info())
+            print(df.columns)
+
+        numeric_features = ['city',	'year',	'weekofyear']
+
+        # Parse date column to datetime format
+        df['date'] = pd.to_datetime(df['week_start_date'], format='%Y-%m-%d')
+
+        return df
+
+

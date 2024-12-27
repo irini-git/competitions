@@ -1,4 +1,9 @@
 from data_manager import DengueData
 
+# Initiate class
 data = DengueData()
-data.clean_data()
+
+# Data exploration
+# data.explore_data()
+
+# END ------------
