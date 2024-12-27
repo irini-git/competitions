@@ -356,11 +356,7 @@ class DengueData:
 
             chart.save(f'../fig/cities_heatmap_{location}.png')
 
-        def plot_pixel_vs_label(location):
-            features = ['Pixel northeast of city centroid',
-                        'Pixel northwest of city centroid',
-                        'Pixel southeast of city centroid',
-                        'Pixel southwest of city centroid']
+        def plot_feature_vs_label(feature, location):
 
             # Up value for the scale
             df = self.train_data.query('city==@location').copy()
@@ -383,29 +379,89 @@ class DengueData:
             )
 
             line2 = base2.mark_line(stroke='#5276A7', interpolate='monotone').encode(
-                alt.Y('Pixel northeast of city centroid',
-                      axis=alt.Axis(title='Pixel northeast of city centroid', titleColor='#5276A7'))
+                alt.Y(feature,
+                      axis=alt.Axis(title=f'{feature}', titleColor='#5276A7'))
             )
 
             chart = alt.layer(line2, line3).resolve_scale(
                 y='independent'
             ).properties(width=700, height=300,
-                         title={"text": [f"Dengue cases and Pixel northeast of city centroid in {city_}"]}
+                         title={"text": [f"Dengue cases and {feature} in {city_}"]}
             ).configure_title(
                 anchor='start'
             )
 
 
-            chart.save(f'../fig/pixel_{location}.png')
+            chart.save(f'../fig/{feature}_{location}.png')
 
-        plot_pixel_vs_label(location='iq')
-        plot_pixel_vs_label(location='sj')
 
+        def resample(term, location):
+
+            # City name is plain English for the title
+            if location == 'iq':
+                city_ = 'Iquitos, Peru'
+            else:
+                city_ = 'San Juan, Puerto Rico'
+
+            # Features to plot
+            columns_to_visualize = [c for c in self.train_data if term in c]
+
+            # Filter for location scale
+            df = self.train_data.query('city==@location').copy()
+
+            fig, ax = plt.subplots(ncols=2, nrows=len(columns_to_visualize), sharex=True, figsize=(14, 8))
+            fig.suptitle(f'{city_} : original (left) and weekly (right)')
+
+            # ---------------
+            for idx, feature in enumerate(columns_to_visualize):
+                text_annotation = feature.split(' ')
+                new_text_annotation = ' '.join(text_annotation[:2]) + '\n' + ' '.join(text_annotation[2:])
+
+                ax[idx, 0].bar(df['date'], df[feature], width=5, color=COLORHEX_GREY)
+                ax[idx, 0].set_ylabel(f'{new_text_annotation}', fontsize=8, rotation='horizontal', ha='right')
+
+                resampled_df = df[['date', feature]].resample('7D', on='date').sum().reset_index(drop=False)
+                ax[idx, 1].bar(resampled_df['date'], resampled_df[feature], width=10, color=COLORHEX_GREY)
+
+            # ---------------
+
+            fig.savefig(f'../fig/resampled_{term}_{location}.png')
+
+        for term, city in list(itertools.product(['centroid', 'forecast', 'station', 'NCEP'],
+                    ['iq', 'sj'])):
+            resample(term=term, location=city)
         # plot_city_vs_label(self.train_data)
         # plot_calendar_heatmap(location='iq')
         # plot_calendar_heatmap(location='sj')
 
+        # Downsample to the week of year
 
+        # Feature to plot
+        for feature, city in list(itertools.product(['Pixel northeast of city centroid',
+                                                         'Pixel northwest of city centroid',
+                                                         'Pixel southeast of city centroid',
+                                                         'Pixel southwest of city centroid',
+                                                         'Total precipitation station satellite',
+                                                         'Mean air temperature forecast',
+                                                         'Average air temperature NCEP',
+                                                         'Mean dew point temperature NCEP',
+                                                         'Maximum air temperature NCEP',
+                                                         'Total precipitation kg_per_m2 NCEP',
+                                                         'Total precipitation mm NCEP',
+                                                         'Mean specific humidity NCEP',
+                                                         'Diurnal temperature range forecast',
+                                                         'Average temperature station',
+                                                         'Diurnal temperature range station',
+                                                         'Maximum temperature station',
+                                                         'Minimum temperature station',
+                                                         'Total precipitation station station',
+                                                         'Mean relative humidity NCEP'
+                                                         ],
+                                                        ['iq', 'sj'])):
+
+            # plot_feature_vs_label(feature=feature, location=city)
+            # resample(feature=feature, location=city)
+            pass
 
 
     def feature_engineering(self, df):
