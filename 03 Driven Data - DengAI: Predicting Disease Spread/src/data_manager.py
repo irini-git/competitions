@@ -7,10 +7,11 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
 import itertools
+import xgboost as xgb
+from matplotlib.pyplot import title, tight_layout
+from sklearn.metrics import mean_squared_error
 
-from matplotlib.pyplot import figure
 from statsmodels.tsa.seasonal import seasonal_decompose
-from sympy import nroots
 
 # Constants
 TEST_DATA_FEATURES = '../data/DengAI_Predicting_Disease_Spread_-_Test_Data_Features.csv'
@@ -602,6 +603,7 @@ class DengueData:
             """
             Create time series features
             """
+            df = df.copy()
             df['year'] = pd.DatetimeIndex(df['date']).year
             df['month'] = pd.DatetimeIndex(df['date']).month
             df['day'] = pd.DatetimeIndex(df['date']).day
@@ -715,7 +717,7 @@ class DengueData:
                             'Minimum temperature station']
 
         columns_time = ['day_of_year', 'season', 'month_sin', 'month_cos',
-                        'day_sin', 'day_cos', 'season_sin', 'season_cos']
+                        'day_sin', 'day_cos', 'season_sin', 'season_cos', 'month', 'quarter']
 
         # Features for components
         columns_components = ['Total precipitation mm NCEP trend',
@@ -734,8 +736,61 @@ class DengueData:
             print(df.info())
             print(df.columns)
 
-        # For time series, train and test split are by some date
 
+        # Regression model
+        remove_features = ['quarter', 'season', 'season_sin', 'season_cos', 'day_cos']
+        FEATURES_ = numeric_raw_features + numeric_features_binary + columns_components + columns_time
+        FEATURES = list(set(FEATURES_) - set(remove_features))
+        TARGET = 'total_cases'
+
+        # Simplified task
+        # For time series, train and test split are by some date
+        # Train / test split for Iq
+        train = df.query('is_sj==0 & index < "01-01-2010"')
+        test = df.query('is_sj==0 & index >= "01-01-2010"')
+
+        X_train = train[FEATURES]
+        y_train = train[TARGET]
+
+        X_test = test[FEATURES]
+        y_test = test[TARGET]
+
+        def plot_train_test():
+            fig, ax = plt.subplots(figsize=(15,15))
+            train['total_cases'].plot(ax=ax, label='Training Set', title='Data Train/Test Split for Iq')
+            test['total_cases'].plot(ax=ax, label='Train Set')
+            ax.axvline('01-01-2010', color='black', ls='--')
+            fig.savefig('../fig/train_test.png')
+
+        # plot_train_test()
+
+        reg = xgb.XGBRegressor(n_estimators=1000,
+                               early_stopping_rounds=50,
+                               learning_rate=0.01)
+        reg.fit(X_train, y_train,
+                eval_set=[(X_train, y_train), (X_test, y_test)],
+                verbose=100)
+
+        fi = pd.DataFrame(data=reg.feature_importances_,
+                        index=reg.feature_names_in_,
+                          columns=['importance'])
+
+        def plot_feature_importance():
+            fig, ax = plt.subplots(figsize=(15,15))
+            fi.sort_values('importance').plot(ax=ax,
+                                              kind='barh',
+                                              title='Feature Importance')
+            plt.tight_layout()
+            plt.close()
+            fig.savefig('../fig/feature_importance.png')
+
+        plot_feature_importance()
+
+        # Forecast on test set
+        y_pred = reg.predict(X_test)
+
+        score = np.sqrt(mean_squared_error(y_test, y_pred))
+        print(f'RMSE Score on Test set: {score:0.2f}')
 
         return df
 
