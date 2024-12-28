@@ -7,7 +7,10 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
 import itertools
+
+from matplotlib.pyplot import figure
 from statsmodels.tsa.seasonal import seasonal_decompose
+from sympy import nroots
 
 # Constants
 TEST_DATA_FEATURES = '../data/DengAI_Predicting_Disease_Spread_-_Test_Data_Features.csv'
@@ -31,8 +34,7 @@ logging.basicConfig(level=logging.INFO, filename=FILENAME_LOGGING, filemode="w",
 class DengueData:
     def __init__(self):
         self.train_data, self.test_data_features = self.load_data()
-        self.train_data_cleaned = self.feature_engineering(self.train_data)
-        # self.test_data_cleaned = self.feature_engineering(self.test_data_features)
+        # self.train_data_cleaned = self.feature_engineering(self.train_data)
 
 
     def load_data(self):
@@ -220,7 +222,7 @@ class DengueData:
                 chart1 = chart_left1 | chart_right1
                 chart2 = chart_left2 | chart_right2
 
-                # Combine all charts together
+                # Combine charts
                 chart = alt.vconcat(chart1, chart2).configure_title(
                     anchor='start'
                 )
@@ -460,10 +462,11 @@ class DengueData:
                                             , inplace=True)
 
 
-        for feature in features_ffill:
-            create_decompositions(feature=feature)
+        # Uncomment for decomposition
+        # for feature in features_ffill:
+        #     create_decompositions(feature=feature)
 
-        plot_correlation(self.train_data, components=True)
+        # plot_correlation(self.train_data, components=True)
 
         def perform_seasonal_decomposition(feature, location):
 
@@ -548,6 +551,27 @@ class DengueData:
             # perform_seasonal_decomposition(feature=feature, location=city)
             pass
 
+        def plot_boxplot_time_vs_cases(df):
+            fig, ax = plt.subplots(ncols=1, nrows=2, sharex=True, figsize=(16, 8))
+
+            # Boxplots
+            sns.boxplot(ax=ax[0], data=df.query('city=="sj"'), x='year', y='total_cases')
+            sns.boxplot(ax=ax[1], data=df.query('city=="iq"'), x='year', y='total_cases')
+
+            # Subtitles as y labels
+            ax[0].set_ylabel('San Juan (Puerto Rico)')
+            ax[1].set_ylabel('Iquitos (Peru)')
+
+            # ax[0].set_xticks(df.year)
+            ax[1].set_xlabel('')
+
+            # despine top and right borders
+            sns.despine(left=False, right=True, bottom=False, top=True)
+
+            fig.suptitle(f'Dengue cases in Iquitos (Peru) and San Juan (Puerto Rico) in {df.year.min()}-{df.year.max()}')
+            fig.savefig('../fig/box_plot.png')
+
+        plot_boxplot_time_vs_cases(self.train_data)
 
     def feature_engineering(self, df):
         """
@@ -671,7 +695,21 @@ class DengueData:
         # Pixel northeast  - use as is
 
         # week_start_date - not use
-        # 'Mean dew point temperature NCEP' - not use, because of high correlation
+        # NOT USE because for high correlation
+        # - Total precipitation station satellite
+        # - Mean dew point temperature NCEP
+
+        #        'Total precipitation station station', 'total_cases', 'date', 'month',
+        #        'day', 'day_of_year', 'quarter', 'season', 'month_sin', 'month_cos',
+        #        'day_sin', 'day_cos', 'quarter_sin', 'quarter_cos', 'season_sin',
+        #        'season_cos', 'Diurnal temperature range station trend',
+        #        'Pixel northwest of city centroid trend',
+        #        'Mean specific humidity NCEP trend',
+        #        'Total precipitation mm NCEP trend',
+        #        'Average air temperature NCEP seasonal',
+        #        'Minimum air temperature NCEP seasonal',
+        #        'Mean dew point temperature NCEP seasonal',
+        #        'Total precipitation mm NCEP seasonal'
 
 
         numeric_features_binary = ['is_sj']
@@ -682,7 +720,9 @@ class DengueData:
                             'Maximum air temperature NCEP', 'Minimum air temperature NCEP',
                             'Total precipitation kg_per_m2 NCEP', 'Mean relative humidity NCEP',
                             'Total precipitation mm NCEP', 'Mean specific humidity NCEP',
-                            'Diurnal temperature range forecast']
+                            'Diurnal temperature range forecast', 'Average temperature station',
+                            'Diurnal temperature range station', 'Maximum temperature station',
+                            'Minimum temperature station']
 
         # Features for components
         columns_components = ['Total precipitation mm NCEP trend',

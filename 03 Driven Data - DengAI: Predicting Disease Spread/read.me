@@ -94,36 +94,18 @@ Any time series distribution has 3 core components:
 - Trend - does the data represent a general upward or downward slope?
 - Noise - what are the outliers or missing values that are not consistent with the rest of the data?
 
-For the model, we will not use highly correlated features (trends and seasonal):
-What are features that are correlated with many other features?
-keep Diurnal temperature range station trend, drop
-    Diurnal temperature range forecast trend
-    Pixel southwest of city centroid trend
-    Maximum air temperature NCEP trend
-    Maximum temperature station trend
-    Minimum air temperature NCEP trend
+For the model, we will not use highly correlated features (trends and seasonal),
+only use below (basen on correlation matrix)
+   - Diurnal temperature range station trend
+   - Pixel northwest of city centroid trend
+   - Mean specific humidity NCEP trend
+   - Total precipitation mm NCEP trend
 
-keep Pixel northwest of city centroid trend, drop
-    Pixel northeast of city centroid trend
+   - Average air temperature NCEP seasonal
+   - Minimum air temperature NCEP seasonal
+   - Mean dew point temperature NCEP seasonal
+   - Total precipitation mm NCEP seasonal
 
-keep Mean specific humidity NCEP trend, drop
-    Mean dew point temperature NCEP trend
-
-keep Average air temperature NCEP seasonal, drop
-    Mean air temperature forecast seasonal
-
-keep Minimum air temperature NCEP seasonal, drop
-    Mean specific humidity NCEP seasonal
-
-keep Mean dew point temperature NCEP seasonal, drop
-    Mean specific humidity NCEP seasonal
-    Minimum temperature station seasonal
-
-keep Total precipitation mm NCEP seasonal, drop
-    Total precipitation station satellite seasonal
-
-keep Total precipitation mm NCEP trend, drop
-    Total precipitation station satellite trend
 
 ------------
 
@@ -143,3 +125,6 @@ https://www.kaggle.com/code/avanwyk/encoding-cyclical-features-for-deep-learning
 
 Time Series Visualization with Altair
 https://developers.google.com/earth-engine/tutorials/community/time-series-visualization-with-altair
+
+Time Series Forecasting with XGBoost - Use python and machine learning to predict energy consumption
+https://www.youtube.com/watch?v=vV12dGe_Fho
