@@ -4,7 +4,7 @@ from data_manager import DengueData
 data = DengueData()
 
 # Data exploration
-data.explore_data()
+# data.explore_data()
 
 # Model
 # data.feature_engineering()

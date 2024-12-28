@@ -34,7 +34,7 @@ logging.basicConfig(level=logging.INFO, filename=FILENAME_LOGGING, filemode="w",
 class DengueData:
     def __init__(self):
         self.train_data, self.test_data_features = self.load_data()
-        # self.train_data_cleaned = self.feature_engineering(self.train_data)
+        self.train_data_cleaned = self.feature_engineering(self.train_data)
 
 
     def load_data(self):
@@ -551,12 +551,12 @@ class DengueData:
             # perform_seasonal_decomposition(feature=feature, location=city)
             pass
 
-        def plot_boxplot_time_vs_cases(df):
+        def plot_boxplot_time_vs_cases(df, time_period='year'):
             fig, ax = plt.subplots(ncols=1, nrows=2, sharex=True, figsize=(16, 8))
 
             # Boxplots
-            sns.boxplot(ax=ax[0], data=df.query('city=="sj"'), x='year', y='total_cases')
-            sns.boxplot(ax=ax[1], data=df.query('city=="iq"'), x='year', y='total_cases')
+            sns.boxplot(ax=ax[0], data=df.query('city=="sj"'), x=time_period, y='total_cases')
+            sns.boxplot(ax=ax[1], data=df.query('city=="iq"'), x=time_period, y='total_cases')
 
             # Subtitles as y labels
             ax[0].set_ylabel('San Juan (Puerto Rico)')
@@ -569,9 +569,9 @@ class DengueData:
             sns.despine(left=False, right=True, bottom=False, top=True)
 
             fig.suptitle(f'Dengue cases in Iquitos (Peru) and San Juan (Puerto Rico) in {df.year.min()}-{df.year.max()}')
-            fig.savefig('../fig/box_plot.png')
+            fig.savefig(f'../fig/box_plot_{time_period}.png')
 
-        plot_boxplot_time_vs_cases(self.train_data)
+        plot_boxplot_time_vs_cases(self.train_data, time_period='year')
 
     def feature_engineering(self, df):
         """
@@ -598,12 +598,19 @@ class DengueData:
             df[f] = df.groupby('city')[f].ffill()
 
         # Time features - engineering ------------------------------
-        df['year'] = pd.DatetimeIndex(df['date']).year
-        df['month'] = pd.DatetimeIndex(df['date']).month
-        df['day'] = pd.DatetimeIndex(df['date']).day
-        df['day_of_year'] = pd.DatetimeIndex(df['date']).dayofyear
-        df['quarter'] = pd.DatetimeIndex(df['date']).quarter
-        df['season'] = df['month'] % 12 // 3 + 1
+        def create_time_features(df):
+            """
+            Create time series features
+            """
+            df['year'] = pd.DatetimeIndex(df['date']).year
+            df['month'] = pd.DatetimeIndex(df['date']).month
+            df['day'] = pd.DatetimeIndex(df['date']).day
+            df['day_of_year'] = pd.DatetimeIndex(df['date']).dayofyear
+            df['quarter'] = pd.DatetimeIndex(df['date']).quarter
+            df['season'] = df['month'] % 12 // 3 + 1
+            return df
+
+        df = create_time_features(df)
 
         # Encode cyclical features - months, days
         def encode_cyclical_features(df_, col, max_val_):
@@ -678,17 +685,12 @@ class DengueData:
         # Create seasonal and trend decomposition for selected features
         df = create_decompositions(df)
 
-        # Preview --------------------------------
-        # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-            # print(df.info())
-            # print(df.columns)
-
-        # Features with high correlation, to be removed
-        # 'Total precipitation station satellite', 'Mean dew point temperature NCEP'
-
         # Features
         # 'city' - to be replaced by 'is_sj' : transform to numeric is_sj 1 (sj) or 0 (iq)
         df['is_sj'] = df['city'].apply(lambda x: 1 if x == 'sj' else 0)
+
+        # Transform date to index
+        df = df.set_index('date')
 
         # year - use as is
         # weekofyear - use as is
@@ -698,18 +700,6 @@ class DengueData:
         # NOT USE because for high correlation
         # - Total precipitation station satellite
         # - Mean dew point temperature NCEP
-
-        #        'Total precipitation station station', 'total_cases', 'date', 'month',
-        #        'day', 'day_of_year', 'quarter', 'season', 'month_sin', 'month_cos',
-        #        'day_sin', 'day_cos', 'quarter_sin', 'quarter_cos', 'season_sin',
-        #        'season_cos', 'Diurnal temperature range station trend',
-        #        'Pixel northwest of city centroid trend',
-        #        'Mean specific humidity NCEP trend',
-        #        'Total precipitation mm NCEP trend',
-        #        'Average air temperature NCEP seasonal',
-        #        'Minimum air temperature NCEP seasonal',
-        #        'Mean dew point temperature NCEP seasonal',
-        #        'Total precipitation mm NCEP seasonal'
 
 
         numeric_features_binary = ['is_sj']
@@ -724,6 +714,9 @@ class DengueData:
                             'Diurnal temperature range station', 'Maximum temperature station',
                             'Minimum temperature station']
 
+        columns_time = ['day_of_year', 'season', 'month_sin', 'month_cos',
+                        'day_sin', 'day_cos', 'season_sin', 'season_cos']
+
         # Features for components
         columns_components = ['Total precipitation mm NCEP trend',
                             'Total precipitation mm NCEP seasonal',
@@ -733,6 +726,15 @@ class DengueData:
                             'Mean specific humidity NCEP trend',
                             'Pixel northwest of city centroid trend',
                             'Diurnal temperature range station trend']
+
+        df = df[numeric_raw_features + numeric_features_binary + columns_components + columns_time + ['total_cases']]
+
+        # Preview --------------------------------
+        with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+            print(df.info())
+            print(df.columns)
+
+        # For time series, train and test split are by some date
 
 
         return df
