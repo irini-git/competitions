@@ -590,6 +590,70 @@ class DengueData:
         for feature, max_val in zip(['month', 'day', 'quarter', 'season'], [12, 31, 4, 4]):
             df = encode_cyclical_features(df, col=feature, max_val_=max_val)
 
+        def create_decompositions(df):
+            """
+            Create support columns responsible for feature decomposition for selected items
+            Based on prev analysis we only need below, other are highly correlated
+
+                - Diurnal temperature range station trend
+                - Pixel northwest of city centroid trend
+                - Mean specific humidity NCEP trend
+                - Total precipitation mm NCEP trend
+
+                - Average air temperature NCEP seasonal
+                - Minimum air temperature NCEP seasonal
+                - Mean dew point temperature NCEP seasonal
+                - Total precipitation mm NCEP seasonal
+
+            :param feature: column in df
+            :return: df data with trends and seasonal components
+            """
+
+            # Filter for location
+            df_iq = df.query('city=="iq"').copy()
+            df_sj = df.query('city=="sj"').copy()
+
+            # Trend --------------
+            for feature in ['Diurnal temperature range station',
+                            'Pixel northwest of city centroid',
+                            'Mean specific humidity NCEP',
+                            'Total precipitation mm NCEP']:
+                # Decomposition
+                res_iq = seasonal_decompose(df_iq[feature], model='additive', extrapolate_trend='freq', period=52)
+                res_sj = seasonal_decompose(df_sj[feature], model='additive', extrapolate_trend='freq', period=52)
+
+                # Combine in one column based on index
+                trend = res_sj.trend.combine_first(res_iq.trend)
+
+                # Add trend and seasonal columns
+                df = pd.concat([df, trend], axis=1)
+
+                # Rename columns
+                df.rename(columns={'trend': f'{feature} trend'}, inplace=True)
+
+            # Seasonal --------------
+            for feature in ['Average air temperature NCEP',
+                            'Minimum air temperature NCEP',
+                            'Mean dew point temperature NCEP',
+                            'Total precipitation mm NCEP']:
+                # Decomposition
+                res_iq = seasonal_decompose(df_iq[feature], model='additive', extrapolate_trend='freq', period=52)
+                res_sj = seasonal_decompose(df_sj[feature], model='additive', extrapolate_trend='freq', period=52)
+
+                # Combine in one column based on index
+                seasonal = res_sj.seasonal.combine_first(res_iq.seasonal)
+
+                # Add trend and seasonal columns
+                df = pd.concat([df, seasonal], axis=1)
+
+                # Rename columns
+                df.rename(columns={'seasonal': f'{feature} seasonal'}, inplace=True)
+
+            return df
+
+        # Create seasonal and trend decomposition for selected features
+        df = create_decompositions(df)
+
         # Preview --------------------------------
         # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
             # print(df.info())

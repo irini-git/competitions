@@ -95,27 +95,6 @@ Any time series distribution has 3 core components:
 - Noise - what are the outliers or missing values that are not consistent with the rest of the data?
 
 For the model, we will not use highly correlated features (trends and seasonal):
-done : Mean specific humidity NCEP trend : ['Mean dew point temperature NCEP trend']
-done : Mean specific humidity NCEP seasonal : [, 'Mean dew point temperature NCEP seasonal', 'Minimum air temperature NCEP seasonal']
-done : Diurnal temperature range forecast trend : ['', 'Pixel southwest of city centroid trend', 'Maximum air temperature NCEP trend', 'Minimum air temperature NCEP trend', 'Diurnal temperature range station trend']
-done : Total precipitation station satellite trend : ['', 'Total precipitation mm NCEP trend']
-done : Total precipitation station satellite seasonal : ['', 'Total precipitation mm NCEP seasonal']
-done : Pixel northwest of city centroid trend : ['', 'Pixel northeast of city centroid trend']
-done : Mean dew point temperature NCEP trend : ['Mean specific humidity NCEP trend', '']
-done : Mean dew point temperature NCEP seasonal : ['Mean specific humidity NCEP seasonal', '', 'Minimum temperature station seasonal']
-done : Pixel southwest of city centroid trend : ['Diurnal temperature range forecast trend', '', 'Diurnal temperature range station trend']
-done : Maximum air temperature NCEP trend : ['Diurnal temperature range forecast trend', '', 'Minimum air temperature NCEP trend', 'Diurnal temperature range station trend']
-done : Pixel northeast of city centroid trend : ['Pixel northwest of city centroid trend', '']
-done : Maximum temperature station trend : ['', 'Diurnal temperature range station trend']
-done : Minimum temperature station seasonal : ['Mean dew point temperature NCEP seasonal', '']
-done : Mean air temperature forecast seasonal : ['', 'Average air temperature NCEP seasonal']
-done : Average air temperature NCEP seasonal : ['Mean air temperature forecast seasonal', '']
-done : Minimum air temperature NCEP trend : ['Diurnal temperature range forecast trend', 'Maximum air temperature NCEP trend', '', 'Diurnal temperature range station trend']
-done : Minimum air temperature NCEP seasonal : ['Mean specific humidity NCEP seasonal', '']
-done : Total precipitation mm NCEP trend : ['Total precipitation station satellite trend', '']
-done : Total precipitation mm NCEP seasonal : ['Total precipitation station satellite seasonal', '']
-done : Diurnal temperature range station trend : ['Diurnal temperature range forecast trend', 'Pixel southwest of city centroid trend', 'Maximum air temperature NCEP trend', 'Maximum temperature station trend', 'Minimum air temperature NCEP trend', '']
-
 What are features that are correlated with many other features?
 keep Diurnal temperature range station trend, drop
     Diurnal temperature range forecast trend
@@ -146,7 +125,7 @@ keep Total precipitation mm NCEP seasonal, drop
 keep Total precipitation mm NCEP trend, drop
     Total precipitation station satellite trend
 
-
+------------
 
 Time series can be either univariate or multivariate (current task):
 - Univariate time series only has a single time-dependent variable.
