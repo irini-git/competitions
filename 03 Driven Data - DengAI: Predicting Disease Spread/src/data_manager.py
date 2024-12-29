@@ -689,7 +689,7 @@ class DengueData:
 
         # Features
         # 'city' - to be replaced by 'is_sj' : transform to numeric is_sj 1 (sj) or 0 (iq)
-        df['is_sj'] = df['city'].apply(lambda x: 1 if x == 'sj' else 0)
+        # df['is_sj'] = df['city'].apply(lambda x: 1 if x == 'sj' else 0)
 
         # Transform date to index
         df = df.set_index('date')
@@ -703,8 +703,6 @@ class DengueData:
         # - Total precipitation station satellite
         # - Mean dew point temperature NCEP
 
-
-        numeric_features_binary = ['is_sj']
         numeric_raw_features = ['year', 'weekofyear',
                             'Pixel northeast of city centroid', 'Pixel northwest of city centroid',
                             'Pixel southeast of city centroid', 'Pixel southwest of city centroid',
@@ -729,68 +727,90 @@ class DengueData:
                             'Pixel northwest of city centroid trend',
                             'Diurnal temperature range station trend']
 
-        df = df[numeric_raw_features + numeric_features_binary + columns_components + columns_time + ['total_cases']]
+        df = df[['city']+numeric_raw_features + columns_components + columns_time + ['total_cases']]
 
         # Preview --------------------------------
         with pd.option_context('display.max_rows', None, 'display.max_columns', None):
             print(df.info())
-            print(df.columns)
+            # print(df.columns)
 
 
         # Regression model
-        remove_features = ['quarter', 'season', 'season_sin', 'season_cos', 'day_cos']
-        FEATURES_ = numeric_raw_features + numeric_features_binary + columns_components + columns_time
+        remove_features = []
+        FEATURES_ = numeric_raw_features + columns_components
         FEATURES = list(set(FEATURES_) - set(remove_features))
         TARGET = 'total_cases'
 
-        # Simplified task
-        # For time series, train and test split are by some date
-        # Train / test split for Iq
-        train = df.query('is_sj==0 & index < "01-01-2010"')
-        test = df.query('is_sj==0 & index >= "01-01-2010"')
+        # Split cities
+        # Separate data for Iquitos
+        iq_train_features = df.query('city=="iq"').copy()
+        sj_train_features = df.query('city=="sj"').copy()
 
-        X_train = train[FEATURES]
-        y_train = train[TARGET]
+        iq_train_features = iq_train_features.drop(['city'],axis='columns')
+        sj_train_features = sj_train_features.drop(['city'],axis='columns')
 
-        X_test = test[FEATURES]
-        y_test = test[TARGET]
+        # compute the correlations
+        sj_correlations = sj_train_features.corr()
+        iq_correlations = iq_train_features.corr()
 
-        def plot_train_test():
-            fig, ax = plt.subplots(figsize=(15,15))
-            train['total_cases'].plot(ax=ax, label='Training Set', title='Data Train/Test Split for Iq')
-            test['total_cases'].plot(ax=ax, label='Train Set')
-            ax.axvline('01-01-2010', color='black', ls='--')
-            fig.savefig('../fig/train_test.png')
+        def plot_correlations(df, city):
+            fig, ax = plt.subplots(figsize=(15, 15))
+            df.total_cases.drop('total_cases').sort_values(ascending=False).plot.barh(ax=ax)
+            plt.tight_layout()
+            fig.savefig(f'../fig/corr_data_drive_{city}.png')
+
+        plot_correlations(iq_correlations, 'iq')
+        plot_correlations(sj_correlations, 'sj')
+
+        # ----------------
+        # # Simplified task
+        # # For time series, train and test split are by some date
+        # # Train / test split for Iq
+        # train = df.query('is_sj==0 & index < "01-01-2010"')
+        # test = df.query('is_sj==0 & index >= "01-01-2010"')
+        #
+        # X_train = train[FEATURES]
+        # y_train = train[TARGET]
+        #
+        # X_test = test[FEATURES]
+        # y_test = test[TARGET]
+
+        # def plot_train_test():
+        #     fig, ax = plt.subplots(figsize=(15,15))
+        #     train['total_cases'].plot(ax=ax, label='Training Set', title='Data Train/Test Split for Iq')
+        #     test['total_cases'].plot(ax=ax, label='Train Set')
+        #     ax.axvline('01-01-2010', color='black', ls='--')
+        #     fig.savefig('../fig/train_test.png')
 
         # plot_train_test()
 
-        reg = xgb.XGBRegressor(n_estimators=1000,
-                               early_stopping_rounds=50,
-                               learning_rate=0.01)
-        reg.fit(X_train, y_train,
-                eval_set=[(X_train, y_train), (X_test, y_test)],
-                verbose=100)
+        # reg = xgb.XGBRegressor(n_estimators=1000,
+        #                        early_stopping_rounds=50,
+        #                        learning_rate=0.01)
+        # reg.fit(X_train, y_train,
+        #         eval_set=[(X_train, y_train), (X_test, y_test)],
+        #         verbose=100)
+        #
+        # fi = pd.DataFrame(data=reg.feature_importances_,
+        #                 index=reg.feature_names_in_,
+        #                   columns=['importance'])
 
-        fi = pd.DataFrame(data=reg.feature_importances_,
-                        index=reg.feature_names_in_,
-                          columns=['importance'])
+        # def plot_feature_importance():
+        #     fig, ax = plt.subplots(figsize=(15,15))
+        #     fi.sort_values('importance').plot(ax=ax,
+        #                                       kind='barh',
+        #                                       title='Feature Importance')
+        #     plt.tight_layout()
+        #     plt.close()
+        #     fig.savefig('../fig/feature_importance.png')
+        #
+        # plot_feature_importance()
 
-        def plot_feature_importance():
-            fig, ax = plt.subplots(figsize=(15,15))
-            fi.sort_values('importance').plot(ax=ax,
-                                              kind='barh',
-                                              title='Feature Importance')
-            plt.tight_layout()
-            plt.close()
-            fig.savefig('../fig/feature_importance.png')
-
-        plot_feature_importance()
-
-        # Forecast on test set
-        y_pred = reg.predict(X_test)
-
-        score = np.sqrt(mean_squared_error(y_test, y_pred))
-        print(f'RMSE Score on Test set: {score:0.2f}')
+        # # Forecast on test set
+        # y_pred = reg.predict(X_test)
+        #
+        # score = np.sqrt(mean_squared_error(y_test, y_pred))
+        # print(f'RMSE Score on Test set: {score:0.2f}')
 
         return df
 
