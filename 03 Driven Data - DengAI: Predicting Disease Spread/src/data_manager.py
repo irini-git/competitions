@@ -2,8 +2,8 @@
 import pandas as pd
 import time
 import datetime
-from sklearn.model_selection import TimeSeriesSplit
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import TimeSeriesSplit, GridSearchCV
+from sklearn.inspection import permutation_importance
 from sklearn.ensemble import HistGradientBoostingRegressor
 import logging
 import altair as alt
@@ -12,6 +12,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import itertools
 import xgboost as xgb
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.compose import ColumnTransformer
 from sklearn.metrics import mean_squared_error
 
 from statsmodels.tsa.seasonal import seasonal_decompose
@@ -750,16 +753,42 @@ class DengueData:
         df_sj = df.query('city=="sj"').drop('city', axis='columns')
 
         # Preview --------------------------------
-        with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-            print(df.info())
+        # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+            # print(df.info())
             # print(df.columns)
 
-        tss = TimeSeriesSplit(n_splits=3)
+        # Define numeric features
+        numeric_features = list(set(df_iq.columns.values) - set(['total_cases', 'month',
+                                                                 'Minimum air temperature NCEP',
+                                                                 'Mean specific humidity NCEP']))
+
+        print(numeric_features)
+
+        # Define pipelines for numeric and categorical features -------------
+        numeric_transformer = Pipeline(
+            steps=[
+                ('scaler', StandardScaler(with_mean=False))
+                ]
+            )
+
+        # Make our ColumnTransformer
+        # Set remainder="passthrough" to keep the columns in our feature table which do not need any preprocessing.
+        col_transformer = ColumnTransformer(
+            transformers=[
+                ("numeric", numeric_transformer, numeric_features),
+            ],
+            remainder='passthrough'
+        )
+
 
         def split_test_train(df):
 
+            df = df[numeric_features + ['total_cases']]
+
             X = df.iloc[:, 0:-1]
             y = df.iloc[:, -1]
+
+            tss = TimeSeriesSplit(n_splits=5)
 
             for train_index, test_index in tss.split(X):
                  X_train, X_test = X.iloc[train_index, :], X.iloc[test_index, :]
@@ -771,8 +800,6 @@ class DengueData:
         X_train_iq, y_train_iq, X_test_iq, y_test_iq = split_test_train(df_iq)
 
         # ----------------
-        # Simplified task
-
         def plot_train_test(train, test, city):
             train = train.to_frame(name='total_cases')
             test = test.to_frame(name='total_cases')
@@ -801,23 +828,37 @@ class DengueData:
 
         # Run model per location
 
-
-
         def model_city(X_train, y_train, X_test, y_test):
-            r
-            eg = xgb.XGBRegressor(n_estimators=1000,
-                                   early_stopping_rounds=50)
+            # model = xgb.XGBRegressor(n_estimators=1000,
+            #                        early_stopping_rounds=50)
 
             param_grid = {
-                'learning_rate': [0.01, 0.1],
-                'max_iter': [100],
-                'max_leaf_nodes': [10],
-                'l2_regularization': [1.0]
+                'model__learning_rate': [0.01, 0.1],
+                'model__max_iter': [100],
+                'model__max_leaf_nodes': [10],
+                'model__l2_regularization': [1.0]
             }
 
-            model = HistGradientBoostingRegressor()
-            grid_search = GridSearchCV(model, param_grid, cv=5, verbose=True)
+            classifier = HistGradientBoostingRegressor()
+
+            # Make a pipeline
+            main_pipe = Pipeline(
+                steps=[
+                    ("preprocessor", col_transformer),  # <-- this is the ColumnTransformer we created
+                    ("model", classifier)])
+
+            grid_search = GridSearchCV(main_pipe, param_grid, cv=2, verbose=4)
+
             grid_search.fit(X_train, y_train)
+
+            result = permutation_importance(grid_search, X_train, y_train, n_repeats=10,
+                                            random_state=0)
+
+            for i in result.importances_mean.argsort()[::-1]:
+                if result.importances_mean[i] - 2 * result.importances_std[i] > 0:
+                    print(f"{X_train.columns.values[i]:<8}"
+                          f" {result.importances_mean[i]:.3f}"
+                          f" +/- {result.importances_std[i]:.3f}")
 
             print('Best Grid Search Parameters :', grid_search.best_params_)
             print('Best Grid Search Score : ', grid_search.best_score_)
@@ -839,7 +880,6 @@ class DengueData:
         y_preds_iq = model_city(X_train_iq, y_train_iq, X_test_iq, y_test_iq)
 
         # Save predictions
-
         X_test_sj['y_pred'] = y_preds_sj
         X_test_sj['y_test'] = y_test_sj
         X_test_sj.to_csv('../data/X_test_sj.csv')
@@ -888,5 +928,7 @@ class DengueData:
 
             fig.savefig(f'../fig/pred_test_{city}.png')
 
-        # plot_predictions_vs_test(X_test_sj, 'sj')
+        plot_predictions_vs_test(X_test_sj, 'sj')
         plot_predictions_vs_test(X_test_iq, 'iq')
+
+

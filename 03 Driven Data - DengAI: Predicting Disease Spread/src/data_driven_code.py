@@ -68,10 +68,7 @@ print('mean: ', iq_train_labels.mean()[0])
 print('var :', iq_train_labels.var()[0])
 
 # Add total cases to features
-sj_train_features['total_cases'] = sj_train_labels.total_cases
-iq_train_features['total_cases'] = iq_train_labels.total_cases
-
-# compute the correlations
+sj_train_features['to# compute the correlations
 sj_correlations = sj_train_features.corr()
 iq_correlations = iq_train_features.corr()
 
@@ -81,6 +78,9 @@ def plot_correlations(df, city):
     fig.savefig(f'../fig/corr_data_drive_{city}.png')
 
 plot_correlations(sj_correlations, 'sj')
-plot_correlations(sj_correlations, 'iq')
+plot_correlations(sj_correlations, 'iq')tal_cases'] = sj_train_labels.total_cases
+iq_train_features['total_cases'] = iq_train_labels.total_cases
+
+
 
 

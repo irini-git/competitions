@@ -7,7 +7,7 @@ data = DengueData()
 # data.explore_data()
 
 # Model
-# data.create_model_HistGradientBoostingRegressor(data.train_data_cleaned)
+data.create_model_HistGradientBoostingRegressor(data.train_data_cleaned)
 
 # Load predictions
 data.load_predictions()
