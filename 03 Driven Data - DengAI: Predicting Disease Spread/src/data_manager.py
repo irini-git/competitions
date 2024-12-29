@@ -758,6 +758,7 @@ class DengueData:
             # print(df.columns)
 
         # Define numeric features
+        # use different set of numeric features for cities
         numeric_features = list(set(df_iq.columns.values) - set(['total_cases', 'month',
                                                                  'Minimum air temperature NCEP',
                                                                  'Mean specific humidity NCEP']))
