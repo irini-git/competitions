@@ -38,7 +38,6 @@ class DengueData:
     def __init__(self):
         self.train_data, self.test_data_features = self.load_data()
         self.train_data_cleaned = self.feature_engineering(self.train_data)
-        self.create_model(self.train_data_cleaned)
 
 
     def load_data(self):
@@ -737,7 +736,7 @@ class DengueData:
 
         return df
 
-    def create_model(self, df):
+    def create_model_HistGradientBoostingRegressor(self, df):
         """
         Creates model
         :return:
@@ -822,20 +821,26 @@ class DengueData:
             print('Best Grid Search Parameters :', grid_search.best_params_)
             print('Best Grid Search Score : ', grid_search.best_score_)
 
-            # fit the model
+            # Predict
             y_pred = grid_search.predict(X_test)
 
             score = np.sqrt(mean_squared_error(y_test, y_pred))
             print(f'RMSE Score on Test set: {score:0.2f}')
 
+            return y_pred
+
             # -----------
 
         #
         print('SJ ----------- ')
-        model_city(X_train_sj, y_train_sj, X_test_sj, y_test_sj)
-        print('IQ ----------- ')
-        model_city(X_train_iq, y_train_iq, X_test_iq, y_test_iq)
+        y_preds_sj = model_city(X_train_sj, y_train_sj, X_test_sj, y_test_sj)
+        # print('IQ ----------- ')
+        # y_preds_iq = model_city(X_train_iq, y_train_iq, X_test_iq, y_test_iq)
 
+        # Save predictions
+        print(type(y_preds_sj))
+
+        np.save('../data/y_preds_sj.npy', y_preds_sj)
 
         # def plot_feature_importance():
         #     fig, ax = plt.subplots(figsize=(15,15))
@@ -848,12 +853,11 @@ class DengueData:
         #
         # plot_feature_importance()
 
-        # Forecast on test set
-        # y_pred = reg.predict(X_test)
-        #
-        # score = np.sqrt(mean_squared_error(y_test, y_pred))
-        # print(f'RMSE Score on Test set: {score:0.2f}')
-
         return
 
+    def load_predictions(self):
+        y_preds_sj = np.load('../data/y_preds_sj.npy')
+        print(self.test_data_features)
+
+        print(y_preds_sj)
 
