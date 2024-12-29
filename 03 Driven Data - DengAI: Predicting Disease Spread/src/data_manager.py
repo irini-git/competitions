@@ -857,7 +857,22 @@ class DengueData:
 
     def load_predictions(self):
         y_preds_sj = np.load('../data/y_preds_sj.npy')
-        print(self.test_data_features)
+        print(self.train_data_cleaned)
 
         print(y_preds_sj)
+
+        figs, axes = plt.subplots(nrows=2, ncols=1)
+
+        def plot_predictions():# plot sj
+            sj_train['fitted'] = sj_best_model.fittedvalues
+            sj_train.fitted.plot(ax=axes[0], label="Predictions")
+            sj_train.total_cases.plot(ax=axes[0], label="Actual")
+
+            # plot iq
+            iq_train['fitted'] = iq_best_model.fittedvalues
+            iq_train.fitted.plot(ax=axes[1], label="Predictions")
+            iq_train.total_cases.plot(ax=axes[1], label="Actual")
+
+            plt.suptitle("Dengue Predicted Cases vs. Actual Cases")
+            plt.legend()
 
