@@ -808,10 +808,10 @@ class DengueData:
         def model_city(X_train, y_train, X_test, y_test):
 
             param_grid = {
-                'learning_rate': [0.01, 0.1, 0.2],
-                'max_iter': [100, 200],
-                'max_leaf_nodes': [10, 20, 30],
-                'l2_regularization': [0.0, 0.1, 1.0]
+                'learning_rate': [0.01, 0.1],
+                'max_iter': [100],
+                'max_leaf_nodes': [10],
+                'l2_regularization': [1.0]
             }
 
             model = HistGradientBoostingRegressor()
@@ -822,7 +822,7 @@ class DengueData:
             print('Best Grid Search Score : ', grid_search.best_score_)
 
             # Predict
-            y_pred = grid_search.predict(X_test)
+            y_pred = grid_search.predict(X_test).astype(int)
 
             score = np.sqrt(mean_squared_error(y_test, y_pred))
             print(f'RMSE Score on Test set: {score:0.2f}')
@@ -834,13 +834,18 @@ class DengueData:
         #
         print('SJ ----------- ')
         y_preds_sj = model_city(X_train_sj, y_train_sj, X_test_sj, y_test_sj)
-        # print('IQ ----------- ')
-        # y_preds_iq = model_city(X_train_iq, y_train_iq, X_test_iq, y_test_iq)
+        print('IQ ----------- ')
+        y_preds_iq = model_city(X_train_iq, y_train_iq, X_test_iq, y_test_iq)
 
         # Save predictions
-        print(type(y_preds_sj))
 
-        np.save('../data/y_preds_sj.npy', y_preds_sj)
+        X_test_sj['y_pred'] = y_preds_sj
+        X_test_sj['y_test'] = y_test_sj
+        X_test_sj.to_csv('../data/X_test_sj.csv')
+
+        X_test_iq['y_pred'] = y_preds_iq
+        X_test_iq['y_test'] = y_test_iq
+        X_test_iq.to_csv('../data/X_test_iq.csv')
 
         # def plot_feature_importance():
         #     fig, ax = plt.subplots(figsize=(15,15))
@@ -856,23 +861,31 @@ class DengueData:
         return
 
     def load_predictions(self):
-        y_preds_sj = np.load('../data/y_preds_sj.npy')
-        print(self.train_data_cleaned)
 
-        print(y_preds_sj)
+        X_test_sj = pd.read_csv('../data/X_test_sj.csv', index_col='date')
+        X_test_sj.index = pd.to_datetime(X_test_sj.index)
 
-        figs, axes = plt.subplots(nrows=2, ncols=1)
+        X_test_iq = pd.read_csv('../data/X_test_iq.csv', index_col='date')
+        X_test_iq.index = pd.to_datetime(X_test_iq.index)
 
-        def plot_predictions():# plot sj
-            sj_train['fitted'] = sj_best_model.fittedvalues
-            sj_train.fitted.plot(ax=axes[0], label="Predictions")
-            sj_train.total_cases.plot(ax=axes[0], label="Actual")
+        def plot_predictions_vs_test(df, city):# plot sj
 
-            # plot iq
-            iq_train['fitted'] = iq_best_model.fittedvalues
-            iq_train.fitted.plot(ax=axes[1], label="Predictions")
-            iq_train.total_cases.plot(ax=axes[1], label="Actual")
+            fig, ax = plt.subplots(figsize=(15, 5))
+            df['y_pred'].plot(ax=ax, label='Predictions', color=COLORHEX_ASCENT)
+            df['y_test'].plot(ax=ax, label='Test', color=COLORHEX_GREY)
 
-            plt.suptitle("Dengue Predicted Cases vs. Actual Cases")
-            plt.legend()
+            plt.ylim(bottom=0)
+            plt.xlim(left=df.index[0], right=df.index[-1])
+            plt.xlabel('')
+            plt.legend(loc='upper left')
+            plt.xticks(rotation=0)
 
+            ax.spines[['top', 'right']].set_visible(False)
+
+            plt.title(f'Predictions vs test for {city}', loc='left')
+            plt.close()
+
+            fig.savefig(f'../fig/pred_test_{city}.png')
+
+        # plot_predictions_vs_test(X_test_sj, 'sj')
+        plot_predictions_vs_test(X_test_iq, 'iq')
