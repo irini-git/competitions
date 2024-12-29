@@ -1,6 +1,9 @@
+from http.cookiejar import month
+
 import pandas as pd
 import time
 import datetime
+from dateutil.relativedelta import relativedelta
 import logging
 import altair as alt
 import seaborn as sns
@@ -8,7 +11,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import itertools
 import xgboost as xgb
-from matplotlib.pyplot import title, tight_layout
 from sklearn.metrics import mean_squared_error
 
 from statsmodels.tsa.seasonal import seasonal_decompose
@@ -20,7 +22,6 @@ TRAINING_DATA_LABELS = '../data/DengAI_Predicting_Disease_Spread_-_Training_Data
 
 COLORHEX_GREY = '#767676'
 COLORHEX_ASCENT = '#ff4d00'
-
 
 # Timestamp for a log file
 ts = time.time()
@@ -36,6 +37,7 @@ class DengueData:
     def __init__(self):
         self.train_data, self.test_data_features = self.load_data()
         self.train_data_cleaned = self.feature_engineering(self.train_data)
+        self.create_model(self.train_data_cleaned)
 
 
     def load_data(self):
@@ -687,21 +689,8 @@ class DengueData:
         # Create seasonal and trend decomposition for selected features
         df = create_decompositions(df)
 
-        # Features
-        # 'city' - to be replaced by 'is_sj' : transform to numeric is_sj 1 (sj) or 0 (iq)
-        # df['is_sj'] = df['city'].apply(lambda x: 1 if x == 'sj' else 0)
-
         # Transform date to index
         df = df.set_index('date')
-
-        # year - use as is
-        # weekofyear - use as is
-        # Pixel northeast  - use as is
-
-        # week_start_date - not use
-        # NOT USE because for high correlation
-        # - Total precipitation station satellite
-        # - Mean dew point temperature NCEP
 
         numeric_raw_features = ['year', 'weekofyear',
                             'Pixel northeast of city centroid', 'Pixel northwest of city centroid',
@@ -727,47 +716,56 @@ class DengueData:
                             'Pixel northwest of city centroid trend',
                             'Diurnal temperature range station trend']
 
-        df = df[['city']+numeric_raw_features + columns_components + columns_time + ['total_cases']]
+        FEATURES = ['city'] + numeric_raw_features + columns_components + columns_time
+        TARGET = ['total_cases']
 
+        df = df[FEATURES + TARGET]
+
+        return df
+
+    def create_model(self, df):
+        """
+        Creates model
+        :return:
+        """
         # Preview --------------------------------
         with pd.option_context('display.max_rows', None, 'display.max_columns', None):
             print(df.info())
             # print(df.columns)
 
-
-        # Regression model
-        remove_features = []
-        FEATURES_ = numeric_raw_features + columns_components
-        FEATURES = list(set(FEATURES_) - set(remove_features))
-        TARGET = 'total_cases'
-
         # Split cities
-        # Separate data for Iquitos
-        iq_train_features = df.query('city=="iq"').copy()
-        sj_train_features = df.query('city=="sj"').copy()
+        # Test to have one year of data
+        # locate the latest date and date minus 12 m
+        with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+            # max_time = df.query('city=="iq"').index.max()
+            # print(max_time)
+            # print(print(max_time - relativedelta(months = 12)))
+            # print(df.columns)
 
-        iq_train_features = iq_train_features.drop(['city'],axis='columns')
-        sj_train_features = sj_train_features.drop(['city'],axis='columns')
 
-        # compute the correlations
-        sj_correlations = sj_train_features.corr()
-        iq_correlations = iq_train_features.corr()
+            print(df.tail(1))
+            print(type(df.index))
+            print(df['2010-06-25 00:00:00'])
 
-        def plot_correlations(df, city):
-            fig, ax = plt.subplots(figsize=(15, 15))
-            df.total_cases.drop('total_cases').sort_values(ascending=False).plot.barh(ax=ax)
-            plt.tight_layout()
-            fig.savefig(f'../fig/corr_data_drive_{city}.png')
-
-        plot_correlations(iq_correlations, 'iq')
-        plot_correlations(sj_correlations, 'sj')
+        # # compute the correlations
+        # sj_correlations = sj_train_features.corr()
+        # iq_correlations = iq_train_features.corr()
+        #
+        # def plot_correlations(df, city):
+        #     fig, ax = plt.subplots(figsize=(15, 15))
+        #     df.total_cases.drop('total_cases').sort_values(ascending=False).plot.barh(ax=ax)
+        #     plt.tight_layout()
+        #     fig.savefig(f'../fig/corr_data_drive_{city}.png')
+        #
+        # plot_correlations(iq_correlations, 'iq')
+        # plot_correlations(sj_correlations, 'sj')
 
         # ----------------
-        # # Simplified task
-        # # For time series, train and test split are by some date
-        # # Train / test split for Iq
-        # train = df.query('is_sj==0 & index < "01-01-2010"')
-        # test = df.query('is_sj==0 & index >= "01-01-2010"')
+        # Simplified task
+        # For time series, train and test split are by some date
+        # Train / test split for Iq
+        # train_iq = df.query('city=="iq" & index < "01-01-2010"')
+        # test_iq = df.query('city=="iq" & index >= "01-01-2010"')
         #
         # X_train = train[FEATURES]
         # y_train = train[TARGET]
