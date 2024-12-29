@@ -84,4 +84,3 @@ plot_correlations(sj_correlations, 'sj')
 plot_correlations(sj_correlations, 'iq')
 
 
-

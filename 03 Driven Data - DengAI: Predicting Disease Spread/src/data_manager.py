@@ -1,9 +1,10 @@
-from http.cookiejar import month
 
 import pandas as pd
 import time
 import datetime
-from dateutil.relativedelta import relativedelta
+from sklearn.model_selection import TimeSeriesSplit
+from sklearn.model_selection import GridSearchCV
+from sklearn.ensemble import HistGradientBoostingRegressor
 import logging
 import altair as alt
 import seaborn as sns
@@ -721,32 +722,6 @@ class DengueData:
 
         df = df[FEATURES + TARGET]
 
-        return df
-
-    def create_model(self, df):
-        """
-        Creates model
-        :return:
-        """
-        # Preview --------------------------------
-        with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-            print(df.info())
-            # print(df.columns)
-
-        # Split cities
-        # Test to have one year of data
-        # locate the latest date and date minus 12 m
-        with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-            # max_time = df.query('city=="iq"').index.max()
-            # print(max_time)
-            # print(print(max_time - relativedelta(months = 12)))
-            # print(df.columns)
-
-
-            print(df.tail(1))
-            print(type(df.index))
-            print(df['2010-06-25 00:00:00'])
-
         # # compute the correlations
         # sj_correlations = sj_train_features.corr()
         # iq_correlations = iq_train_features.corr()
@@ -760,38 +735,107 @@ class DengueData:
         # plot_correlations(iq_correlations, 'iq')
         # plot_correlations(sj_correlations, 'sj')
 
+        return df
+
+    def create_model(self, df):
+        """
+        Creates model
+        :return:
+        """
+
+        # Split cities
+        # Test to have one year of data
+        # locate the latest date and date minus 12 m
+
+        df_iq = df.query('city=="iq"').drop('city', axis='columns')
+        df_sj = df.query('city=="sj"').drop('city', axis='columns')
+
+        # Preview --------------------------------
+        with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+            print(df.info())
+            # print(df.columns)
+
+        tss = TimeSeriesSplit(n_splits=3)
+
+        def split_test_train(df):
+
+            X = df.iloc[:, 0:-1]
+            y = df.iloc[:, -1]
+
+            for train_index, test_index in tss.split(X):
+                 X_train, X_test = X.iloc[train_index, :], X.iloc[test_index, :]
+                 y_train, y_test = y.iloc[train_index], y.iloc[test_index]
+
+            return X_train, y_train, X_test, y_test
+
+        X_train_sj, y_train_sj, X_test_sj, y_test_sj = split_test_train(df_sj)
+        X_train_iq, y_train_iq, X_test_iq, y_test_iq = split_test_train(df_iq)
+
         # ----------------
         # Simplified task
-        # For time series, train and test split are by some date
-        # Train / test split for Iq
-        # train_iq = df.query('city=="iq" & index < "01-01-2010"')
-        # test_iq = df.query('city=="iq" & index >= "01-01-2010"')
-        #
-        # X_train = train[FEATURES]
-        # y_train = train[TARGET]
-        #
-        # X_test = test[FEATURES]
-        # y_test = test[TARGET]
 
-        # def plot_train_test():
-        #     fig, ax = plt.subplots(figsize=(15,15))
-        #     train['total_cases'].plot(ax=ax, label='Training Set', title='Data Train/Test Split for Iq')
-        #     test['total_cases'].plot(ax=ax, label='Train Set')
-        #     ax.axvline('01-01-2010', color='black', ls='--')
-        #     fig.savefig('../fig/train_test.png')
+        def plot_train_test(train, test, city):
+            train = train.to_frame(name='total_cases')
+            test = test.to_frame(name='total_cases')
 
-        # plot_train_test()
+            fig, ax = plt.subplots(figsize=(15,5))
+            train['total_cases'].plot(ax=ax, label='Training Set', color=COLORHEX_GREY)
+            test['total_cases'].plot(ax=ax, label='Train Set', color=COLORHEX_ASCENT)
+            ax.axvline(test.index[0], color='black', ls='--')
 
-        # reg = xgb.XGBRegressor(n_estimators=1000,
-        #                        early_stopping_rounds=50,
-        #                        learning_rate=0.01)
-        # reg.fit(X_train, y_train,
-        #         eval_set=[(X_train, y_train), (X_test, y_test)],
-        #         verbose=100)
+            plt.ylim(bottom=0)
+            plt.xlim(left=train.index[0], right=test.index[-1])
+            plt.xlabel('')
+            plt.xticks(rotation=0)
+
+            ax.spines[['top', 'right']].set_visible(False)
+
+            plt.title(f'Data Train/Test Split for {city}', loc='left')
+            plt.close()
+
+            fig.savefig(f'../fig/train_test_{city}.png')
+
+        # plot_train_test(y_train_sj, y_test_sj, 'sj')
+        # plot_train_test(y_train_iq, y_test_iq, 'iq')
+
+        # ------------
+
+        # Run model per location
+
+        reg = xgb.XGBRegressor(n_estimators=1000,
+                               early_stopping_rounds=50,
+                               learning_rate=0.01)
+
+        def model_city(X_train, y_train, X_test, y_test):
+
+            param_grid = {
+                'learning_rate': [0.01, 0.1, 0.2],
+                'max_iter': [100, 200],
+                'max_leaf_nodes': [10, 20, 30],
+                'l2_regularization': [0.0, 0.1, 1.0]
+            }
+
+            model = HistGradientBoostingRegressor()
+            grid_search = GridSearchCV(model, param_grid, cv=5, verbose=True)
+            grid_search.fit(X_train, y_train)
+
+            print('Best Grid Search Parameters :', grid_search.best_params_)
+            print('Best Grid Search Score : ', grid_search.best_score_)
+
+            # fit the model
+            y_pred = grid_search.predict(X_test)
+
+            score = np.sqrt(mean_squared_error(y_test, y_pred))
+            print(f'RMSE Score on Test set: {score:0.2f}')
+
+            # -----------
+
         #
-        # fi = pd.DataFrame(data=reg.feature_importances_,
-        #                 index=reg.feature_names_in_,
-        #                   columns=['importance'])
+        print('SJ ----------- ')
+        model_city(X_train_sj, y_train_sj, X_test_sj, y_test_sj)
+        print('IQ ----------- ')
+        model_city(X_train_iq, y_train_iq, X_test_iq, y_test_iq)
+
 
         # def plot_feature_importance():
         #     fig, ax = plt.subplots(figsize=(15,15))
@@ -804,12 +848,12 @@ class DengueData:
         #
         # plot_feature_importance()
 
-        # # Forecast on test set
+        # Forecast on test set
         # y_pred = reg.predict(X_test)
         #
         # score = np.sqrt(mean_squared_error(y_test, y_pred))
         # print(f'RMSE Score on Test set: {score:0.2f}')
 
-        return df
+        return
 
 
