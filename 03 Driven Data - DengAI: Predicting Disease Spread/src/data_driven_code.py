@@ -56,3 +56,32 @@ def plot_vegetation_index():
 # Fill NAs
 sj_train_features.fillna(method='ffill', inplace=True)
 iq_train_features.fillna(method='ffill', inplace=True)
+
+# Let's see how our labels are distributed!
+
+print('San Juan')
+print('mean: ', sj_train_labels.mean()[0])
+print('var :', sj_train_labels.var()[0])
+
+print('\nIquitos')
+print('mean: ', iq_train_labels.mean()[0])
+print('var :', iq_train_labels.var()[0])
+
+# Add total cases to features
+sj_train_features['total_cases'] = sj_train_labels.total_cases
+iq_train_features['total_cases'] = iq_train_labels.total_cases
+
+# compute the correlations
+sj_correlations = sj_train_features.corr()
+iq_correlations = iq_train_features.corr()
+
+def plot_correlations(df, city):
+    fig, ax = plt.subplots(figsize=(15,15))
+    df.total_cases.drop('total_cases').sort_values(ascending=False).plot.barh(ax=ax)
+    fig.savefig(f'../fig/corr_data_drive_{city}.png')
+
+plot_correlations(sj_correlations, 'sj')
+plot_correlations(sj_correlations, 'iq')
+
+
+
