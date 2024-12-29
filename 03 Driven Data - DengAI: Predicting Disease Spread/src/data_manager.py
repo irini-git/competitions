@@ -801,11 +801,12 @@ class DengueData:
 
         # Run model per location
 
-        reg = xgb.XGBRegressor(n_estimators=1000,
-                               early_stopping_rounds=50,
-                               learning_rate=0.01)
+
 
         def model_city(X_train, y_train, X_test, y_test):
+            r
+            eg = xgb.XGBRegressor(n_estimators=1000,
+                                   early_stopping_rounds=50)
 
             param_grid = {
                 'learning_rate': [0.01, 0.1],
