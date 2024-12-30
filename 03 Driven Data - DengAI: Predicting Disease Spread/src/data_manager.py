@@ -759,9 +759,7 @@ class DengueData:
 
         # Define numeric features
         # use different set of numeric features for cities
-        numeric_features = list(set(df_iq.columns.values) - set(['total_cases', 'month',
-                                                                 'Minimum air temperature NCEP',
-                                                                 'Mean specific humidity NCEP']))
+        numeric_features = list(set(df_iq.columns.values) - set(['total_cases']))
 
         print(numeric_features)
 
@@ -854,6 +852,22 @@ class DengueData:
 
             result = permutation_importance(grid_search, X_train, y_train, n_repeats=10,
                                             random_state=0)
+
+            # initialize data of lists.
+            data_test = {'Name': ['Tom', 'Jack', 'nick', 'juli'],
+                    'marks': [99, 98, 95, 90]}
+
+            # Creates pandas DataFrame.
+            df_test = pd.DataFrame(data_test, index=['rank1',
+                                           'rank2',
+                                           'rank3',
+                                           'rank4'])
+
+            print(df_test)
+            data_fi = {'mean' : result.importances_mean,
+                    'std' : result.importances_std}
+            df_fi = pd.DataFrame(data_fi, X_train.columns.values)
+            print(df_fi)
 
             for i in result.importances_mean.argsort()[::-1]:
                 if result.importances_mean[i] - 2 * result.importances_std[i] > 0:
