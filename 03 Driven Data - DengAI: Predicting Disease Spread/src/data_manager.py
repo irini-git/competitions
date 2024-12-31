@@ -872,7 +872,7 @@ class DengueData:
                 # Define pipelines for numeric and categorical features -------------
                 numeric_transformer = Pipeline(
                     steps=[
-                        ('scaler', StandardScaler(copy=False))# RobustScaler(copy=False))# MinMaxScaler(copy=False)) # StandardScaler(with_mean=False))
+                        ('scaler', MinMaxScaler(copy=False)) # RobustScaler(copy=False)), StandardScaler(copy=False, with_mean=False))
                     ]
                 )
 
@@ -946,17 +946,17 @@ class DengueData:
         #
         print('SJ ----------- ')
         y_preds_sj, grid_search_sj = model_city(X_train_sj, y_train_sj, X_test_sj, y_test_sj)
-        print('IQ ----------- ')
-        y_preds_iq, grid_search_iq = model_city(X_train_iq, y_train_iq, X_test_iq, y_test_iq)
+        # print('IQ ----------- ')
+        # y_preds_iq, grid_search_iq = model_city(X_train_iq, y_train_iq, X_test_iq, y_test_iq)
 
         # Save predictions
         X_test_sj['y_pred'] = y_preds_sj
         X_test_sj['y_test'] = y_test_sj
         X_test_sj.to_csv('../data/X_test_sj.csv')
 
-        X_test_iq['y_pred'] = y_preds_iq
-        X_test_iq['y_test'] = y_test_iq
-        X_test_iq.to_csv('../data/X_test_iq.csv')
+        # X_test_iq['y_pred'] = y_preds_iq
+        # X_test_iq['y_test'] = y_test_iq
+        # X_test_iq.to_csv('../data/X_test_iq.csv')
 
         # def plot_feature_importance():
         #     fig, ax = plt.subplots(figsize=(15,15))
@@ -976,8 +976,33 @@ class DengueData:
         X_test_sj = pd.read_csv('../data/X_test_sj.csv', index_col='date')
         X_test_sj.index = pd.to_datetime(X_test_sj.index)
 
-        X_test_iq = pd.read_csv('../data/X_test_iq.csv', index_col='date')
-        X_test_iq.index = pd.to_datetime(X_test_iq.index)
+        # X_test_iq = pd.read_csv('../data/X_test_iq.csv', index_col='date')
+        # X_test_iq.index = pd.to_datetime(X_test_iq.index)
+
+        # Find the highest discrepancy
+        with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+            print(X_test_sj.info())
+            print(X_test_sj.head(2))
+
+
+        def explore_diff(df):
+            df['diff_preds_test'] = abs(df['y_pred'] - df['y_test'])
+
+            # plot line chart
+            chart = alt.Chart(df.reset_index()).mark_line().encode(
+                x=alt.X('date:T', title=''),
+                y=alt.Y('diff_preds_test', title='Absolute difference')
+            ).properties(
+                    width=700,
+                    title = {
+                        "text": ["How well the model operates"],
+                        "subtitle": ["Absolute difference btw prediction and test for San Juan"]
+                    }
+                )
+
+            chart.save('../fig/diff_test_prediction_sj.png')
+
+        explore_diff(X_test_sj)
 
         def plot_predictions_vs_test(df, city):# plot sj
 
@@ -998,7 +1023,7 @@ class DengueData:
 
             fig.savefig(f'../fig/pred_test_{city}.png')
 
-        plot_predictions_vs_test(X_test_sj, 'sj')
-        plot_predictions_vs_test(X_test_iq, 'iq')
+        # plot_predictions_vs_test(X_test_sj, 'sj')
+        # plot_predictions_vs_test(X_test_iq, 'iq')
 
 
