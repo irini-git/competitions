@@ -588,6 +588,45 @@ class DengueData:
         :return:
         """
 
+
+        def analyse_remove_outlers(df):
+
+            # Outlier analysis and removal
+            print('OUTLIER removal')
+            print(df.columns)
+            print(df.dtypes)
+
+            chart_hist_pixel_n = alt.Chart(df).transform_fold(
+                ['Pixel northeast of city centroid', 'Pixel northwest of city centroid'],
+                as_=['Feature', 'Measurement']
+            ).mark_bar(
+                opacity=0.3,
+                binSpacing=0
+            ).encode(
+                alt.X('Measurement:Q').bin(maxbins=100),
+                alt.Y('count()').stack(None),
+                alt.Color('Feature:N')
+            )
+
+            chart_hist_pixel_s = alt.Chart(df).transform_fold(
+                ['Pixel southeast of city centroid', 'Pixel southwest of city centroid'],
+                as_=['Feature', 'Measurement']
+            ).mark_bar(
+                opacity=0.3,
+                binSpacing=0
+            ).encode(
+                alt.X('Measurement:Q').bin(maxbins=100),
+                alt.Y('count()').stack(None),
+                alt.Color('Feature:N')
+            )
+
+            chart =  chart_hist_pixel_n | chart_hist_pixel_s
+
+            chart.save('../fig/hist_pixel.png')
+
+        analyse_remove_outlers(df)
+
+
         # Parse date column to datetime format ---------------
         df['date'] = pd.to_datetime(df['week_start_date'], format='%Y-%m-%d')
 
@@ -971,34 +1010,183 @@ class DengueData:
 
         return
 
+    def create_model_XGBoost(self, df):
+        """
+        Creates model using XGBoost
+        :return:
+        """
+
+        # Split cities
+        df_iq = df.query('city=="iq"').drop('city', axis='columns')
+        df_sj = df.query('city=="sj"').drop('city', axis='columns')
+
+        # Define numeric features
+        numeric_features = list(set(df_iq.columns.values) - set(['total_cases']))
+
+        def split_test_train(df):
+
+            df = df[numeric_features + ['total_cases']]
+
+            X = df.iloc[:, 0:-1]
+            y = df.iloc[:, -1]
+
+            tss = TimeSeriesSplit(n_splits=5)
+
+            for train_index, test_index in tss.split(X):
+                 X_train, X_test = X.iloc[train_index, :], X.iloc[test_index, :]
+                 y_train, y_test = y.iloc[train_index], y.iloc[test_index]
+
+            return X_train, y_train, X_test, y_test
+
+        X_train_sj, y_train_sj, X_test_sj, y_test_sj = split_test_train(df_sj)
+        X_train_iq, y_train_iq, X_test_iq, y_test_iq = split_test_train(df_iq)
+
+        # ----------------
+        def plot_train_test(train, test, city):
+            train = train.to_frame(name='total_cases')
+            test = test.to_frame(name='total_cases')
+
+            fig, ax = plt.subplots(figsize=(15,5))
+            train['total_cases'].plot(ax=ax, label='Training Set', color=COLORHEX_GREY)
+            test['total_cases'].plot(ax=ax, label='Train Set', color=COLORHEX_ASCENT)
+            ax.axvline(test.index[0], color='black', ls='--')
+
+            plt.ylim(bottom=0)
+            plt.xlim(left=train.index[0], right=test.index[-1])
+            plt.xlabel('')
+            plt.xticks(rotation=0)
+
+            ax.spines[['top', 'right']].set_visible(False)
+
+            plt.title(f'Data Train/Test Split for {city}', loc='left')
+            plt.close()
+
+            fig.savefig(f'../fig/train_test_{city}.png')
+
+        # plot_train_test(y_train_sj, y_test_sj, 'sj')
+        # plot_train_test(y_train_iq, y_test_iq, 'iq')
+
+        # ------------
+
+        # Run model per location
+        def model_city(X_train, y_train, X_test, y_test):
+
+            def build_and_train(numeric_features, X_train):
+
+                numeric_transformer = Pipeline(
+                    steps=[
+                        ('scaler', MinMaxScaler(copy=False)) # RobustScaler(copy=False)), StandardScaler(copy=False, with_mean=False))
+                    ]
+                )
+
+                # Make our ColumnTransformer
+                # Set remainder="passthrough" to keep the columns in our feature table which do not need any preprocessing.
+                col_transformer = ColumnTransformer(
+                    transformers=[
+                        ("numeric", numeric_transformer, numeric_features),
+                    ],
+                    remainder='passthrough'
+                )
+
+                param_grid = {
+                    'model__learning_rate': [.03, 0.05, .07],  # so called `eta` value
+                    'model__max_depth': [5, 6, 7]
+                }
+
+                classifier = xgb.XGBRegressor(n_estimators=1000)
+
+                # Make a pipeline
+                main_pipe = Pipeline(
+                    steps=[
+                        ("preprocessor", col_transformer),  # <-- this is the ColumnTransformer we created
+                        ("model", classifier)])
+
+                grid_search = GridSearchCV(main_pipe, param_grid, cv=2, verbose=3)
+                grid_search.fit(X_train, y_train)
+
+                result = permutation_importance(grid_search, X_train, y_train, n_repeats=10,
+                                                random_state=0)
+
+                # Create pandas DataFrame for feature importance
+                data_fi = {'mean': result.importances_mean,
+                           'std': result.importances_std}
+                df_fi = pd.DataFrame(data_fi, index=X_train.columns.values)
+                cols_exclude = df_fi.index[df_fi.eq(0).all(axis=1)].to_list()
+
+                if len(cols_exclude)==0:
+                    # No feature has zero importance
+                    print(f'Numeric features used : {numeric_features}')
+                    print('Best Grid Search Parameters :', grid_search.best_params_)
+                    print('Best Grid Search Score : ', grid_search.best_score_)
+
+                    return grid_search
+
+                else:
+                    # Some features have zero importance to be removed from the list
+                    # redefine numeric features and call the function again
+                    numeric_features = list(set(numeric_features) - set(cols_exclude))
+                    X_train = X_train[numeric_features]
+                    grid_search = build_and_train(numeric_features, X_train)
+
+                return grid_search
+
+            grid_search = build_and_train(numeric_features, X_train)
+            # Predict
+            y_pred = grid_search.predict(X_test).astype(int)
+            score = np.sqrt(mean_squared_error(y_test, y_pred))
+            print(f'RMSE Score on Test set: {score:0.2f}')
+
+            return y_pred, grid_search
+
+            # -----------
+
+        #
+        print('SJ ----------- ')
+        y_preds_sj, grid_search_sj = model_city(X_train_sj, y_train_sj, X_test_sj, y_test_sj)
+        print('IQ ----------- ')
+        y_preds_iq, grid_search_iq = model_city(X_train_iq, y_train_iq, X_test_iq, y_test_iq)
+
+        # Save predictions
+        X_test_sj['y_pred'] = y_preds_sj
+        X_test_sj['y_test'] = y_test_sj
+        X_test_sj.to_csv('../data/X_test_sj.csv')
+
+        X_test_iq['y_pred'] = y_preds_iq
+        X_test_iq['y_test'] = y_test_iq
+        X_test_iq.to_csv('../data/X_test_iq.csv')
+
+        return
+
     def load_predictions(self):
 
         X_test_sj = pd.read_csv('../data/X_test_sj.csv', index_col='date')
         X_test_sj.index = pd.to_datetime(X_test_sj.index)
 
-        # X_test_iq = pd.read_csv('../data/X_test_iq.csv', index_col='date')
-        # X_test_iq.index = pd.to_datetime(X_test_iq.index)
-
-        # Find the highest discrepancy
-        with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-            print(X_test_sj.info())
-            print(X_test_sj.head(2))
+        X_test_iq = pd.read_csv('../data/X_test_iq.csv', index_col='date')
+        X_test_iq.index = pd.to_datetime(X_test_iq.index)
 
 
         def explore_diff(df):
+            """
+            Find highest discrepancy
+            :param df:
+            :return:
+            """
             df['diff_preds_test'] = abs(df['y_pred'] - df['y_test'])
 
             # plot line chart
             chart = alt.Chart(df.reset_index()).mark_line().encode(
                 x=alt.X('date:T', title=''),
-                y=alt.Y('diff_preds_test', title='Absolute difference')
+                y=alt.Y('diff_preds_test', title='Number of cases incorreclty predicted')
             ).properties(
                     width=700,
                     title = {
                         "text": ["How well the model operates"],
                         "subtitle": ["Absolute difference btw prediction and test for San Juan"]
                     }
-                )
+            ).configure_title(
+                    anchor='start'
+            )
 
             chart.save('../fig/diff_test_prediction_sj.png')
 
@@ -1023,7 +1211,7 @@ class DengueData:
 
             fig.savefig(f'../fig/pred_test_{city}.png')
 
-        # plot_predictions_vs_test(X_test_sj, 'sj')
-        # plot_predictions_vs_test(X_test_iq, 'iq')
+        plot_predictions_vs_test(X_test_sj, 'sj')
+        plot_predictions_vs_test(X_test_iq, 'iq')
 
 
