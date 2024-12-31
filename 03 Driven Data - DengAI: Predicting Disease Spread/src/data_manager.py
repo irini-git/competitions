@@ -13,7 +13,7 @@ import numpy as np
 import itertools
 import xgboost as xgb
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from sklearn.compose import ColumnTransformer
 from sklearn.metrics import mean_squared_error
 
@@ -273,8 +273,8 @@ class DengueData:
         # Actual exploration, uncomment to generate charts
 
         # Explore features as is ---------------------------------
-        # for term in ['centroid', 'forecast', 'station', 'NCEP']:
-        #       plot_raw_features(term)
+        for term in ['centroid', 'forecast', 'station', 'NCEP']:
+            plot_raw_features(term)
 
         # Explore missing values city-wise -----------------------
         # and choose the method how to deal with nans
@@ -469,8 +469,8 @@ class DengueData:
 
 
         # Uncomment for decomposition
-        # for feature in features_ffill:
-        #     create_decompositions(feature=feature)
+        for feature in features_ffill:
+            create_decompositions(feature=feature)
 
         # plot_correlation(self.train_data, components=True)
 
@@ -525,9 +525,9 @@ class DengueData:
             # resample(term=term, location=city)
             pass
 
-        # plot_city_vs_label(self.train_data)
-        # plot_calendar_heatmap(location='iq')
-        # plot_calendar_heatmap(location='sj')
+        plot_city_vs_label(self.train_data)
+        plot_calendar_heatmap(location='iq')
+        plot_calendar_heatmap(location='sj')
 
         # Feature to plot
         for feature, city in list(itertools.product(['Pixel northeast of city centroid',
@@ -552,10 +552,9 @@ class DengueData:
                                                          ],
                                                         ['iq', 'sj'])):
 
-            # plot_feature_vs_label(feature=feature, location=city)
+            plot_feature_vs_label(feature=feature, location=city)
             # resample(feature=feature, location=city)
-            # perform_seasonal_decomposition(feature=feature, location=city)
-            pass
+            perform_seasonal_decomposition(feature=feature, location=city)
 
         def plot_boxplot_time_vs_cases(df, time_period='year'):
             fig, ax = plt.subplots(ncols=1, nrows=2, sharex=True, figsize=(16, 8))
@@ -625,8 +624,57 @@ class DengueData:
             df_[col + '_cos'] = np.cos(2 * np.pi * df_[col] / max_val_)
             return df_
 
-        for feature, max_val in zip(['month', 'day', 'quarter', 'season'], [12, 31, 4, 4]):
+        for feature, max_val in zip(['month', 'quarter', 'season'], [12, 4, 4]):
             df = encode_cyclical_features(df, col=feature, max_val_=max_val)
+
+        def create_decompositions_(df):
+            """
+            Decomposition for all meteo features - not used
+            :param df:
+            :return:
+            """
+            meteo_features = ['Pixel northeast of city centroid',
+                              'Pixel northwest of city centroid',
+                              'Pixel southeast of city centroid',
+                              'Pixel southwest of city centroid',
+                              'Total precipitation station satellite',
+                              'Mean air temperature forecast',
+                              'Average air temperature NCEP',
+                              'Mean dew point temperature NCEP',
+                              'Maximum air temperature NCEP',
+                              'Minimum air temperature NCEP',
+                              'Total precipitation kg_per_m2 NCEP',
+                              'Mean relative humidity NCEP',
+                              'Total precipitation mm NCEP',
+                              'Mean specific humidity NCEP',
+                              'Diurnal temperature range forecast',
+                              'Average temperature station',
+                              'Diurnal temperature range station',
+                              'Maximum temperature station',
+                              'Minimum temperature station',
+                              'Total precipitation station station']
+            for feature in meteo_features:
+                # Filter for location
+                df_iq = df.query('city=="iq"').copy()
+                df_sj = df.query('city=="sj"').copy()
+
+                # Decomposition
+                res_iq = seasonal_decompose(df_iq[feature], model='additive', extrapolate_trend='freq', period=52)
+                res_sj = seasonal_decompose(df_sj[feature], model='additive', extrapolate_trend='freq', period=52)
+
+                # Combine in one column based on index
+                trend = res_sj.trend.combine_first(res_iq.trend)
+                seasonal = res_sj.seasonal.combine_first(res_iq.seasonal)
+
+                # Add trend and seasonal columns
+                df = pd.concat([df, trend, seasonal], axis=1)
+
+                # Rename columns
+                df.rename(columns={'trend': f'{feature} trend',
+                                   'seasonal': f'{feature} seasonal'}
+                          , inplace=True)
+
+            return df
 
         def create_decompositions(df):
             """
@@ -653,9 +701,10 @@ class DengueData:
 
             # Trend --------------
             for feature in ['Diurnal temperature range station',
-                            'Pixel northwest of city centroid',
-                            'Mean specific humidity NCEP',
+                             'Pixel northwest of city centroid',
+                             'Mean specific humidity NCEP',
                             'Total precipitation mm NCEP']:
+
                 # Decomposition
                 res_iq = seasonal_decompose(df_iq[feature], model='additive', extrapolate_trend='freq', period=52)
                 res_sj = seasonal_decompose(df_sj[feature], model='additive', extrapolate_trend='freq', period=52)
@@ -707,7 +756,7 @@ class DengueData:
                             'Minimum temperature station']
 
         columns_time = ['day_of_year', 'season', 'month_sin', 'month_cos',
-                        'day_sin', 'day_cos', 'season_sin', 'season_cos', 'month', 'quarter']
+                        'season_sin', 'season_cos', 'month', 'quarter']
 
         # Features for components
         columns_components = ['Total precipitation mm NCEP trend',
@@ -719,12 +768,13 @@ class DengueData:
                             'Pixel northwest of city centroid trend',
                             'Diurnal temperature range station trend']
 
-        FEATURES = ['city'] + numeric_raw_features + columns_components + columns_time
+        # FEATURES = ['city'] + numeric_raw_features + columns_components + columns_time
+        FEATURES = list(set(df.columns.values) - set(['week_start_date', 'total_cases']))
         TARGET = ['total_cases']
 
         df = df[FEATURES + TARGET]
 
-        # # compute the correlations
+        # compute the correlations
         # sj_correlations = sj_train_features.corr()
         # iq_correlations = iq_train_features.corr()
         #
@@ -760,23 +810,6 @@ class DengueData:
         # Define numeric features
         # use different set of numeric features for cities
         numeric_features = list(set(df_iq.columns.values) - set(['total_cases']))
-
-        # Define pipelines for numeric and categorical features -------------
-        numeric_transformer = Pipeline(
-            steps=[
-                ('scaler', StandardScaler(with_mean=False))
-                ]
-            )
-
-        # Make our ColumnTransformer
-        # Set remainder="passthrough" to keep the columns in our feature table which do not need any preprocessing.
-        col_transformer = ColumnTransformer(
-            transformers=[
-                ("numeric", numeric_transformer, numeric_features),
-            ],
-            remainder='passthrough'
-        )
-
 
         def split_test_train(df):
 
@@ -829,60 +862,92 @@ class DengueData:
             # model = xgb.XGBRegressor(n_estimators=1000,
             #                        early_stopping_rounds=50)
 
-            param_grid = {
-                'model__learning_rate': [0.01, 0.1],
-                'model__max_iter': [100],
-                'model__max_leaf_nodes': [10],
-                'model__l2_regularization': [1.0]
-            }
+            # if any zero in numeric features, remove those features and do again
 
-            classifier = HistGradientBoostingRegressor()
+            def build_and_train(numeric_features, X_train):
 
-            # Make a pipeline
-            main_pipe = Pipeline(
-                steps=[
-                    ("preprocessor", col_transformer),  # <-- this is the ColumnTransformer we created
-                    ("model", classifier)])
+                # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+                #    print(X_train.head(2))
+                #    print(X_train.info())
+                # Define pipelines for numeric and categorical features -------------
+                numeric_transformer = Pipeline(
+                    steps=[
+                        ('scaler', StandardScaler(copy=False))# RobustScaler(copy=False))# MinMaxScaler(copy=False)) # StandardScaler(with_mean=False))
+                    ]
+                )
 
-            grid_search = GridSearchCV(main_pipe, param_grid, cv=2, verbose=4)
+                # Make our ColumnTransformer
+                # Set remainder="passthrough" to keep the columns in our feature table which do not need any preprocessing.
+                col_transformer = ColumnTransformer(
+                    transformers=[
+                        ("numeric", numeric_transformer, numeric_features),
+                    ],
+                    remainder='passthrough'
+                )
 
-            grid_search.fit(X_train, y_train)
+                param_grid = {
+                    # 'model__learning_rate': [0.001, 0.01],
+                    # 'model__max_iter': [100],
+                    # 'model__max_depth': [5, 7],
+                    # 'model__max_leaf_nodes': [5, 10, 20],
+                    # 'model__l2_regularization' : [0.001, 0.01]
+                    'model__learning_rate': [0.01, 0.1, 0.5],
+                    'model__max_iter': [100, 200, 300],
+                    'model__max_depth': [1, 2, 3, 10]
+                }
 
-            result = permutation_importance(grid_search, X_train, y_train, n_repeats=10,
-                                            random_state=0)
+                classifier = HistGradientBoostingRegressor(scoring='mae', verbose=False)
 
-            # Create pandas DataFrame for feature importance
-            data_fi = {'mean' : result.importances_mean,
-                    'std' : result.importances_std}
-            df_fi = pd.DataFrame(data_fi, index=X_train.columns.values)
-            cols_exclude = df_fi.index[df_fi.eq(0).all(axis=1)].to_list()
-            print(cols_exclude)
-            print('-'*10)
+                # Make a pipeline
+                main_pipe = Pipeline(
+                    steps=[
+                        ("preprocessor", col_transformer),  # <-- this is the ColumnTransformer we created
+                        ("model", classifier)])
 
-            for i in result.importances_mean.argsort()[::-1]:
-                if result.importances_mean[i] - 2 * result.importances_std[i] > 0:
-                    print(f"{X_train.columns.values[i]:<8}"
-                          f" {result.importances_mean[i]:.3f}"
-                          f" +/- {result.importances_std[i]:.3f}")
+                grid_search = GridSearchCV(main_pipe, param_grid, cv=2, verbose=3)
+                grid_search.fit(X_train, y_train)
 
-            print('Best Grid Search Parameters :', grid_search.best_params_)
-            print('Best Grid Search Score : ', grid_search.best_score_)
+                result = permutation_importance(grid_search, X_train, y_train, n_repeats=10,
+                                                random_state=0)
 
+                # Create pandas DataFrame for feature importance
+                data_fi = {'mean': result.importances_mean,
+                           'std': result.importances_std}
+                df_fi = pd.DataFrame(data_fi, index=X_train.columns.values)
+                cols_exclude = df_fi.index[df_fi.eq(0).all(axis=1)].to_list()
+
+                if len(cols_exclude)==0:
+                    # No feature has zero importance
+                    print(f'Numeric features used : {numeric_features}')
+                    print('Best Grid Search Parameters :', grid_search.best_params_)
+                    print('Best Grid Search Score : ', grid_search.best_score_)
+
+                    return grid_search
+
+                else:
+                    # Some features have zero importance to be removed from the list
+                    # redefine numeric features and call the function again
+                    numeric_features = list(set(numeric_features) - set(cols_exclude))
+                    X_train = X_train[numeric_features]
+                    grid_search = build_and_train(numeric_features, X_train)
+
+                return grid_search
+
+            grid_search = build_and_train(numeric_features, X_train)
             # Predict
             y_pred = grid_search.predict(X_test).astype(int)
-
             score = np.sqrt(mean_squared_error(y_test, y_pred))
             print(f'RMSE Score on Test set: {score:0.2f}')
 
-            return y_pred
+            return y_pred, grid_search
 
             # -----------
 
         #
         print('SJ ----------- ')
-        y_preds_sj = model_city(X_train_sj, y_train_sj, X_test_sj, y_test_sj)
+        y_preds_sj, grid_search_sj = model_city(X_train_sj, y_train_sj, X_test_sj, y_test_sj)
         print('IQ ----------- ')
-        y_preds_iq = model_city(X_train_iq, y_train_iq, X_test_iq, y_test_iq)
+        y_preds_iq, grid_search_iq = model_city(X_train_iq, y_train_iq, X_test_iq, y_test_iq)
 
         # Save predictions
         X_test_sj['y_pred'] = y_preds_sj
@@ -933,7 +998,7 @@ class DengueData:
 
             fig.savefig(f'../fig/pred_test_{city}.png')
 
-        # plot_predictions_vs_test(X_test_sj, 'sj')
-        # plot_predictions_vs_test(X_test_iq, 'iq')
+        plot_predictions_vs_test(X_test_sj, 'sj')
+        plot_predictions_vs_test(X_test_iq, 'iq')
 
 
