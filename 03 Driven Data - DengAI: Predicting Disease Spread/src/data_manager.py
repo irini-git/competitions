@@ -761,8 +761,6 @@ class DengueData:
         # use different set of numeric features for cities
         numeric_features = list(set(df_iq.columns.values) - set(['total_cases']))
 
-        print(numeric_features)
-
         # Define pipelines for numeric and categorical features -------------
         numeric_transformer = Pipeline(
             steps=[
@@ -853,21 +851,13 @@ class DengueData:
             result = permutation_importance(grid_search, X_train, y_train, n_repeats=10,
                                             random_state=0)
 
-            # initialize data of lists.
-            data_test = {'Name': ['Tom', 'Jack', 'nick', 'juli'],
-                    'marks': [99, 98, 95, 90]}
-
-            # Creates pandas DataFrame.
-            df_test = pd.DataFrame(data_test, index=['rank1',
-                                           'rank2',
-                                           'rank3',
-                                           'rank4'])
-
-            print(df_test)
+            # Create pandas DataFrame for feature importance
             data_fi = {'mean' : result.importances_mean,
                     'std' : result.importances_std}
-            df_fi = pd.DataFrame(data_fi, X_train.columns.values)
-            print(df_fi)
+            df_fi = pd.DataFrame(data_fi, index=X_train.columns.values)
+            cols_exclude = df_fi.index[df_fi.eq(0).all(axis=1)].to_list()
+            print(cols_exclude)
+            print('-'*10)
 
             for i in result.importances_mean.argsort()[::-1]:
                 if result.importances_mean[i] - 2 * result.importances_std[i] > 0:
@@ -943,7 +933,7 @@ class DengueData:
 
             fig.savefig(f'../fig/pred_test_{city}.png')
 
-        plot_predictions_vs_test(X_test_sj, 'sj')
-        plot_predictions_vs_test(X_test_iq, 'iq')
+        # plot_predictions_vs_test(X_test_sj, 'sj')
+        # plot_predictions_vs_test(X_test_iq, 'iq')
 
 
