@@ -695,19 +695,24 @@ class DengueData:
 
         # Transform some features to make normal distributions
         # Square Root Transformation, replace the original
-
         for feature in ['Pixel southeast of city centroid',
                         'Pixel southwest of city centroid',
                         'Total precipitation station station']:
-            # df[feature] = np.sqrt(df[feature])
-            # Replace negative values by positive
+            # Replace negative values by positive, use abs
+            df[feature] = np.sqrt(df[feature].abs())
 
-            # df[feature] = np.where(df[feature]<0, np.sqrt(df[feature]), np.nan)
-            # df[feature] = np.where(df[feature] > 0, np.sqrt(df[feature]), np.nan)
+        # Reciprocal
+        for feature in ['Diurnal temperature range forecast',
+                        'Diurnal temperature range station',
+                        'Maximum air temperature NCEP',
+                        'Mean relative humidity NCEP']:
+            df[feature] = 1 / df[feature]
 
-            # df[f'{feature}_'] = df.apply(lambda row: np.sqrt(row[feature]) if row[feature] > 0 else row[feature])
-            pass
-
+        # Log
+        for feature in ['Total precipitation kg_per_m2 NCEP',
+                        'Total precipitation mm NCEP',
+                        'Total precipitation station satellite']:
+            df[feature] = np.where(df[feature] > 0, np.log(df[feature]), np.nan)
 
         # Parse date column to datetime format ---------------
         df['date'] = pd.to_datetime(df['week_start_date'], format='%Y-%m-%d')
@@ -722,6 +727,7 @@ class DengueData:
 
         for f in features_ffill:
             df[f] = df.groupby('city')[f].ffill()
+
 
         def check_missing_values_station(df):
             """ Check if any missing values.
@@ -876,6 +882,7 @@ class DengueData:
             return df
 
         # Create seasonal and trend decomposition for selected features
+        print(df.isna().sum().sum())
         df = create_decompositions(df)
 
         # Transform date to index
