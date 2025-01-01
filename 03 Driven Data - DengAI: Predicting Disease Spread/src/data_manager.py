@@ -592,90 +592,12 @@ class DengueData:
         :return:
         """
 
-
         def analyse_remove_outliers(df):
 
             # Outlier analysis and removal
             print('OUTLIER removal')
             print(df.columns)
             print(df.dtypes)
-
-            def plot_hist_pixel(df):
-                """ Plot historgrams for pixel - features"""
-                chart_hist_pixel_n = alt.Chart(df).transform_fold(
-                    ['Pixel northeast of city centroid', 'Pixel northwest of city centroid'],
-                    as_=['Feature', 'Measurement']
-                ).mark_bar(
-                    opacity=0.3,
-                    binSpacing=0
-                ).encode(
-                    alt.X('Measurement:Q').bin(maxbins=100),
-                    alt.Y('count()').stack(None),
-                    alt.Color('Feature:N')
-                )
-
-                chart_hist_pixel_s = alt.Chart(df).transform_fold(
-                    ['Pixel southeast of city centroid', 'Pixel southwest of city centroid'],
-                    as_=['Feature', 'Measurement']
-                ).mark_bar(
-                    opacity=0.3,
-                    binSpacing=0
-                ).encode(
-                    alt.X('Measurement:Q').bin(maxbins=100),
-                    alt.Y('count()').stack(None),
-                    alt.Color('Feature:N')
-                )
-
-                chart =  chart_hist_pixel_n | chart_hist_pixel_s
-
-                chart.save('../fig/hist_pixel.png')
-
-
-            def plot_hist_temp(df):
-                """ Plot historgrams"""
-
-                # NCEP temperature
-                chart1_ncep = alt.Chart(df).mark_bar().encode(
-                    alt.X("Minimum air temperature NCEP:Q", bin=True),
-                    y='count()',
-                )
-
-                chart2_ncep = alt.Chart(df).mark_bar().encode(
-                    alt.X("Average air temperature NCEP:Q", bin=True),
-                    y='count()',
-                )
-
-                chart3_ncep = alt.Chart(df).mark_bar().encode(
-                    alt.X("Maximum air temperature NCEP:Q", bin=True),
-                    y='count()',
-                )
-
-
-                # Station temperature
-                chart1_station = alt.Chart(df).mark_bar().encode(
-                    alt.X("Minimum temperature station:Q", bin=True),
-                    y='count()',
-                )
-
-                chart2_station = alt.Chart(df).mark_bar().encode(
-                    alt.X("Average temperature station:Q", bin=True),
-                    y='count()',
-                )
-
-                chart3_station = alt.Chart(df).mark_bar().encode(
-                    alt.X("Maximum temperature station:Q", bin=True),
-                    y='count()',
-                )
-
-                chart_station =  chart1_station | chart2_station | chart3_station
-                chart_ncep = chart1_ncep | chart2_ncep | chart3_ncep
-
-                chart = alt.vconcat(chart_station, chart_ncep)
-
-                chart.save('../fig/hist_temp.png')
-
-            plot_hist_temp(df)
-            # plot_hist_pixel(df)
 
         def convert_celsius_to_kelvin(df):
             """ Convert Celsius to Kelvin
@@ -716,75 +638,84 @@ class DengueData:
                 if row['skewness'] < 0.5 and -0.5 < row['skewness']:
                     return 'normal'
 
-
             df_skew['skewness_label'] = df_skew.apply(label_skewness, axis=1)
-
-            # Logarithmic transformation on the feature
-            df['Total precipitation mm NCEP log'] = np.log(df['Total precipitation mm NCEP'])
-
-            # Reciprocal Transformation
-            df['Total precipitation mm NCEP reciprocal'] = 1 / df['Total precipitation mm NCEP']
-
-            # Square Root Transformation
-            df['Total precipitation mm NCEP sqroot'] = np.sqrt(df['Total precipitation mm NCEP'])
-
-            # Exponential Transformation
-            df['Total precipitation mm NCEP exponential'] = df['Total precipitation mm NCEP']**(1/1.2)
-
-            # Box-Cox Transformation
-            from scipy.special import boxcox1p
-            # scipy.special.boxcox1p(x, lmbda)
-            # df['Total precipitation mm NCEP Boxcox'], parameters = stats.boxcox(df['Total precipitation mm NCEP'])
-            # df['Total precipitation mm NCEP Boxcox'], parameters = boxcox1p(df['Total precipitation mm NCEP'])
 
             with pd.option_context('display.max_rows', None, 'display.max_columns', None):
                 print(f'Skewness in the data')
                 print(df_skew.sort_values('skewness_label'))
 
-            fig, ax = plt.subplots(nrows=2, ncols=3, figsize=(15, 5))
+            # ----------------
 
-            # 'Total precipitation mm NCEP
-            feature00 = 'Total precipitation mm NCEP'
-            stats.probplot(df[f'{feature00}'],
-                                    fit=True,
-                                    plot=ax[0, 0],
-                                    dist=stats.norm)
-            ax[0, 0].set_title(f'{feature00}')
+            feature = 'Total precipitation mm NCEP'
 
-            # Total precipitation mm NCEP exponential
-            feature01 = 'Total precipitation mm NCEP exponential'
-            stats.probplot(df[f'{feature01}'],
-                                    fit=True,
-                                    plot=ax[0, 1])
-            ax[0, 1].set_title(f'{feature01}')
+            # Logarithmic transformation on the feature
+            df[f'{feature} log'] = np.log(df[feature])
 
-            # 'Total precipitation mm NCEP reciprocal'
-            feature10 = 'Total precipitation mm NCEP reciprocal'
-            stats.probplot(df[f'{feature10}'],
-                                    fit=True,
-                                    plot=ax[1, 0])
-            ax[1, 0].set_title(f'{feature10}')
+            # Reciprocal Transformation
+            df[f'{feature} reciprocal'] = 1 / df[feature]
+
+            # Square Root Transformation
+            df[f'{feature} sqroot'] = np.sqrt(df[feature])
+
+            # Exponential Transformation
+            df[f'{feature} exponential'] = df[feature]**(1/1.2)
+
+            # Box-Cox Transformation
+            # df['Total precipitation mm NCEP Boxcox'], parameters = stats.boxcox(df['Total precipitation mm NCEP'])
+
+            # -----------------
+            fig, ax = plt.subplots(nrows=2, figsize=(15, 5))
+
+            # , ' exponential', ' reciprocal', ' log', ' sqroot'
+            # for i, val in enumerate(['', ' exponential']):
+            #     stats.probplot(df[f'{feature}{val}'], fit=True, plot=ax[i], dist=stats.norm)
+            #     ax[i].set_title("")
+            #     ax[i].text(.05, .9, f'{val.title()}',
+            #           horizontalalignment='left',
+            #           transform=ax[0,i].transAxes)
+            #     ax[i].spines[['top', 'right']].set_visible(False)
 
 
-            # Total precipitation mm NCEP log
-            feature11 = 'Total precipitation mm NCEP log'
-            stats.probplot(df[f'{feature11}'],
-                                    fit=True,
-                                    plot=ax[1, 1])
-            ax[1, 1].set_title(f'{feature11}')
+
+            stats.probplot(df[f'{feature}'],
+                                     fit=True,
+                                     plot=ax[0],
+                                     dist=stats.norm)
+            ax[0].set_title(f'{feature}')
+            #
+            # stats.probplot(df[f'{feature} exponential'],
+            #                         fit=True,
+            #                         plot=ax[0, 1])
+            # ax[0, 1].set_title("Exponential")
+            #
+            # stats.probplot(df[f'{feature} reciprocal'],
+            #                         fit=True,
+            #                         plot=ax[1, 0])
+            # ax[1, 0].set_title("")
+            # ax[1, 0].text(.05, .9, 'Reciprocal',
+            #          horizontalalignment='left',
+            #          transform=ax[1,0].transAxes)
+            # ax[1, 0].spines[['top', 'right']].set_visible(False)
+            #
+            # stats.probplot(df[f'{feature} log'],
+            #                         fit=True,
+            #                         plot=ax[1, 1])
+            # ax[1, 1].set_title("Logarithmic")
+            #
+            # stats.probplot(df[f'{feature} sqroot'],
+            #                         fit=True,
+            #                         plot=ax[1, 2])
+            # ax[1, 2].set_title("Square Root")
+
+            # Space between subplots
+            fig.tight_layout()
 
 
-            # Total precipitation mm NCEP sqroot
-            feature12 = 'Total precipitation mm NCEP sqroot'
-            stats.probplot(df[f'{feature12}'],
-                                    fit=True,
-                                    plot=ax[1, 2])
-            ax[1, 2].set_title(f'{feature12}')
-
+            plt.close()
             fig.savefig('../fig/distribution.png')
 
 
-        # analyse_distribution(df)
+        analyse_distribution(df)
 
         # Parse date column to datetime format ---------------
         df['date'] = pd.to_datetime(df['week_start_date'], format='%Y-%m-%d')
