@@ -13,3 +13,4 @@ sympy~=1.13.1
 seaborn~=0.13.2
 statsmodels
 xgboost
+feature_engine

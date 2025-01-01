@@ -2,6 +2,8 @@
 import pandas as pd
 import time
 import datetime
+
+from feature_engine.transformation import BoxCoxTransformer
 from sklearn.model_selection import TimeSeriesSplit, GridSearchCV
 from sklearn.inspection import permutation_importance
 from sklearn.ensemble import HistGradientBoostingRegressor
@@ -714,41 +716,75 @@ class DengueData:
                 if row['skewness'] < 0.5 and -0.5 < row['skewness']:
                     return 'normal'
 
+
             df_skew['skewness_label'] = df_skew.apply(label_skewness, axis=1)
+
+            # Logarithmic transformation on the feature
+            df['Total precipitation mm NCEP log'] = np.log(df['Total precipitation mm NCEP'])
+
+            # Reciprocal Transformation
+            df['Total precipitation mm NCEP reciprocal'] = 1 / df['Total precipitation mm NCEP']
+
+            # Square Root Transformation
+            df['Total precipitation mm NCEP sqroot'] = np.sqrt(df['Total precipitation mm NCEP'])
+
+            # Exponential Transformation
+            df['Total precipitation mm NCEP exponential'] = df['Total precipitation mm NCEP']**(1/1.2)
+
+            # Box-Cox Transformation
+            from scipy.special import boxcox1p
+            # scipy.special.boxcox1p(x, lmbda)
+            # df['Total precipitation mm NCEP Boxcox'], parameters = stats.boxcox(df['Total precipitation mm NCEP'])
+            # df['Total precipitation mm NCEP Boxcox'], parameters = boxcox1p(df['Total precipitation mm NCEP'])
 
             with pd.option_context('display.max_rows', None, 'display.max_columns', None):
                 print(f'Skewness in the data')
-                print(df_skew)
+                print(df_skew.sort_values('skewness_label'))
 
-            fig, ax = plt.subplots()
-            stats.probplot(df['Pixel northeast of city centroid'],
+            fig, ax = plt.subplots(nrows=2, ncols=3, figsize=(15, 5))
+
+            # 'Total precipitation mm NCEP
+            feature00 = 'Total precipitation mm NCEP'
+            stats.probplot(df[f'{feature00}'],
                                     fit=True,
-                                    plot=ax)
+                                    plot=ax[0, 0],
+                                    dist=stats.norm)
+            ax[0, 0].set_title(f'{feature00}')
+
+            # Total precipitation mm NCEP exponential
+            feature01 = 'Total precipitation mm NCEP exponential'
+            stats.probplot(df[f'{feature01}'],
+                                    fit=True,
+                                    plot=ax[0, 1])
+            ax[0, 1].set_title(f'{feature01}')
+
+            # 'Total precipitation mm NCEP reciprocal'
+            feature10 = 'Total precipitation mm NCEP reciprocal'
+            stats.probplot(df[f'{feature10}'],
+                                    fit=True,
+                                    plot=ax[1, 0])
+            ax[1, 0].set_title(f'{feature10}')
+
+
+            # Total precipitation mm NCEP log
+            feature11 = 'Total precipitation mm NCEP log'
+            stats.probplot(df[f'{feature11}'],
+                                    fit=True,
+                                    plot=ax[1, 1])
+            ax[1, 1].set_title(f'{feature11}')
+
+
+            # Total precipitation mm NCEP sqroot
+            feature12 = 'Total precipitation mm NCEP sqroot'
+            stats.probplot(df[f'{feature12}'],
+                                    fit=True,
+                                    plot=ax[1, 2])
+            ax[1, 2].set_title(f'{feature12}')
+
             fig.savefig('../fig/distribution.png')
 
-            from vega_datasets import data
 
-            source = data.normal_2d.url
-
-            print(source.head(2))
-
-            base = alt.Chart(source).transform_quantile(
-                'u',
-                step=0.01,
-                as_=['p', 'v']
-            ).transform_calculate(
-                uniform='quantileUniform(datum.p)',
-                normal='quantileNormal(datum.p)'
-            ).mark_point().encode(
-                alt.Y('v:Q')
-            )
-
-            chart = base.encode(x='uniform:Q') | base.encode(x='normal:Q')
-
-            chart.save('../fig/distribution001.png')
-
-
-        analyse_distribution(df)
+        # analyse_distribution(df)
 
         # Parse date column to datetime format ---------------
         df['date'] = pd.to_datetime(df['week_start_date'], format='%Y-%m-%d')
@@ -1048,11 +1084,14 @@ class DengueData:
                 #    print(X_train.head(2))
                 #    print(X_train.info())
                 # Define pipelines for numeric and categorical features -------------
+
                 numeric_transformer = Pipeline(
                     steps=[
-                        ('scaler', MinMaxScaler(copy=False)) # RobustScaler(copy=False)), StandardScaler(copy=False, with_mean=False))
+                        ('scaler', MinMaxScaler(copy=False)), # RobustScaler(copy=False)), StandardScaler(copy=False, with_mean=False))
+                        # ('boxcox', BoxCoxTransformer())
                     ]
                 )
+
 
                 # Make our ColumnTransformer
                 # Set remainder="passthrough" to keep the columns in our feature table which do not need any preprocessing.
