@@ -17,6 +17,8 @@ from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from sklearn.compose import ColumnTransformer
 from sklearn.metrics import mean_squared_error
 
+import scipy.stats as stats
+
 from statsmodels.tsa.seasonal import seasonal_decompose
 
 # Constants
@@ -589,43 +591,164 @@ class DengueData:
         """
 
 
-        def analyse_remove_outlers(df):
+        def analyse_remove_outliers(df):
 
             # Outlier analysis and removal
             print('OUTLIER removal')
             print(df.columns)
             print(df.dtypes)
 
-            chart_hist_pixel_n = alt.Chart(df).transform_fold(
-                ['Pixel northeast of city centroid', 'Pixel northwest of city centroid'],
-                as_=['Feature', 'Measurement']
-            ).mark_bar(
-                opacity=0.3,
-                binSpacing=0
-            ).encode(
-                alt.X('Measurement:Q').bin(maxbins=100),
-                alt.Y('count()').stack(None),
-                alt.Color('Feature:N')
+            def plot_hist_pixel(df):
+                """ Plot historgrams for pixel - features"""
+                chart_hist_pixel_n = alt.Chart(df).transform_fold(
+                    ['Pixel northeast of city centroid', 'Pixel northwest of city centroid'],
+                    as_=['Feature', 'Measurement']
+                ).mark_bar(
+                    opacity=0.3,
+                    binSpacing=0
+                ).encode(
+                    alt.X('Measurement:Q').bin(maxbins=100),
+                    alt.Y('count()').stack(None),
+                    alt.Color('Feature:N')
+                )
+
+                chart_hist_pixel_s = alt.Chart(df).transform_fold(
+                    ['Pixel southeast of city centroid', 'Pixel southwest of city centroid'],
+                    as_=['Feature', 'Measurement']
+                ).mark_bar(
+                    opacity=0.3,
+                    binSpacing=0
+                ).encode(
+                    alt.X('Measurement:Q').bin(maxbins=100),
+                    alt.Y('count()').stack(None),
+                    alt.Color('Feature:N')
+                )
+
+                chart =  chart_hist_pixel_n | chart_hist_pixel_s
+
+                chart.save('../fig/hist_pixel.png')
+
+
+            def plot_hist_temp(df):
+                """ Plot historgrams"""
+
+                # NCEP temperature
+                chart1_ncep = alt.Chart(df).mark_bar().encode(
+                    alt.X("Minimum air temperature NCEP:Q", bin=True),
+                    y='count()',
+                )
+
+                chart2_ncep = alt.Chart(df).mark_bar().encode(
+                    alt.X("Average air temperature NCEP:Q", bin=True),
+                    y='count()',
+                )
+
+                chart3_ncep = alt.Chart(df).mark_bar().encode(
+                    alt.X("Maximum air temperature NCEP:Q", bin=True),
+                    y='count()',
+                )
+
+
+                # Station temperature
+                chart1_station = alt.Chart(df).mark_bar().encode(
+                    alt.X("Minimum temperature station:Q", bin=True),
+                    y='count()',
+                )
+
+                chart2_station = alt.Chart(df).mark_bar().encode(
+                    alt.X("Average temperature station:Q", bin=True),
+                    y='count()',
+                )
+
+                chart3_station = alt.Chart(df).mark_bar().encode(
+                    alt.X("Maximum temperature station:Q", bin=True),
+                    y='count()',
+                )
+
+                chart_station =  chart1_station | chart2_station | chart3_station
+                chart_ncep = chart1_ncep | chart2_ncep | chart3_ncep
+
+                chart = alt.vconcat(chart_station, chart_ncep)
+
+                chart.save('../fig/hist_temp.png')
+
+            plot_hist_temp(df)
+            # plot_hist_pixel(df)
+
+        def convert_celsius_to_kelvin(df):
+            """ Convert Celsius to Kelvin
+            NOAA's GHCN daily climate data weather station measurements :  Temperature values are in Celsius
+            Minimum temperature station
+            Maximum temperature station
+            Average temperature station
+            Diurnal temperature range station
+            """
+            # Kelvin = C + 273.15
+
+            for f in ["Minimum temperature station", "Maximum temperature station",
+                      "Average temperature station", "Diurnal temperature range station"]:
+                df[f] = df[f] + 273.15
+
+        convert_celsius_to_kelvin(df)
+        # analyse_remove_outliers(df)
+
+        def analyse_distribution(df):
+            """ Transform features into Normal/Gaussian Distribution
+            the variables with -0.5 < skewness < 0.5 are symmetric i.e., normally distributed
+            """
+            # Checking the distribution with Skewness
+
+            # Subset of columns for the analysis
+            columns_exclude = ['city', 'total_cases', 'year', 'weekofyear', 'week_start_date']
+            columns_ = list(set(df.columns) - set(columns_exclude))
+
+            # Calculate skewness for numeric feature
+            s = df[columns_].skew()
+
+            df_skew = pd.DataFrame({'Feature': s.index, 'skewness': s.values})
+
+            # Create a flag for normally distributed
+
+            def label_skewness(row):
+                # the variables with -0.5 < skewness < 0.5 are symmetric i.e normally
+                if row['skewness'] < 0.5 and -0.5 < row['skewness']:
+                    return 'normal'
+
+            df_skew['skewness_label'] = df_skew.apply(label_skewness, axis=1)
+
+            with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+                print(f'Skewness in the data')
+                print(df_skew)
+
+            fig, ax = plt.subplots()
+            stats.probplot(df['Pixel northeast of city centroid'],
+                                    fit=True,
+                                    plot=ax)
+            fig.savefig('../fig/distribution.png')
+
+            from vega_datasets import data
+
+            source = data.normal_2d.url
+
+            print(source.head(2))
+
+            base = alt.Chart(source).transform_quantile(
+                'u',
+                step=0.01,
+                as_=['p', 'v']
+            ).transform_calculate(
+                uniform='quantileUniform(datum.p)',
+                normal='quantileNormal(datum.p)'
+            ).mark_point().encode(
+                alt.Y('v:Q')
             )
 
-            chart_hist_pixel_s = alt.Chart(df).transform_fold(
-                ['Pixel southeast of city centroid', 'Pixel southwest of city centroid'],
-                as_=['Feature', 'Measurement']
-            ).mark_bar(
-                opacity=0.3,
-                binSpacing=0
-            ).encode(
-                alt.X('Measurement:Q').bin(maxbins=100),
-                alt.Y('count()').stack(None),
-                alt.Color('Feature:N')
-            )
+            chart = base.encode(x='uniform:Q') | base.encode(x='normal:Q')
 
-            chart =  chart_hist_pixel_n | chart_hist_pixel_s
+            chart.save('../fig/distribution001.png')
 
-            chart.save('../fig/hist_pixel.png')
 
-        analyse_remove_outlers(df)
-
+        analyse_distribution(df)
 
         # Parse date column to datetime format ---------------
         df['date'] = pd.to_datetime(df['week_start_date'], format='%Y-%m-%d')
@@ -640,6 +763,22 @@ class DengueData:
 
         for f in features_ffill:
             df[f] = df.groupby('city')[f].ffill()
+
+        def check_missing_values_station(df):
+            """ Check if any missing values.
+            """
+            # NOAA's GHCN
+            features_noaa_ghcn_persiann = ["Total precipitation station station",
+                                  "Minimum temperature station",
+                                  "Maximum temperature station",
+                                  "Average temperature station",
+                                  "Diurnal temperature range station",
+                                  "Total precipitation station satellite"]
+
+            with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+                print(f'Min values for features (-9999?):\n{df[features_noaa_ghcn_persiann].min()}')
+
+        # check_missing_values_station(df)
 
         # Time features - engineering ------------------------------
         def create_time_features(df):
@@ -1164,7 +1303,6 @@ class DengueData:
 
         X_test_iq = pd.read_csv('../data/X_test_iq.csv', index_col='date')
         X_test_iq.index = pd.to_datetime(X_test_iq.index)
-
 
         def explore_diff(df):
             """
