@@ -122,6 +122,24 @@ only use below (basen on correlation matrix)
 
 
 ------------
+Some features do not have normal distribution
+- Average temperature station - use original, skew value is not improved
+- Diurnal temperature range forecast - reciprocal
+- Diurnal temperature range station - reciprocal
+- Maximum air temperature NCEP - reciprocal
+- Mean dew point temperature NCEP - original
+- Mean relative humidity NCEP - reciprocal
+- Mean specific humidity NCEP - original
+- Minimum air temperature NCEP - original
+- Pixel southeast of city centroid - sqroot
+- Pixel southwest of city centroid - sqroot
+- Total precipitation kg_per_m2 NCEP - log, but it will create nan, need to replace nan
+- Total precipitation mm NCEP - log, but it will create nan, need to replace nan
+- Total precipitation station satellite - log, but it will create nan, need to replace nan
+- Total precipitation station station - sqroot
+
+------------
+
 
 Time series can be either univariate or multivariate (current task):
 - Univariate time series only has a single time-dependent variable.

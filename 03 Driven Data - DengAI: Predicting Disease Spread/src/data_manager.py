@@ -645,77 +645,69 @@ class DengueData:
                 print(df_skew.sort_values('skewness_label'))
 
             # ----------------
+            # Transformation
+            features_to_transform = df_skew.query('skewness_label!="normal"')['Feature'].values
+            for feature in features_to_transform:
+                """
+                Perform transformations and plot distributions
+                """
 
-            feature = 'Total precipitation mm NCEP'
+                # Logarithmic transformation on the feature
+                df[f'{feature} log'] = np.log(df[feature])
 
-            # Logarithmic transformation on the feature
-            df[f'{feature} log'] = np.log(df[feature])
+                # Reciprocal Transformation
+                df[f'{feature} reciprocal'] = 1 / df[feature]
 
-            # Reciprocal Transformation
-            df[f'{feature} reciprocal'] = 1 / df[feature]
+                # Square Root Transformation
+                df[f'{feature} sqroot'] = np.sqrt(df[feature])
 
-            # Square Root Transformation
-            df[f'{feature} sqroot'] = np.sqrt(df[feature])
+                # Exponential Transformation
+                df[f'{feature} exponential'] = df[feature]**(1/1.2)
 
-            # Exponential Transformation
-            df[f'{feature} exponential'] = df[feature]**(1/1.2)
+                # -----------------
+                fig, ax = plt.subplots(nrows=5, figsize=(15, 20))
 
-            # Box-Cox Transformation
-            # df['Total precipitation mm NCEP Boxcox'], parameters = stats.boxcox(df['Total precipitation mm NCEP'])
+                # Plot subtitles
+                for i, val in enumerate(['', ' exponential', ' reciprocal', ' log', ' sqroot']):
+                    skew_text = df[f'{feature}{val}'].skew()
+                    stats.probplot(df[f'{feature}{val}'], fit=True, plot=ax[i], dist=stats.norm)
+                    ax[i].text(.02, .9, f'{val.title()} : {round(skew_text,2)}',
+                               horizontalalignment='left', transform=ax[i].transAxes)
+                    ax[i].set_title("")
+                    ax[i].spines[['top', 'right']].set_visible(False)
+                    ax[i].spines[['bottom', 'left']].set_color(COLORHEX_GREY)
 
-            # -----------------
-            fig, ax = plt.subplots(nrows=2, figsize=(15, 5))
+                # Space between subplots
+                fig.tight_layout()
 
-            # , ' exponential', ' reciprocal', ' log', ' sqroot'
-            # for i, val in enumerate(['', ' exponential']):
-            #     stats.probplot(df[f'{feature}{val}'], fit=True, plot=ax[i], dist=stats.norm)
-            #     ax[i].set_title("")
-            #     ax[i].text(.05, .9, f'{val.title()}',
-            #           horizontalalignment='left',
-            #           transform=ax[0,i].transAxes)
-            #     ax[i].spines[['top', 'right']].set_visible(False)
+                plt.close()
+                fig.savefig(f'../fig/distribution_{feature.lower()}.png')
 
-
-
-            stats.probplot(df[f'{feature}'],
-                                     fit=True,
-                                     plot=ax[0],
-                                     dist=stats.norm)
-            ax[0].set_title(f'{feature}')
-            #
-            # stats.probplot(df[f'{feature} exponential'],
-            #                         fit=True,
-            #                         plot=ax[0, 1])
-            # ax[0, 1].set_title("Exponential")
-            #
-            # stats.probplot(df[f'{feature} reciprocal'],
-            #                         fit=True,
-            #                         plot=ax[1, 0])
-            # ax[1, 0].set_title("")
-            # ax[1, 0].text(.05, .9, 'Reciprocal',
-            #          horizontalalignment='left',
-            #          transform=ax[1,0].transAxes)
-            # ax[1, 0].spines[['top', 'right']].set_visible(False)
-            #
-            # stats.probplot(df[f'{feature} log'],
-            #                         fit=True,
-            #                         plot=ax[1, 1])
-            # ax[1, 1].set_title("Logarithmic")
-            #
-            # stats.probplot(df[f'{feature} sqroot'],
-            #                         fit=True,
-            #                         plot=ax[1, 2])
-            # ax[1, 2].set_title("Square Root")
-
-            # Space between subplots
-            fig.tight_layout()
+                # Clean and drop support features
+                df = df.drop(columns=[f'{feature} log',
+                                      f'{feature} reciprocal',
+                                      f'{feature} sqroot',
+                                      f'{feature} exponential'])
 
 
-            plt.close()
-            fig.savefig('../fig/distribution.png')
+        # uncomment to plot transformations
+        # analyse_distribution(df)
 
+        # Transform some features to make normal distributions
+        # Square Root Transformation, replace the original
 
-        analyse_distribution(df)
+        for feature in ['Pixel southeast of city centroid',
+                        'Pixel southwest of city centroid',
+                        'Total precipitation station station']:
+            # df[feature] = np.sqrt(df[feature])
+            # Replace negative values by positive
+
+            # df[feature] = np.where(df[feature]<0, np.sqrt(df[feature]), np.nan)
+            # df[feature] = np.where(df[feature] > 0, np.sqrt(df[feature]), np.nan)
+
+            # df[f'{feature}_'] = df.apply(lambda row: np.sqrt(row[feature]) if row[feature] > 0 else row[feature])
+            pass
+
 
         # Parse date column to datetime format ---------------
         df['date'] = pd.to_datetime(df['week_start_date'], format='%Y-%m-%d')
