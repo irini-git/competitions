@@ -681,7 +681,7 @@ class DengueData:
                 fig.tight_layout()
 
                 plt.close()
-                fig.savefig(f'../fig/distribution_{feature.lower()}.png')
+                # fig.savefig(f'../fig/distribution_{feature.lower()}.png')
 
                 # Clean and drop support features
                 df = df.drop(columns=[f'{feature} log',
@@ -691,7 +691,7 @@ class DengueData:
 
 
         # uncomment to plot transformations
-        # analyse_distribution(df)
+        analyse_distribution(df)
 
         # Transform some features to make normal distributions
         # Square Root Transformation, replace the original

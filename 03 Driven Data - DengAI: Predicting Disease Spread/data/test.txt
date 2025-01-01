@@ -1,19 +1,9 @@
-['Diurnal temperature range forecast',
-'Pixel southeast of city centroid',
-'Minimum air temperature NCEP',
-'Total precipitation station satellite',
-'Mean relative humidity NCEP',
-'Total precipitation mm NCEP',
-'Average air temperature NCEP',
-'Minimum temperature station',
-'Maximum temperature station',
-'Pixel northwest of city centroid',
-'Average temperature station',
-'Total precipitation kg_per_m2 NCEP', 'Mean air temperature forecast',
- 'Pixel northeast of city centroid', 'Mean specific humidity NCEP',
- 'Mean dew point temperature NCEP', 'Total precipitation station station',
- 'Pixel southwest of city centroid', 'Diurnal temperature range station',
- 'Maximum air temperature NCEP']
+
+2   Total precipitation station satellite  1.737449           None
+4     Total precipitation station station  2.984023           None
+7             Total precipitation mm NCEP  1.737449           None
+15     Diurnal temperature range forecast  1.070846           None
+18     Total precipitation kg_per_m2 NCEP  3.384061           None
 
 
         # Total precipitation station satellite
