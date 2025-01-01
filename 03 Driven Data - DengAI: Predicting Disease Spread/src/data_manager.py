@@ -713,8 +713,8 @@ class DengueData:
         for feature in ['Total precipitation kg_per_m2 NCEP',
                         'Total precipitation mm NCEP',
                         'Total precipitation station satellite']:
-            # df[feature] = np.where(df[feature] > 0, np.log(df[feature]), np.nan)
-            pass
+            df[feature] = np.where(df[feature] > 0, np.log(df[feature]), np.nan)
+            # pass
 
         # Parse date column to datetime format ---------------
         df['date'] = pd.to_datetime(df['week_start_date'], format='%Y-%m-%d')
