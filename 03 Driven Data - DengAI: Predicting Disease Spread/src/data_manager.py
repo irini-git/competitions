@@ -927,9 +927,6 @@ class DengueData:
 
             target_map = {np.datetime64(k): v for k, v in target_map.get('total_cases').items()}
 
-            # for k,v in target_map.items():
-            #     print(f'{k} :{v} / {type(k)}')
-
             # Play with days to have correct mapping (365 or 364)
             # Cannot be longer than a forecasting horizon
             df['lag1']= (df.index - pd.Timedelta(days=365)).map(target_map)
@@ -941,11 +938,11 @@ class DengueData:
         # Add lags to df
         df = add_lags(df)
 
-        # Preview --------------------------------
-        with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-            print(df.info())
-            print(df[['total_cases', 'lag1', 'lag2', 'lag3']].head(3))
-            print(df[['total_cases', 'lag1', 'lag2', 'lag3']].tail(3))
+        # # Preview --------------------------------
+        # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+        #     print(df.info())
+        #     print(df[['total_cases', 'lag1', 'lag2', 'lag3']].head(3))
+        #     print(df[['total_cases', 'lag1', 'lag2', 'lag3']].tail(3))
 
         # compute the correlations
         # sj_correlations = sj_train_features.corr()
@@ -1151,145 +1148,201 @@ class DengueData:
         df_sj = df.query('city=="sj"').drop('city', axis='columns')
 
         # Define numeric features
-        numeric_features = list(set(df_iq.columns.values) - set(['total_cases']))
+        numeric_features = list(set(df_iq.columns.values) - set(['total_cases', 'lag1', 'lag2', 'lag3']))
+        print(numeric_features)
 
-        def split_test_train(df):
+        df = df[numeric_features + ['total_cases']]
 
-            df = df[numeric_features + ['total_cases']]
+        X = df.iloc[:, 0:-1]
+        y = df.iloc[:, -1]
 
-            X = df.iloc[:, 0:-1]
-            y = df.iloc[:, -1]
+        def forecast_series(df):
+            """ Create a forecast per city """
 
-            tss = TimeSeriesSplit(n_splits=5, test_size=24*365*1, gap=24)
+            print(df.columns)
+            tss = TimeSeriesSplit(n_splits=3, test_size=100, gap=1)
 
             fold = 0
             preds = []
             scores = []
 
             for train_index, test_index in tss.split(X):
-                 X_train, X_test = X.iloc[train_index, :], X.iloc[test_index, :]
-                 y_train, y_test = y.iloc[train_index], y.iloc[test_index]
+                X_train, X_test = X.iloc[train_index, :], X.iloc[test_index, :]
+                y_train, y_test = y.iloc[train_index], y.iloc[test_index]
 
-            return X_train, y_train, X_test, y_test
-
-        X_train_sj, y_train_sj, X_test_sj, y_test_sj = split_test_train(df_sj)
-        X_train_iq, y_train_iq, X_test_iq, y_test_iq = split_test_train(df_iq)
-
-        # ----------------
-        def plot_train_test(train, test, city):
-            train = train.to_frame(name='total_cases')
-            test = test.to_frame(name='total_cases')
-
-            fig, ax = plt.subplots(figsize=(15,5))
-            train['total_cases'].plot(ax=ax, label='Training Set', color=COLORHEX_GREY)
-            test['total_cases'].plot(ax=ax, label='Train Set', color=COLORHEX_ASCENT)
-            ax.axvline(test.index[0], color='black', ls='--')
-
-            plt.ylim(bottom=0)
-            plt.xlim(left=train.index[0], right=test.index[-1])
-            plt.xlabel('')
-            plt.xticks(rotation=0)
-
-            ax.spines[['top', 'right']].set_visible(False)
-
-            plt.title(f'Data Train/Test Split for {city}', loc='left')
-            plt.close()
-
-            fig.savefig(f'../fig/train_test_{city}.png')
-
-        # Plot test - train visualisation for total cases, if it does not exist
-        # plot_train_test(y_train_sj, y_test_sj, 'sj')
-        # plot_train_test(y_train_iq, y_test_iq, 'iq')
-
-        # ------------
-
-        # Run model per location
-        def model_city(X_train, y_train, X_test, y_test):
-
-            def build_and_train(numeric_features, X_train):
+                print(X_train)
 
                 numeric_transformer = Pipeline(
-                    steps=[
-                        ('scaler', MinMaxScaler(copy=False))
-                    ]
-                )
+                             steps=[
+                                 ('scaler', MinMaxScaler(copy=False))
+                             ]
+                         )
+
+                print(numeric_features)
+                print(X_train[numeric_features])
 
                 # Make our ColumnTransformer
                 # Set remainder="passthrough" to keep the columns in our feature table which do not need any preprocessing.
                 col_transformer = ColumnTransformer(
-                    transformers=[
-                        ("numeric", numeric_transformer, numeric_features),
-                    ],
-                    remainder='passthrough'
-                )
+                             transformers=[
+                                 ("numeric", numeric_transformer, numeric_features),
+                             ],
+                             remainder='passthrough'
+                         )
 
                 param_grid = {
-                    'model__learning_rate': [.03, 0.05, .07],  # so called `eta` value
-                    'model__max_depth': [5, 6, 7]
-                }
+                             'model__learning_rate': [.03, 0.05, .07],  # so called `eta` value
+                             'model__max_depth': [5, 6, 7]
+                         }
 
-                classifier = xgb.XGBRegressor(n_estimators=1000)
+                classifier = xgb.XGBRegressor(n_estimators=1000,
+                                              base_score=0.5,
+                                              booster='gbtree',
+                                              objective='reg:squarederror'
+                                              )
 
                 # Make a pipeline
                 main_pipe = Pipeline(
-                    steps=[
-                        ("preprocessor", col_transformer),
-                        ("model", classifier)])
+                             steps=[
+                                 ("preprocessor", col_transformer),
+                                 ("model", classifier)])
 
                 grid_search = GridSearchCV(main_pipe, param_grid, cv=2, verbose=3)
                 grid_search.fit(X_train, y_train)
 
-                result = permutation_importance(grid_search, X_train, y_train, n_repeats=10,
-                                                random_state=0)
+                y_pred = grid_search.predict(X_test)
+                preds.append(y_pred)
 
-                # Create pandas DataFrame for feature importance
-                data_fi = {'mean': result.importances_mean,
-                           'std': result.importances_std}
-                df_fi = pd.DataFrame(data_fi, index=X_train.columns.values)
-                cols_exclude = df_fi.index[df_fi.eq(0).all(axis=1)].to_list()
+                scores = np.sqrt(mean_squared_error(y_test, y_pred))
+                scores.append(scores)
 
-                if len(cols_exclude)==0:
-                    # No feature has zero importance
-                    # Use the model as final
-                    print(f'Numeric features used : {numeric_features}')
-                    print('Best Grid Search Parameters :', grid_search.best_params_)
-                    print('Best Grid Search Score : ', grid_search.best_score_)
+                print(preds)
+                print(scores)
 
-                    return grid_search
+            return
 
-                else:
-                    # Some features have zero importance to be removed from the list
-                    # remove those and call the function again
-                    numeric_features = list(set(numeric_features) - set(cols_exclude))
-                    X_train = X_train[numeric_features]
-                    grid_search = build_and_train(numeric_features, X_train)
+            # return X_train, y_train, X_test, y_test
 
-                return grid_search
 
-            grid_search = build_and_train(numeric_features, X_train)
-            # Predict
-            y_pred = grid_search.predict(X_test).astype(int)
-            score = np.sqrt(mean_squared_error(y_test, y_pred))
-            print(f'RMSE Score on Test set: {score:0.2f}')
+        forecast_series(df_sj)
+        # X_train_sj, y_train_sj, X_test_sj, y_test_sj = split_test_train(df_sj)
+        # X_train_iq, y_train_iq, X_test_iq, y_test_iq = split_test_train(df_iq)
 
-            return y_pred, grid_search
+        # ----------------
+        # def plot_train_test(train, test, city):
+        #     train = train.to_frame(name='total_cases')
+        #     test = test.to_frame(name='total_cases')
+        #
+        #     fig, ax = plt.subplots(figsize=(15,5))
+        #     train['total_cases'].plot(ax=ax, label='Training Set', color=COLORHEX_GREY)
+        #     test['total_cases'].plot(ax=ax, label='Train Set', color=COLORHEX_ASCENT)
+        #     ax.axvline(test.index[0], color='black', ls='--')
+        #
+        #     plt.ylim(bottom=0)
+        #     plt.xlim(left=train.index[0], right=test.index[-1])
+        #     plt.xlabel('')
+        #     plt.xticks(rotation=0)
+        #
+        #     ax.spines[['top', 'right']].set_visible(False)
+        #
+        #     plt.title(f'Data Train/Test Split for {city}', loc='left')
+        #     plt.close()
+        #
+        #     fig.savefig(f'../fig/train_test_{city}.png')
+        #
+        # # Plot test - train visualisation for total cases, if it does not exist
+        # # plot_train_test(y_train_sj, y_test_sj, 'sj')
+        # # plot_train_test(y_train_iq, y_test_iq, 'iq')
 
-            # -----------
+        # ------------
 
-        # Run the model per city
-        print('SJ ----------- ')
-        y_preds_sj, grid_search_sj = model_city(X_train_sj, y_train_sj, X_test_sj, y_test_sj)
-        print('IQ ----------- ')
-        y_preds_iq, grid_search_iq = model_city(X_train_iq, y_train_iq, X_test_iq, y_test_iq)
-
-        # Save predictions for later analysis
-        X_test_sj['y_pred'] = y_preds_sj
-        X_test_sj['y_test'] = y_test_sj
-        X_test_sj.to_csv('../data/X_test_sj.csv')
-
-        X_test_iq['y_pred'] = y_preds_iq
-        X_test_iq['y_test'] = y_test_iq
-        X_test_iq.to_csv('../data/X_test_iq.csv')
+        # # Run model per location
+        # def model_city(X_train, y_train, X_test, y_test):
+        #
+        #     def build_and_train(numeric_features, X_train):
+        #
+        #         numeric_transformer = Pipeline(
+        #             steps=[
+        #                 ('scaler', MinMaxScaler(copy=False))
+        #             ]
+        #         )
+        #
+        #         # Make our ColumnTransformer
+        #         # Set remainder="passthrough" to keep the columns in our feature table which do not need any preprocessing.
+        #         col_transformer = ColumnTransformer(
+        #             transformers=[
+        #                 ("numeric", numeric_transformer, numeric_features),
+        #             ],
+        #             remainder='passthrough'
+        #         )
+        #
+        #         param_grid = {
+        #             'model__learning_rate': [.03, 0.05, .07],  # so called `eta` value
+        #             'model__max_depth': [5, 6, 7]
+        #         }
+        #
+        #         classifier = xgb.XGBRegressor(n_estimators=1000)
+        #
+        #         # Make a pipeline
+        #         main_pipe = Pipeline(
+        #             steps=[
+        #                 ("preprocessor", col_transformer),
+        #                 ("model", classifier)])
+        #
+        #         grid_search = GridSearchCV(main_pipe, param_grid, cv=2, verbose=3)
+        #         grid_search.fit(X_train, y_train)
+        #
+        #         result = permutation_importance(grid_search, X_train, y_train, n_repeats=10,
+        #                                         random_state=0)
+        #
+        #         # Create pandas DataFrame for feature importance
+        #         data_fi = {'mean': result.importances_mean,
+        #                    'std': result.importances_std}
+        #         df_fi = pd.DataFrame(data_fi, index=X_train.columns.values)
+        #         cols_exclude = df_fi.index[df_fi.eq(0).all(axis=1)].to_list()
+        #
+        #         if len(cols_exclude)==0:
+        #             # No feature has zero importance
+        #             # Use the model as final
+        #             print(f'Numeric features used : {numeric_features}')
+        #             print('Best Grid Search Parameters :', grid_search.best_params_)
+        #             print('Best Grid Search Score : ', grid_search.best_score_)
+        #
+        #             return grid_search
+        #
+        #         else:
+        #             # Some features have zero importance to be removed from the list
+        #             # remove those and call the function again
+        #             numeric_features = list(set(numeric_features) - set(cols_exclude))
+        #             X_train = X_train[numeric_features]
+        #             grid_search = build_and_train(numeric_features, X_train)
+        #
+        #         return grid_search
+        #
+        #     grid_search = build_and_train(numeric_features, X_train)
+        #     # Predict
+        #     y_pred = grid_search.predict(X_test).astype(int)
+        #     score = np.sqrt(mean_squared_error(y_test, y_pred))
+        #     print(f'RMSE Score on Test set: {score:0.2f}')
+        #
+        #     return y_pred, grid_search
+        #
+        #     # -----------
+        #
+        # # Run the model per city
+        # print('SJ ----------- ')
+        # y_preds_sj, grid_search_sj = model_city(X_train_sj, y_train_sj, X_test_sj, y_test_sj)
+        # print('IQ ----------- ')
+        # y_preds_iq, grid_search_iq = model_city(X_train_iq, y_train_iq, X_test_iq, y_test_iq)
+        #
+        # # Save predictions for later analysis
+        # X_test_sj['y_pred'] = y_preds_sj
+        # X_test_sj['y_test'] = y_test_sj
+        # X_test_sj.to_csv('../data/X_test_sj.csv')
+        #
+        # X_test_iq['y_pred'] = y_preds_iq
+        # X_test_iq['y_test'] = y_test_iq
+        # X_test_iq.to_csv('../data/X_test_iq.csv')
 
         return
 
