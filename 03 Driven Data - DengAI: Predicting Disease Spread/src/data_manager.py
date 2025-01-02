@@ -1,3 +1,4 @@
+from ctypes.wintypes import tagPOINT
 
 import pandas as pd
 import time
@@ -881,7 +882,6 @@ class DengueData:
             return df
 
         # Create seasonal and trend decomposition for selected features
-        print(df.isna().sum().sum())
         df = create_decompositions(df)
 
         # Transform date to index
@@ -916,6 +916,11 @@ class DengueData:
         TARGET = ['total_cases']
 
         df = df[FEATURES + TARGET]
+
+        # Lag features
+        # What was the target (x) days in the past
+        target_map = df[TARGET].to_dict()
+        print(f'Target map : {target_map}')
 
         # compute the correlations
         # sj_correlations = sj_train_features.corr()
