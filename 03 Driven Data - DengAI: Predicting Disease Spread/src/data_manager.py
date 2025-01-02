@@ -100,9 +100,25 @@ class DengueData:
     def explore_data(self):
 
         # Explore data
-        # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-            # print(self.train_data.head(2))
-            # print(self.train_data.info())
+        with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+            print(self.train_data.head(2))
+            print(self.train_data.info())
+
+        def check_missing_values_station(df):
+            """ Check if any missing values.
+            """
+            # NOAA's GHCN
+            features_noaa_ghcn_persiann = ["Total precipitation station station",
+                                  "Minimum temperature station",
+                                  "Maximum temperature station",
+                                  "Average temperature station",
+                                  "Diurnal temperature range station",
+                                  "Total precipitation station satellite"]
+
+            with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+                print(f'Min values for features (-9999?):\n{df[features_noaa_ghcn_persiann].min()}')
+
+        # check_missing_values_station(df)
 
         # Parse date column to datetime format
         self.train_data['date'] = pd.to_datetime(self.train_data['week_start_date'], format='%Y-%m-%d')
@@ -708,13 +724,11 @@ class DengueData:
                         'Mean relative humidity NCEP']:
             df[feature] = 1 / df[feature]
 
-        # Log
-        # Worse results show after log transformation...
+        # Log transformations, np.nan for negative values
         for feature in ['Total precipitation kg_per_m2 NCEP',
                         'Total precipitation mm NCEP',
                         'Total precipitation station satellite']:
             df[feature] = np.where(df[feature] > 0, np.log(df[feature]), np.nan)
-            # pass
 
         # Parse date column to datetime format ---------------
         df['date'] = pd.to_datetime(df['week_start_date'], format='%Y-%m-%d')
@@ -729,23 +743,6 @@ class DengueData:
 
         for f in features_ffill:
             df[f] = df.groupby('city')[f].ffill()
-
-
-        def check_missing_values_station(df):
-            """ Check if any missing values.
-            """
-            # NOAA's GHCN
-            features_noaa_ghcn_persiann = ["Total precipitation station station",
-                                  "Minimum temperature station",
-                                  "Maximum temperature station",
-                                  "Average temperature station",
-                                  "Diurnal temperature range station",
-                                  "Total precipitation station satellite"]
-
-            with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-                print(f'Min values for features (-9999?):\n{df[features_noaa_ghcn_persiann].min()}')
-
-        # check_missing_values_station(df)
 
         # Time features - engineering ------------------------------
         def create_time_features(df):
@@ -1005,10 +1002,6 @@ class DengueData:
         # Run model per location
 
         def model_city(X_train, y_train, X_test, y_test):
-            # model = xgb.XGBRegressor(n_estimators=1000,
-            #                        early_stopping_rounds=50)
-
-            # if any zero in numeric features, remove those features and do again
 
             def build_and_train(numeric_features, X_train):
 
@@ -1121,10 +1114,7 @@ class DengueData:
         return
 
     def create_model_XGBoost(self, df):
-        """
-        Creates model using XGBoost
-        :return:
-        """
+        """ Creates model using XGBoost """
 
         # Split cities
         df_iq = df.query('city=="iq"').drop('city', axis='columns')
@@ -1173,6 +1163,7 @@ class DengueData:
 
             fig.savefig(f'../fig/train_test_{city}.png')
 
+        # Plot test - train visualisation for total cases, if it does not exist
         # plot_train_test(y_train_sj, y_test_sj, 'sj')
         # plot_train_test(y_train_iq, y_test_iq, 'iq')
 
@@ -1185,7 +1176,7 @@ class DengueData:
 
                 numeric_transformer = Pipeline(
                     steps=[
-                        ('scaler', MinMaxScaler(copy=False)) # RobustScaler(copy=False)), StandardScaler(copy=False, with_mean=False))
+                        ('scaler', MinMaxScaler(copy=False))
                     ]
                 )
 
@@ -1208,7 +1199,7 @@ class DengueData:
                 # Make a pipeline
                 main_pipe = Pipeline(
                     steps=[
-                        ("preprocessor", col_transformer),  # <-- this is the ColumnTransformer we created
+                        ("preprocessor", col_transformer),
                         ("model", classifier)])
 
                 grid_search = GridSearchCV(main_pipe, param_grid, cv=2, verbose=3)
@@ -1225,6 +1216,7 @@ class DengueData:
 
                 if len(cols_exclude)==0:
                     # No feature has zero importance
+                    # Use the model as final
                     print(f'Numeric features used : {numeric_features}')
                     print('Best Grid Search Parameters :', grid_search.best_params_)
                     print('Best Grid Search Score : ', grid_search.best_score_)
@@ -1233,7 +1225,7 @@ class DengueData:
 
                 else:
                     # Some features have zero importance to be removed from the list
-                    # redefine numeric features and call the function again
+                    # remove those and call the function again
                     numeric_features = list(set(numeric_features) - set(cols_exclude))
                     X_train = X_train[numeric_features]
                     grid_search = build_and_train(numeric_features, X_train)
@@ -1250,13 +1242,13 @@ class DengueData:
 
             # -----------
 
-        #
+        # Run the model per city
         print('SJ ----------- ')
         y_preds_sj, grid_search_sj = model_city(X_train_sj, y_train_sj, X_test_sj, y_test_sj)
         print('IQ ----------- ')
         y_preds_iq, grid_search_iq = model_city(X_train_iq, y_train_iq, X_test_iq, y_test_iq)
 
-        # Save predictions
+        # Save predictions for later analysis
         X_test_sj['y_pred'] = y_preds_sj
         X_test_sj['y_test'] = y_test_sj
         X_test_sj.to_csv('../data/X_test_sj.csv')
@@ -1276,11 +1268,7 @@ class DengueData:
         X_test_iq.index = pd.to_datetime(X_test_iq.index)
 
         def explore_diff(df):
-            """
-            Find highest discrepancy
-            :param df:
-            :return:
-            """
+            """ Find the highest discrepancy """
             df['diff_preds_test'] = abs(df['y_pred'] - df['y_test'])
 
             # plot line chart
