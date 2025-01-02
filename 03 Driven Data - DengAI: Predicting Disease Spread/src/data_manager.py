@@ -1,10 +1,10 @@
-from ctypes.wintypes import tagPOINT
 
 import pandas as pd
 import time
 import datetime
 
 from feature_engine.transformation import BoxCoxTransformer
+from future.backports.html.parser import tagfind
 from sklearn.model_selection import TimeSeriesSplit, GridSearchCV
 from sklearn.inspection import permutation_importance
 from sklearn.ensemble import HistGradientBoostingRegressor
@@ -917,10 +917,35 @@ class DengueData:
 
         df = df[FEATURES + TARGET]
 
-        # Lag features
-        # What was the target (x) days in the past
-        target_map = df[TARGET].to_dict()
-        print(f'Target map : {target_map}')
+        def add_lags(df):
+            """
+            Add lags to dataframe (1,2 and 3 years)
+            """
+            # Lag features
+            # What was the target (x) days in the past
+            target_map = df[TARGET].to_dict(orient = 'dict')
+
+            target_map = {np.datetime64(k): v for k, v in target_map.get('total_cases').items()}
+
+            # for k,v in target_map.items():
+            #     print(f'{k} :{v} / {type(k)}')
+
+            # Play with days to have correct mapping (365 or 364)
+            # Cannot be longer than a forecasting horizon
+            df['lag1']= (df.index - pd.Timedelta(days=365)).map(target_map)
+            df['lag2'] = (df.index - pd.Timedelta(days=724)).map(target_map)
+            df['lag3'] = (df.index - pd.Timedelta(days=1096)).map(target_map)
+
+            return df
+
+        # Add lags to df
+        df = add_lags(df)
+
+        # Preview --------------------------------
+        with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+            print(df.info())
+            print(df[['total_cases', 'lag1', 'lag2', 'lag3']].head(3))
+            print(df[['total_cases', 'lag1', 'lag2', 'lag3']].tail(3))
 
         # compute the correlations
         # sj_correlations = sj_train_features.corr()
@@ -1135,7 +1160,11 @@ class DengueData:
             X = df.iloc[:, 0:-1]
             y = df.iloc[:, -1]
 
-            tss = TimeSeriesSplit(n_splits=5)
+            tss = TimeSeriesSplit(n_splits=5, test_size=24*365*1, gap=24)
+
+            fold = 0
+            preds = []
+            scores = []
 
             for train_index, test_index in tss.split(X):
                  X_train, X_test = X.iloc[train_index, :], X.iloc[test_index, :]
