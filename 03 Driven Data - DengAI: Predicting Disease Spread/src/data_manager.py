@@ -1163,23 +1163,19 @@ class DengueData:
             tss = TimeSeriesSplit(n_splits=3, test_size=100, gap=1)
 
             fold = 0
-            preds = []
             scores = []
+            preds = pd.DataFrame()
+            support_id = 0
 
             for train_index, test_index in tss.split(X):
                 X_train, X_test = X.iloc[train_index, :], X.iloc[test_index, :]
                 y_train, y_test = y.iloc[train_index], y.iloc[test_index]
-
-                print(X_train)
 
                 numeric_transformer = Pipeline(
                              steps=[
                                  ('scaler', MinMaxScaler(copy=False))
                              ]
                          )
-
-                print(numeric_features)
-                print(X_train[numeric_features])
 
                 # Make our ColumnTransformer
                 # Set remainder="passthrough" to keep the columns in our feature table which do not need any preprocessing.
@@ -1191,8 +1187,8 @@ class DengueData:
                          )
 
                 param_grid = {
-                             'model__learning_rate': [.03, 0.05, .07],  # so called `eta` value
-                             'model__max_depth': [5, 6, 7]
+                             'model__learning_rate': [.03, .07],  # so called `eta` value
+                             'model__max_depth': [3, 5]
                          }
 
                 classifier = xgb.XGBRegressor(n_estimators=1000,
@@ -1211,20 +1207,26 @@ class DengueData:
                 grid_search.fit(X_train, y_train)
 
                 y_pred = grid_search.predict(X_test)
-                preds.append(y_pred)
 
-                scores = np.sqrt(mean_squared_error(y_test, y_pred))
-                scores.append(scores)
+                score = np.sqrt(mean_squared_error(y_test, y_pred))
 
-                print(preds)
-                print(scores)
+                preds[f'y_test_{support_id}'] = y_test
+                preds[f'y_preds_{support_id}'] = y_pred
 
-            return
+
+                support_id += 1
+
+            return preds, scores
 
             # return X_train, y_train, X_test, y_test
 
+        preds, scores = forecast_series(df_sj)
+        print(scores)
+        print(preds.head(2))
 
-        forecast_series(df_sj)
+        preds.to_csv('../data/forecast.csv')
+
+
         # X_train_sj, y_train_sj, X_test_sj, y_test_sj = split_test_train(df_sj)
         # X_train_iq, y_train_iq, X_test_iq, y_test_iq = split_test_train(df_iq)
 
